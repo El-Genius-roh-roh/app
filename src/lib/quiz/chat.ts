@@ -52,6 +52,14 @@ export async function buildChatPrompt(subjectId: string, o: PromptOptions = {}):
     `select d.nom, string_agg(p.texte, E'\\n' order by p.numero) as t from documents d join document_pages p on p.document_id=d.id
       where d.subject_id=$1 and d.categorie='annale' and d.statut='pret' group by d.id, d.nom order by d.created_at`, [subjectId]);
 
+  // Vue d'ensemble de TOUTE la matière (pas seulement les slides du jour) : l'IA situe chaque slide dans le sujet global
+  // et juge ce qui est central ou accessoire.
+  const plan = await q<{ nom: string; notions: string }>(
+    `select d.nom, string_agg(distinct coalesce(nullif(p.chapitre,''), nullif(p.notions->>0,'')), ' ; ') as notions
+       from documents d join document_pages p on p.document_id=d.id
+      where d.subject_id=$1 and d.categorie='cours' and d.statut='pret' group by d.id, d.nom, d.ordre order by d.ordre`, [subjectId]);
+  const planTxt = clip(plan.map((d) => `- ${d.nom}${d.notions ? ` : ${d.notions}` : ""}`).join("\n"), CONFIG.CHAT_PLAN_MAX_CARACTERES);
+
   const slides = new Map<string, RefPage>();
   const blocks: string[] = [];
   const cq = <T,>(text: string, params: unknown[] = []) => q<T>(text, params);
@@ -70,6 +78,9 @@ export async function buildChatPrompt(subjectId: string, o: PromptOptions = {}):
   const annalesTxt = clip(annales.map((a) => `--- ${a.nom}\n${a.t}`).join("\n\n"), CONFIG.CHAT_ANNALES_MAX_CARACTERES);
   const prompt = `Tu es professeur en « ${s.nom} ». Rédige les quiz quotidiens de révision de mes étudiants, à partir des slides ci-dessous.
 
+## D'abord, comprends la matière
+Avant d'écrire, lis le plan de la matière et les slides pour comprendre le SUJET GLOBAL : de quoi parle « ${s.nom} », quelles sont ses notions centrales, et ce que chaque slide apporte à ce sujet. Résume-le en une phrase dans le champ "sujet" de ta réponse.
+${planTxt ? `\nPlan de la matière (tous les cours) :\n${planTxt}\n` : ""}
 ## Quiz à produire (${CONFIG.QUESTIONS_PAR_JOUR} questions par jour)
 ${blocks.join("\n\n")}
 
@@ -78,6 +89,12 @@ ${blocks.join("\n\n")}
 - Chaque question porte uniquement sur le contenu des slides indiquées ; la bonne réponse doit s'y trouver sans ambiguïté.
 - Interroge uniquement sur la MATIÈRE (notions, définitions, propriétés, méthodes, résultats). Ignore tout ce qui est hors matière : enseignant, contacts, organisation du cours, planning, modalités d'examen, bibliographie, plan, remerciements. Si une slide indiquée ne contient que ce genre d'informations, prends une autre slide de la liste.
 - Les EXEMPLES du cours servent à comprendre une méthode : ne pose jamais de question sur leurs données précises (valeurs, noms, chiffres, résultats de l'exemple). Fais plutôt une question d'APPLICATION : la même méthode avec de nouvelles valeurs ou une nouvelle situation, ou « quelle méthode / quelle formule utiliser », « que signifie ce résultat ».
+- PERTINENCE : chaque question teste une notion importante de « ${s.nom} », du genre de ce qu'un examen de cette matière pourrait demander. Écarte les détails accessoires d'une slide (anecdote, historique, digression, illustration).
+- TEST DE L'INTERNET : une personne qui connaît la matière mais qui n'a PAS lu ce cours doit pouvoir répondre, par exemple en cherchant sur internet ou dans un manuel. Donc :
+  - l'énoncé est autonome et donne tout le contexte utile ; jamais « selon le cours », « dans la slide », « dans l'exemple vu en cours », « d'après le professeur » ;
+  - pas de notation, d'abréviation ou de convention propre au cours sans la définir dans l'énoncé ;
+  - pas de question sur un exemple précis, un jeu de données, une étude de cas, une citation, un nom propre ou une date cités seulement pour illustrer ;
+  - la bonne réponse est celle qu'on trouve dans les références usuelles de la matière, pas une formulation propre au cours.
 - Privilégie la compréhension et l'application plutôt que le par-cœur mot pour mot.
 - Écris TOUTES les formules, variables et symboles mathématiques en LaTeX entre dollars : $\\hat{\\beta} = (X^\\top X)^{-1} X^\\top y$, $\\alpha = 5\\,\\%$, $n \\geq 30$. Cela vaut pour l'énoncé, les choix et l'explication. Dans le JSON, double chaque antislash (\\\\frac, \\\\beta…).
 - Chaque choix fait au plus une phrase courte (moins de 150 caractères), écrite en entier.
@@ -88,7 +105,8 @@ ${blocks.join("\n\n")}
 
 ## Format de réponse
 Réponds UNIQUEMENT avec un JSON valide, sans texte autour :
-{"jours":[{"date":"AAAA-MM-JJ","questions":[{"type":"qcm","kind":"new","enonce":"…","choix":["…","…","…","…"],"bonne_reponse":0,"explication":"…","slides":["C1-p3"]}]}]}
+{"sujet":"…","jours":[{"date":"AAAA-MM-JJ","questions":[{"type":"qcm","kind":"new","enonce":"…","choix":["…","…","…","…"],"bonne_reponse":0,"explication":"…","slides":["C1-p3"]}]}]}
+- "sujet" : une phrase qui résume le sujet global de la matière.
 - "type" : "qcm" ou "vrai_faux" (pour vrai_faux, "choix" vaut ["Vrai","Faux"] et "bonne_reponse" vaut 0 pour Vrai, 1 pour Faux).
 - "bonne_reponse" : index (à partir de 0) du bon choix.
 - "slides" : références des slides utilisées.
@@ -108,7 +126,7 @@ const QuestionSchema = z.object({
   explication: z.string().catch(""),
   slides: z.array(z.string()).catch([]),
 });
-const AnswerSchema = z.object({ jours: z.array(z.object({ date: z.string(), questions: z.array(z.unknown()) })) });
+const AnswerSchema = z.object({ sujet: z.string().catch(""), jours: z.array(z.object({ date: z.string(), questions: z.array(z.unknown()) })) });
 
 export type ImportResult = { date: string; report?: GenReport; erreur?: string }[];
 
@@ -141,14 +159,19 @@ export function extractJson(text: string): unknown {
   return JSON.parse(fixLatexEscapes(raw));
 }
 
-/** Vérificateur indépendant : renvoie, pour chaque question, l'index de la réponse qu'il juge correcte (ou null). */
-export type Verifier = (qs: { type: string; enonce: string; choix: string[] }[]) => Promise<(number | null)[]>;
+/**
+ * Vérificateur indépendant : renvoie, pour chaque question, l'index de la réponse qu'il juge correcte, null (ambiguë),
+ * ou "hors_sujet" (question qui ne porte pas sur la matière, ou à laquelle on ne peut pas répondre sans avoir lu le cours).
+ */
+export type AvisCorrecteur = number | null | "hors_sujet";
+export type Verifier = (qs: { type: string; enonce: string; choix: string[] }[], ctx: { matiere: string; sujet: string }) => Promise<AvisCorrecteur[]>;
 
 export async function importChatAnswer(subjectId: string, text: string, opts: { verifier?: Verifier } = {}): Promise<ImportResult> {
   let parsed;
   try { parsed = AnswerSchema.parse(extractJson(text)); }
   catch (e) { throw new Error(`Réponse illisible : ${(e as Error).message.slice(0, 200)}`); }
 
+  const [{ nom: matiere } = { nom: "" }] = await q<{ nom: string }>("select nom from subjects where id=$1", [subjectId]);
   const pages = await withOrdre(await q<SrcPage>(
     `select p.id, p.document_id, p.numero, p.texte, coalesce(nullif(p.notions->>0,''), split_part(p.texte, E'\\n', 1)) as notion
        from document_pages p join documents d on d.id=p.document_id where d.subject_id=$1 and d.categorie='cours' and d.statut='pret'`, [subjectId]));
@@ -178,16 +201,17 @@ export async function importChatAnswer(subjectId: string, text: string, opts: { 
     // la réponse, retrouve exactement la même. Réponse différente, « null » (ambiguë / aucune bonne réponse) ou
     // absente = rejet. Si la vérification échoue, on n'enregistre RIEN de non vérifié pour ce jour.
     if (opts.verifier && qs.length) {
-      let rep: (number | null)[];
+      let rep: AvisCorrecteur[];
       try {
-        rep = await opts.verifier(qs.map((x) => ({ type: x.type, enonce: x.enonce, choix: x.choix })));
+        rep = await opts.verifier(qs.map((x) => ({ type: x.type, enonce: x.enonce, choix: x.choix })), { matiere, sujet: parsed.sujet });
       } catch (e) {
         out.push({ date: jour.date, erreur: `vérification impossible, quiz non enregistré : ${(e as Error).message.slice(0, 80)}` });
         continue;
       }
       for (let i = qs.length - 1; i >= 0; i--) {
         if (rep[i] === qs[i].correct_index) continue;
-        const raison = rep[i] === null || rep[i] === undefined ? "jugée ambiguë par le correcteur" : "le correcteur trouve une autre réponse";
+        const raison = rep[i] === "hors_sujet" ? "hors sujet ou impossible à résoudre sans le cours (jugé par le correcteur)"
+          : rep[i] === null || rep[i] === undefined ? "jugée ambiguë par le correcteur" : "le correcteur trouve une autre réponse";
         rejets.push(`« ${qs[i].enonce.slice(0, 60)} » : ${raison}`);
         qs.splice(i, 1);
       }

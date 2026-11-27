@@ -16,7 +16,7 @@ export default function PhotoForm({ avatar, aPhoto }: { avatar: React.ReactNode;
         <button type="button" onClick={() => input.current?.click()} className="group relative rounded-full" aria-label="Changer de photo">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {apercu ? <img src={apercu} alt="Aperçu" className="h-28 w-28 rounded-full object-cover ring-4 ring-white/80 shadow-lg" /> : avatar}
-          <span className="absolute right-0 bottom-0 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 text-lg shadow backdrop-blur">📷</span>
+          <span className="absolute right-0 bottom-0 flex h-9 w-9 items-center justify-center rounded-full bg-white text-lg shadow">📷</span>
         </button>
         <input ref={input} type="file" name="photo" accept="image/*" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; setApercu(f ? URL.createObjectURL(f) : null); }} />

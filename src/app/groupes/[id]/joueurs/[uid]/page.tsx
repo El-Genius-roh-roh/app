@@ -56,7 +56,7 @@ export default async function Joueur({ params }: { params: Promise<{ id: string;
         <div className="min-w-0">
           <h1 className="truncate text-3xl">{p.pseudo}{moi ? " (moi)" : ""}</h1>
           {ligne && <p className="mt-1 font-semibold text-white/90">{ligne.rang === 1 ? "1er" : `${ligne.rang}e`} du groupe sur {tr.lignes.length}</p>}
-          {moi && <Link href="/profil" className="mt-2 inline-block rounded-full bg-white/25 px-3 py-1 text-sm backdrop-blur">📷 Modifier ma photo</Link>}
+          {moi && <Link href="/profil" className="mt-2 inline-block rounded-full bg-white/25 px-3 py-1 text-sm">📷 Modifier ma photo</Link>}
         </div>
       </header>
 
@@ -77,7 +77,7 @@ export default async function Joueur({ params }: { params: Promise<{ id: string;
               <h2 className="h2">📚 Par matière</h2>
               {matieres.map((m) => (
                 <Link key={m.id} href={`/matieres/${m.id}`}
-                  className="flex items-center gap-2 rounded-2xl bg-white/50 px-3 py-2 ring-1 ring-white/70 backdrop-blur transition hover:bg-white/70">
+                  className="flex items-center gap-2 rounded-2xl bg-violet-50 px-3 py-2 transition hover:bg-violet-100">
                   <span className="flex-1 truncate">{m.nom}</span>
                   <span className="font-sans text-xs font-semibold text-slate-600">
                     {m.joues ? `${m.joues} quiz · ${m.moyenne!.toFixed(1).replace(".", ",")}/${CONFIG.QUESTIONS_PAR_JOUR}` : "pas encore joué"}

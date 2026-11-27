@@ -34,7 +34,7 @@ export default async function Classements({ subjectId, groupId, userId, today, s
         <div className="flex flex-wrap gap-2">
           {seasons.map((s) => (
             <Link key={s.saison} href={`?saison=${s.saison}`} scroll={false}
-              className={`chip ${s.saison === saison ? "bg-violet-600 text-white" : "bg-white/60 backdrop-blur-md text-violet-700"}`}>Saison {s.saison}</Link>
+              className={`chip ${s.saison === saison ? "bg-violet-600 text-white" : "bg-white text-violet-700"}`}>Saison {s.saison}</Link>
           ))}
         </div>
       )}
@@ -63,7 +63,7 @@ export default async function Classements({ subjectId, groupId, userId, today, s
         <section className="card space-y-2">
           <h2 className="h2">Saisons terminées</h2>
           {podiums.map(({ s, top }) => (
-            <div key={s.saison} className="rounded-2xl bg-amber-50/70 backdrop-blur-md p-3">
+            <div key={s.saison} className="rounded-2xl bg-amber-50 p-3">
               <p className="text-sm font-extrabold text-orange-600">Saison {s.saison}</p>
               {top.length === 0 ? <p className="muted">Personne n&apos;a joué.</p> : top.map((l) => (
                 <p key={l.userId} className="flex items-center gap-1 font-semibold"><RankBadge rang={l.rang} /> {l.pseudo} <DeltaTrophees d={l.gain} /></p>

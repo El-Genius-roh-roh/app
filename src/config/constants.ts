@@ -18,6 +18,7 @@ export const CONFIG = {
   CHAT_SLIDES_REVISION: 6,
   CHAT_SLIDE_MAX_CARACTERES: 1500,
   CHAT_ANNALES_MAX_CARACTERES: 6000,
+  CHAT_PLAN_MAX_CARACTERES: 3000, // vue d'ensemble de la matière (titres des chapitres et notions de tous les cours) dans le prompt
   // génération automatique par l'IA (API compatible OpenAI, ex. service IA d'Onyxia)
   LLM_MODELE: "qwen3-6-35b-moe", // remplaçable par la variable d'environnement LLM_MODEL
   LLM_TIMEOUT_S: 240,

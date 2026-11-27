@@ -7,15 +7,28 @@ import { buildChatPrompt, extractJson, importChatAnswer, type ImportResult, type
 
 const SYSTEME = "Tu es un professeur rigoureux qui rédige des quiz de révision en français. Tu réponds uniquement avec du JSON valide, sans texte autour.";
 
-/** Seconde passe : le modèle répond aux questions SANS connaître la bonne réponse. */
-export const verifierIA = (timeoutS?: number): Verifier => async (qs) => {
+/**
+ * Seconde passe : un correcteur qui n'a PAS le cours (ni la bonne réponse) répond aux questions, comme le ferait
+ * quelqu'un qui connaît la matière ou cherche sur internet. Il signale aussi les questions hors sujet ou qui
+ * dépendent du cours (exemple précis, notation maison, « selon le cours »…) : elles sont rejetées.
+ */
+export const verifierIA = (timeoutS?: number): Verifier => async (qs, ctx) => {
   const liste = qs.map((x, i) => `${i + 1}. ${x.enonce}\n${x.choix.map((c, j) => `   ${j}) ${c}`).join("\n")}`).join("\n\n");
   const txt = await chatLLM([
     { role: "system", content: SYSTEME },
-    { role: "user", content: `Réponds à chacune de ces questions de cours. Pour chaque question, donne l'index (à partir de 0) du choix correct, ou null si aucune réponse n'est correcte ou si plusieurs le sont.\n\n${liste}\n\nRéponds uniquement : {"reponses":[0,2,null,...]} (une valeur par question, dans l'ordre).` },
-  ], { maxTokens: 400, temperature: 0, timeoutS });
+    { role: "user", content: `Matière : « ${ctx.matiere} »${ctx.sujet ? ` (${ctx.sujet})` : ""}.
+Tu n'as PAS le cours sous les yeux : réponds avec tes connaissances générales de la matière, comme quelqu'un qui chercherait sur internet ou dans un manuel.
+
+Pour chaque question :
+- si elle ne porte pas sur une notion de la matière (organisation du cours, anecdote, détail accessoire), ou si on ne peut pas y répondre sans avoir lu CE cours précis (exemple ou données du cours, notation non définie, « selon le cours »…), réponds "hors_sujet" ;
+- sinon, donne l'index (à partir de 0) du choix correct, ou null si aucune réponse n'est correcte ou si plusieurs le sont.
+
+${liste}
+
+Réponds uniquement : {"reponses":[0,"hors_sujet",2,null,...]} (une valeur par question, dans l'ordre).` },
+  ], { maxTokens: 600, temperature: 0, timeoutS });
   const r = (extractJson(txt) as { reponses?: unknown[] }).reponses ?? [];
-  return qs.map((_, i) => (typeof r[i] === "number" ? (r[i] as number) : null));
+  return qs.map((_, i) => (typeof r[i] === "number" ? (r[i] as number) : r[i] === "hors_sujet" ? "hors_sujet" : null));
 };
 
 /** Génération + vérification. Avec `budgetS`, les deux appels réunis tiennent dans ce budget. */

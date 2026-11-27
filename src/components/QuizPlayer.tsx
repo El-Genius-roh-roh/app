@@ -58,7 +58,7 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
       <div className="hero space-y-4 text-center">
         <p className="text-6xl">🧠</p>
         <p className="text-2xl font-extrabold">10 questions, un seul essai</p>
-        <button onClick={start} disabled={busy} className="btn bg-white/60 backdrop-blur-md text-xl text-fuchsia-600 shadow-lg">
+        <button onClick={start} disabled={busy} className="btn bg-white text-xl text-fuchsia-600 shadow-lg">
           {busy ? "Chargement…" : "▶ C'est parti"}
         </button>
         {err && <p className="rounded-2xl bg-white/90 p-2 text-sm font-bold text-rose-600">{err}</p>}
@@ -70,10 +70,10 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <span className="chip bg-white/60 backdrop-blur-md text-violet-700 shadow-sm">{st.index + 1} / {st.total}</span>
-        <span className="chip bg-white/60 backdrop-blur-md font-mono text-base text-fuchsia-600 shadow-sm">⏱ {fmt(now)}</span>
+        <span className="chip bg-white text-violet-700 shadow-sm">{st.index + 1} / {st.total}</span>
+        <span className="chip bg-white font-mono text-base text-fuchsia-600 shadow-sm">⏱ {fmt(now)}</span>
       </div>
-      <div className="h-3 rounded-full bg-white/60 backdrop-blur-md shadow-inner"><div className="h-3 rounded-full bg-gradient-to-r from-violet-500 to-orange-400 transition-all" style={{ width: `${pct}%` }} /></div>
+      <div className="h-3 rounded-full bg-white shadow-inner"><div className="h-3 rounded-full bg-gradient-to-r from-violet-500 to-orange-400 transition-all" style={{ width: `${pct}%` }} /></div>
       <h2 className="card text-xl font-extrabold leading-snug break-words"><Tex>{st.question.enonce}</Tex></h2>
       <div className={st.question.type === "vrai_faux" ? "grid grid-cols-2 gap-3" : "space-y-3"}>
         {st.question.choices.map((c, i) => (

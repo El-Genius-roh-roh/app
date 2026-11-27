@@ -152,7 +152,7 @@ export default function ArenaRoom({ code }: { code: string }) {
         )}
         <Ranking players={v.players} me={v.me} changes={v.final?.changes} />
         {v.final && v.final.recap.some((r) => !r.ok) && (
-          <section className="space-y-2 rounded-xl bg-white/60 backdrop-blur-md p-3 text-gray-900">
+          <section className="space-y-2 rounded-xl bg-white p-3 text-gray-900">
             <h2 className="font-bold">📚 À revoir</h2>
             {v.final.recap.filter((r) => !r.ok).map((r, i) => (
               <div key={i} className="border-t pt-2 text-sm">
@@ -188,7 +188,7 @@ export default function ArenaRoom({ code }: { code: string }) {
       <div className="h-2 overflow-hidden rounded bg-white/20">
         <div className={`h-2 ${question ? "bg-emerald-300" : "bg-white/60"}`} style={{ width: `${(left / total) * 100}%`, transition: "width 100ms linear" }} />
       </div>
-      <h2 className="min-h-20 whitespace-pre-line rounded-2xl bg-white/60 backdrop-blur-md p-4 text-lg font-bold text-gray-900 shadow lg:p-6 lg:text-2xl"><Tex>{r.enonce}</Tex></h2>
+      <h2 className="min-h-20 whitespace-pre-line rounded-2xl bg-white p-4 text-lg font-bold text-gray-900 shadow lg:p-6 lg:text-2xl"><Tex>{r.enonce}</Tex></h2>
 
       <div className={`grid gap-3 ${r.kind === "vf" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
         {r.choices.map((c, i) => {
@@ -230,7 +230,7 @@ function Ranking({ players, me, changes }: { players: P[]; me: string; changes?:
   return (
     <ol className="space-y-1">
       {players.map((p) => (
-        <li key={p.id} className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${p.id === me ? "bg-white/60 backdrop-blur-md text-gray-900 font-bold" : "bg-white/10"} ${p.left ? "opacity-50" : ""}`}>
+        <li key={p.id} className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${p.id === me ? "bg-white text-gray-900 font-bold" : "bg-white/10"} ${p.left ? "opacity-50" : ""}`}>
           <span className="w-6">{p.rank}</span>
           <span className="flex-1 truncate">{p.name}{p.left && " (parti)"}</span>
           {p.round && <span className="text-xs">{p.round.ok ? `+${p.round.pts}` : "✗"}</span>}

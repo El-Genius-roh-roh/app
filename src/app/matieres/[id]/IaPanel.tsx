@@ -17,11 +17,11 @@ export default function IaPanel({ subjectId }: { subjectId: string }) {
         Refaire aussi les quiz déjà prêts (si personne ne les a commencés)
       </label>
       <button disabled={pending} className="btn-primary">{pending ? "⏳ L'IA écrit les questions…" : "✨ Générer avec l'IA"}</button>
-      {state?.erreur && <p className="rounded-2xl bg-rose-50/70 backdrop-blur-md p-3 text-sm font-bold text-rose-600">{state.erreur}</p>}
+      {state?.erreur && <p className="rounded-2xl bg-rose-50 p-3 text-sm font-bold text-rose-600">{state.erreur}</p>}
       {state?.resultats && (
         <ul className="space-y-2">
           {state.resultats.map((r, i) => (
-            <li key={r.date + i} className={`rounded-2xl p-3 text-sm ${r.erreur ? "bg-rose-50/70 backdrop-blur-md" : "bg-emerald-50/70 backdrop-blur-md"}`}>
+            <li key={r.date + i} className={`rounded-2xl p-3 text-sm ${r.erreur ? "bg-rose-50" : "bg-emerald-50"}`}>
               <p className="font-bold">{r.erreur ? "❌" : "✅"} Quiz du {r.date}</p>
               {r.erreur ? <p>{r.erreur}</p> : (
                 <p>{r.report!.chat} question(s) de l&apos;IA{r.report!.simulees ? ` + ${r.report!.simulees} simulée(s) pour compléter` : ""}

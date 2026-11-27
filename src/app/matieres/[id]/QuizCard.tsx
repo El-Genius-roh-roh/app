@@ -16,7 +16,7 @@ export default async function QuizCard({ subjectId, userId, today }: { subjectId
         <p className="font-semibold text-white/90">Quiz du jour {d.jour}</p>
         {fait && <p className="text-2xl font-extrabold">{CONFIG.QUESTIONS_PAR_JOUR - (d.erreurs ?? 0)}/{CONFIG.QUESTIONS_PAR_JOUR} {d.rang ? ` · ${d.rang}${d.rang === 1 ? "er" : "e"}` : ""}</p>}
       </div>
-      <Link href={`/quiz/${d.id}`} className={fait ? "btn-white" : "btn bg-white/60 backdrop-blur-md text-xl text-fuchsia-600 shadow-lg"}>
+      <Link href={`/quiz/${d.id}`} className={fait ? "btn-white" : "btn bg-white text-xl text-fuchsia-600 shadow-lg"}>
         {fait ? "Voir ma correction" : d.statut === "en_cours" ? "▶ Reprendre" : "▶ Jouer"}
       </Link>
     </div>

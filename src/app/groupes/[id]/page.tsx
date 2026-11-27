@@ -72,7 +72,7 @@ export default async function Groupe({ params }: { params: Promise<{ id: string 
         <section className="card space-y-3">
           <h2 className="h2">🏆 Classement général</h2>
           <RankTable meId={u.id} groupId={id} lines={tr.lignes.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
-            badge: <><LigueBadge ligue={ligueDe(l.trophees).ligue} /><TropheesCompteur n={l.trophees} className="ml-1 rounded-full bg-white/60 backdrop-blur-md px-2 py-0.5 text-sm text-amber-700" /></> }))} />
+            badge: <><LigueBadge ligue={ligueDe(l.trophees).ligue} /><TropheesCompteur n={l.trophees} className="ml-1 rounded-full bg-white px-2 py-0.5 text-sm text-amber-700" /></> }))} />
         </section>
       </div>
       </div>
@@ -89,7 +89,7 @@ export default async function Groupe({ params }: { params: Promise<{ id: string 
             <form action={supprimerGroupe}>
               <input type="hidden" name="group" value={id} />
               <ConfirmButton message={`Supprimer le groupe « ${g.nom} » ? Toutes ses matières, quiz et classements seront définitivement effacés pour tous les membres.`}
-                className="btn border-2 border-rose-200 bg-rose-50/70 backdrop-blur-md py-2 text-rose-600">🗑 Supprimer le groupe</ConfirmButton>
+                className="btn border-2 border-rose-200 bg-rose-50 py-2 text-rose-600">🗑 Supprimer le groupe</ConfirmButton>
             </form>
           </div>
         </details>

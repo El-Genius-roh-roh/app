@@ -70,7 +70,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
                   <p className="text-sm font-bold text-white/90">Ligue {ligue.ligue.nom} · <TropheesCompteur n={mesTrophees} /></p>
                 </div>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-black/20"><div className="h-2 rounded-full bg-white/60 backdrop-blur-md" style={{ width: `${Math.round(ligue.progression * 100)}%` }} /></div>
+              <div className="h-2 overflow-hidden rounded-full bg-black/20"><div className="h-2 rounded-full bg-white" style={{ width: `${Math.round(ligue.progression * 100)}%` }} /></div>
               {ligue.suivante && <p className="text-xs font-semibold text-white/85">Encore {ligue.manque} trophées pour la ligue {ligue.suivante.nom}</p>}
               {!jour?.fige && <p className="text-[11px] text-white/70">Provisoire : ça bouge encore si d&apos;autres joueurs font mieux aujourd&apos;hui.</p>}
             </div>

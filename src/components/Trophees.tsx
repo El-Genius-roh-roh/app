@@ -165,7 +165,7 @@ export function Vitrine({ data, titre = "🎖️ Mes badges" }: { data: VitrineD
           const ok = t.nombre > 0;
           return (
             <li key={t.id} title={t.description}
-              className={`relative flex flex-col items-center rounded-2xl p-3 text-center transition ${ok ? "bg-gradient-to-b from-amber-50 to-orange-100 shadow-sm ring-1 ring-amber-200" : "bg-slate-50/70 backdrop-blur-md"}`}>
+              className={`relative flex flex-col items-center rounded-2xl p-3 text-center transition ${ok ? "bg-gradient-to-b from-amber-50 to-orange-100 shadow-sm ring-1 ring-amber-200" : "bg-slate-50"}`}>
               <span className={`text-3xl ${ok ? "drop-shadow" : "opacity-30 grayscale"}`} aria-hidden>{t.emoji}</span>
               {!ok && <span className="absolute top-1.5 right-2 text-xs" aria-hidden>🔒</span>}
               {ok && t.cumulable && <span className="absolute top-1.5 right-1.5 rounded-full bg-fuchsia-600 px-1.5 text-[11px] font-black text-white">×{t.nombre}</span>}
