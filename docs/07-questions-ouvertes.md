@@ -21,3 +21,4 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q15 | Faut-il garder une trace de qui a modifié une question ? | Non : simple marqueur `manuelle`, pas d'historique |
 | Q16 | Un joueur qui rejoint un groupe en cours perd-il des trophées pour les jours manqués avant son arrivée ? | Non : la pénalité d'absence ne s'applique qu'après sa première partie dans la matière |
 | Q17 | Que faire si l'IA est indisponible ? | Le générateur simulé prend le relais pour que le quiz du jour existe toujours |
+| Q16 | Taille et formats de la photo de profil ? | 15 Mo maximum à l'envoi, JPEG/PNG/WebP ; stockée en 256 × 256 WebP. Le HEIC brut n'est pas lu (les iPhone convertissent en JPEG à l'envoi) |

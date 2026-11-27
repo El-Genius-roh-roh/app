@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser, clearSession } from "@/lib/auth";
 import { q } from "@/lib/db";
+import Avatar from "@/components/Avatar";
+import PhotoForm from "./PhotoForm";
 
 async function enregistrer(fd: FormData) {
   "use server";
@@ -21,6 +23,7 @@ export default async function Profil() {
     <main className="page max-w-sm">
       <Link href="/" className="back">← Accueil</Link>
       <h1 className="title">Mon profil</h1>
+      <PhotoForm aPhoto={!!u.avatar_v} avatar={<Avatar id={u.id} pseudo={u.pseudo ?? "?"} v={u.avatar_v} size={112} className="ring-4" />} />
       <form action={enregistrer} className="card space-y-3">
         <input name="pseudo" defaultValue={u.pseudo ?? ""} required minLength={2} placeholder="Pseudo" className="input" />
         <button className="btn-primary">Enregistrer</button>

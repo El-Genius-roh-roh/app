@@ -40,7 +40,7 @@ export default async function Questions({ params, searchParams }: { params: Prom
           <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
             {days.map((d) => (
               <Link key={d.id} href={`?jour=${d.id}`} scroll={false}
-                className={`shrink-0 rounded-2xl px-3 py-2 text-center text-sm leading-tight shadow-sm ${d.id === day.id ? "bg-violet-600 text-white" : "bg-white text-violet-700"}`}>
+                className={`shrink-0 rounded-2xl px-3 py-2 text-center text-sm leading-tight shadow-sm ${d.id === day.id ? "bg-violet-600 text-white" : "bg-white/60 backdrop-blur-md text-violet-700"}`}>
                 {jj(d.date)}<br /><span className="font-sans text-xs font-semibold opacity-80">{d.nb}/{CONFIG.QUESTIONS_PAR_JOUR}</span>
               </Link>
             ))}
@@ -48,12 +48,12 @@ export default async function Questions({ params, searchParams }: { params: Prom
 
           <section className="space-y-3">
             <h2 className="h2">Quiz du {jj(day.date)} <span className="font-sans text-sm font-semibold text-slate-500">· jour {day.jour}</span></h2>
-            {locked && <p className="rounded-2xl bg-amber-50 p-3 text-sm font-semibold text-amber-700">🔒 Des joueurs ont déjà commencé ce quiz : il ne peut plus être modifié.</p>}
+            {locked && <p className="rounded-2xl bg-amber-50/70 backdrop-blur-md p-3 text-sm font-semibold text-amber-700">🔒 Des joueurs ont déjà commencé ce quiz : il ne peut plus être modifié.</p>}
             {!locked && questions.length === 0 && (
               <p className="muted">Pas encore de questions. Ajoute les tiennes ci-dessous : les places restantes seront complétées automatiquement (ou par le chat).</p>
             )}
             {!locked && questions.length > 0 && questions.length < CONFIG.QUESTIONS_PAR_JOUR && (
-              <p className="rounded-2xl bg-sky-50 p-3 text-sm font-semibold text-sky-700">
+              <p className="rounded-2xl bg-sky-50/70 backdrop-blur-md p-3 text-sm font-semibold text-sky-700">
                 {questions.length}/{CONFIG.QUESTIONS_PAR_JOUR} questions : les places libres seront complétées automatiquement.
               </p>
             )}

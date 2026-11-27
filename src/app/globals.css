@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Thème vif : violet / rose / orange, cartes blanches arrondies. */
+/* Thème vif « verre dépoli » (façon iOS) : fond coloré fixe, cartes translucides floutées avec un liseré clair. */
 @theme {
   --font-sans: var(--nf-texte), ui-rounded, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-titre: var(--nf-titre), ui-rounded, system-ui, sans-serif;
@@ -23,26 +23,38 @@
 body {
   min-height: 100dvh;
   color: #1e1b4b;
+  background: #f5f0ff;
+}
+/* Taches de couleur fixes derrière le verre : c'est leur flou à travers les cartes qui donne l'effet. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  z-index: -1;
+  pointer-events: none;
   background:
-    radial-gradient(circle at 0% 0%, #f0abfc55 0, transparent 40%),
-    radial-gradient(circle at 100% 20%, #fdba7455 0, transparent 40%),
-    radial-gradient(circle at 50% 100%, #67e8f955 0, transparent 45%),
-    #faf5ff;
+    radial-gradient(38% 32% at 8% 6%, #e879f9b0 0, transparent 70%),
+    radial-gradient(34% 30% at 96% 14%, #fb923ca0 0, transparent 70%),
+    radial-gradient(40% 34% at 70% 62%, #818cf8a0 0, transparent 70%),
+    radial-gradient(36% 30% at 12% 78%, #22d3eea0 0, transparent 70%),
+    radial-gradient(30% 26% at 92% 96%, #f472b6a0 0, transparent 70%),
+    linear-gradient(160deg, #faf5ff, #eef2ff 55%, #fdf2f8);
 }
 
 @layer components {
   .page { @apply mx-auto max-w-md space-y-5 px-4 pt-5 pb-12 lg:max-w-6xl lg:space-y-6 lg:px-8 lg:pt-8; }
-  .card { @apply rounded-3xl bg-white p-4 shadow-[0_6px_24px_-8px_rgb(124_58_237/0.25)]; }
-  .hero { @apply rounded-3xl bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 p-5 text-white shadow-lg shadow-fuchsia-300/50 lg:p-8; }
+  .card { @apply rounded-3xl border border-white/70 bg-white/50 p-4 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_10px_36px_-12px_rgb(76_29_149/0.35)]; }
+  .verre { @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_10px_36px_-12px_rgb(76_29_149/0.35)]; }
+  .hero { @apply rounded-3xl border border-white/40 bg-gradient-to-br from-violet-600/80 via-fuchsia-500/75 to-orange-400/75 p-5 text-white backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.45),0_16px_40px_-14px_rgb(162_28_175/0.55)] lg:p-8; }
   .title { @apply font-titre text-2xl font-bold tracking-tight lg:text-4xl; }
   .h2 { @apply font-titre text-lg font-bold lg:text-xl; }
-  .back { @apply inline-flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 font-action text-sm font-normal text-violet-700 shadow-sm; }
+  .back { @apply inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/50 px-3 py-1 font-action text-sm font-normal text-violet-700 shadow-sm backdrop-blur-xl; }
   .btn, .btn-primary, .btn-orange, .btn-white, .btn-ghost { @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 font-action text-[1.05rem] font-normal tracking-wide transition active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:font-sans disabled:font-bold disabled:italic; }
-  .btn-primary { @apply bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-fuchsia-300/60; }
-  .btn-orange { @apply bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md shadow-orange-300/60; }
-  .btn-white { @apply bg-white text-violet-700 shadow-md; }
-  .btn-ghost { @apply border-2 border-violet-200 bg-white text-violet-700; }
-  .input { @apply w-full rounded-2xl border-2 border-violet-100 bg-white px-4 py-3 outline-none focus:border-fuchsia-400; }
+  .btn-primary { @apply border border-white/30 bg-gradient-to-r from-violet-600/90 to-fuchsia-500/90 text-white backdrop-blur-xl shadow-[inset_0_1px_0_rgb(255_255_255/0.4),0_8px_20px_-8px_rgb(192_38_211/0.7)]; }
+  .btn-orange { @apply border border-white/30 bg-gradient-to-r from-orange-500/90 to-amber-400/90 text-white backdrop-blur-xl shadow-[inset_0_1px_0_rgb(255_255_255/0.4),0_8px_20px_-8px_rgb(249_115_22/0.7)]; }
+  .btn-white { @apply border border-white/70 bg-white/45 text-violet-700 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_10px_36px_-12px_rgb(76_29_149/0.35)]; }
+  .btn-ghost { @apply border border-violet-300/60 bg-white/35 text-violet-700 backdrop-blur-xl; }
+  .input { @apply w-full rounded-2xl border border-white/80 bg-white/55 px-4 py-3 shadow-inner shadow-violet-200/40 outline-none backdrop-blur-xl placeholder:text-slate-400 focus:border-fuchsia-400 focus:bg-white/75; }
   .chip { @apply rounded-full px-3 py-1 text-xs font-bold; }
   .lien { @apply font-action text-violet-600 underline decoration-2 underline-offset-2 hover:text-fuchsia-600; }
   .muted { @apply text-sm text-slate-500; }

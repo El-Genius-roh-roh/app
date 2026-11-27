@@ -46,7 +46,7 @@ export default function QuestionItem({ n, q, subjectId, dayId, docs, locked }: {
             <input type="hidden" name="subject" value={subjectId} />
             <input type="hidden" name="day" value={dayId} />
             <input type="hidden" name="question" value={q.id} />
-            <ConfirmButton message="Supprimer cette question ?" className="btn w-full border-2 border-rose-200 bg-white py-2 text-sm text-rose-600">🗑 Supprimer</ConfirmButton>
+            <ConfirmButton message="Supprimer cette question ?" className="btn w-full border-2 border-rose-200 bg-white/60 backdrop-blur-md py-2 text-sm text-rose-600">🗑 Supprimer</ConfirmButton>
           </form>
         </div>
       )}

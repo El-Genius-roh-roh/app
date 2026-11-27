@@ -15,14 +15,14 @@ export async function setSession(userId: string) {
 }
 export async function clearSession() { (await cookies()).delete(COOKIE); }
 
-export type User = { id: string; email: string; pseudo: string | null };
+export type User = { id: string; email: string; pseudo: string | null; avatar_v: number | null };
 
 export async function getUser(): Promise<User | null> {
   const raw = (await cookies()).get(COOKIE)?.value;
   if (!raw) return null;
   const [id, sig] = raw.split(".");
   if (!id || !sig || sig !== sign(id)) return null;
-  const [u] = await q<User>("select id,email,pseudo from profiles where id=$1", [id]);
+  const [u] = await q<User>("select id,email,pseudo,avatar_v from profiles where id=$1", [id]);
   return u ?? null;
 }
 

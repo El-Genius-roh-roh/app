@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import Avatar from "@/components/Avatar";
 import { q } from "@/lib/db";
 import { APP_NAME } from "@/config/constants";
 
@@ -13,7 +14,7 @@ export default async function Accueil() {
     <main className="page">
       <header className="flex items-center justify-between">
         <h1 className="title bg-gradient-to-r from-violet-700 to-fuchsia-600 bg-clip-text text-transparent">{APP_NAME}</h1>
-        <Link href="/profil" className="chip bg-white text-violet-700 shadow-sm">👤 {u.pseudo}</Link>
+        <Link href="/profil" className="flex items-center gap-2 rounded-full border border-white/70 bg-white/50 py-1 pr-3 pl-1 text-sm text-violet-700 shadow-sm backdrop-blur-xl"><Avatar id={u.id} pseudo={u.pseudo ?? "?"} v={u.avatar_v} size={30} />{u.pseudo}</Link>
       </header>
       <h2 className="h2">Mes groupes</h2>
       {groupes.length === 0 && <p className="muted">Crée un groupe ou rejoins celui de tes amis.</p>}

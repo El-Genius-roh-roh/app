@@ -40,7 +40,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
         {list.length === 0 && <p className="muted">Aucun PDF.</p>}
         <ul className="space-y-2">
           {list.map((d) => (
-            <li key={d.id} className="flex items-center gap-2 rounded-2xl bg-violet-50 px-3 py-2 text-sm">
+            <li key={d.id} className="flex items-center gap-2 rounded-2xl bg-white/45 backdrop-blur-md px-3 py-2 text-sm">
               <span title={d.erreur ?? undefined}>{STATUT[d.statut]}</span>
               <a href={url(`/api/documents/${d.id}/file`)} target="_blank" className="flex-1 truncate">{d.nom}</a>
               {canManage && categorie === "cours" && d.ordre > 1 && (
@@ -112,7 +112,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
             <form action={supprimerMatiere}>
               <input type="hidden" name="subject" value={id} />
               <ConfirmButton message={`Supprimer « ${s.nom} » ? Les cours, quiz et résultats de cette matière seront définitivement effacés.`}
-                className="btn border-2 border-rose-200 bg-rose-50 py-2 text-rose-600">🗑 Supprimer la matière</ConfirmButton>
+                className="btn border-2 border-rose-200 bg-rose-50/70 backdrop-blur-md py-2 text-rose-600">🗑 Supprimer la matière</ConfirmButton>
             </form>
           </div>
         </details>

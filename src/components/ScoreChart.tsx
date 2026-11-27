@@ -83,10 +83,10 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
 
   return (
     <div className="space-y-3">
-      <div className="flex rounded-2xl bg-violet-50 p-1" role="tablist">
+      <div className="flex rounded-2xl bg-white/45 backdrop-blur-md p-1" role="tablist">
         {([["cumul", "Trophées de la saison"], ["note", `Note du jour /${maxQuestions}`]] as const).map(([m, label]) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
-            className={`flex-1 rounded-xl px-3 py-1.5 text-sm transition ${mode === m ? "bg-white text-violet-700 shadow" : "text-slate-500"}`}>
+            className={`flex-1 rounded-xl px-3 py-1.5 text-sm transition ${mode === m ? "bg-white/60 backdrop-blur-md text-violet-700 shadow" : "text-slate-500"}`}>
             {label}
           </button>
         ))}

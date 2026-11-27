@@ -28,10 +28,10 @@ export default function QuestionForm({ subjectId, dayId, docs, question, onDone 
       {question && <input type="hidden" name="question" value={question.id} />}
       <input type="hidden" name="type" value={type} />
 
-      <div className="flex rounded-2xl bg-violet-50 p-1">
+      <div className="flex rounded-2xl bg-white/45 backdrop-blur-md p-1">
         {([["qcm", "QCM (4 choix)"], ["vrai_faux", "Vrai / Faux"]] as const).map(([t, label]) => (
           <button key={t} type="button" onClick={() => setType(t)}
-            className={`flex-1 rounded-xl px-3 py-1.5 text-sm transition ${type === t ? "bg-white text-violet-700 shadow" : "text-slate-500"}`}>{label}</button>
+            className={`flex-1 rounded-xl px-3 py-1.5 text-sm transition ${type === t ? "bg-white/60 backdrop-blur-md text-violet-700 shadow" : "text-slate-500"}`}>{label}</button>
         ))}
       </div>
 
@@ -79,8 +79,8 @@ export default function QuestionForm({ subjectId, dayId, docs, question, onDone 
         </div>
       )}
 
-      {state?.erreur && <p className="rounded-2xl bg-rose-50 p-2 text-sm font-bold text-rose-600">{state.erreur}</p>}
-      {state?.ok && !question && <p className="rounded-2xl bg-emerald-50 p-2 text-sm font-bold text-emerald-700">✓ Question ajoutée</p>}
+      {state?.erreur && <p className="rounded-2xl bg-rose-50/70 backdrop-blur-md p-2 text-sm font-bold text-rose-600">{state.erreur}</p>}
+      {state?.ok && !question && <p className="rounded-2xl bg-emerald-50/70 backdrop-blur-md p-2 text-sm font-bold text-emerald-700">✓ Question ajoutée</p>}
       <button disabled={pending} className="btn-primary">{pending ? "Enregistrement…" : question ? "💾 Enregistrer" : "＋ Ajouter la question"}</button>
     </form>
   );
