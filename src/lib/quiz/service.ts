@@ -192,34 +192,37 @@ export async function finishAttempt(attemptId: string, statut: "terminee" | "clo
 export async function recomputeDay(gameDayId: string) {
   const [gd] = await q<{ jour_dans_saison: number; fige: boolean }>("select jour_dans_saison,fige from game_days where id=$1", [gameDayId]);
   if (!gd) return;
-  const rows = await q<{ userId: string; erreurs: number; dureeMs: number }>(
-    `select user_id as "userId", erreurs, duree_ms as "dureeMs" from attempts where game_day_id=$1 and statut in ('terminee','cloturee')`, [gameDayId]);
+  const rows = await q<{ userId: string; erreurs: number; dureeMs: number; retard: number }>(
+    `select user_id as "userId", erreurs, duree_ms as "dureeMs", retard_jours as retard from attempts where game_day_id=$1 and statut in ('terminee','cloturee')`, [gameDayId]);
   const mult = (await import("../scoring")).multiplicateur(gd.jour_dans_saison);
   for (const r of classementDuJour(rows, gd.jour_dans_saison)) {
     await q(
-      `insert into daily_results(game_day_id,user_id,rang,erreurs,duree_ms,joueurs_battus,points_base,multiplicateur,points,provisoire)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+      `insert into daily_results(game_day_id,user_id,rang,erreurs,duree_ms,joueurs_battus,points_base,multiplicateur,points,provisoire,retard_jours)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        on conflict (game_day_id,user_id) do update set rang=excluded.rang, erreurs=excluded.erreurs, duree_ms=excluded.duree_ms,
          joueurs_battus=excluded.joueurs_battus, points_base=excluded.points_base, multiplicateur=excluded.multiplicateur,
-         points=excluded.points, provisoire=excluded.provisoire`,
-      [gameDayId, r.userId, r.rang, r.erreurs, r.dureeMs, r.battus, r.base, mult, r.points, !gd.fige]);
+         points=excluded.points, provisoire=excluded.provisoire, retard_jours=excluded.retard_jours`,
+      [gameDayId, r.userId, r.rang, r.erreurs, r.dureeMs, r.battus, r.base, mult, r.points, !gd.fige, r.retard ?? 0]);
   }
 }
 
-/** Clôture les tentatives abandonnées : > 15 min, ou d'un jour passé. */
+/** Dernier jour encore jouable (rattrapage) : aujourd'hui − RATTRAPAGE_JOURS, en SQL, pour la matière de `col`. */
+const sqlLimiteRattrapage = (col: string) => `(${sqlToday(col)} - ${CONFIG.RATTRAPAGE_JOURS})`;
+
+/** Clôture les tentatives abandonnées : > 15 min, ou d'un jour qui n'est plus rattrapable. */
 export async function closeStaleAttempts(): Promise<number> {
   const stale = await q<{ id: string }>(
     `select a.id from attempts a join game_days g on g.id=a.game_day_id
-      where a.statut='en_cours' and (a.started_at < now() - ($1 || ' minutes')::interval or g.date < ${sqlToday("g.subject_id")})`,
+      where a.statut='en_cours' and (a.started_at < now() - ($1 || ' minutes')::interval or g.date < ${sqlLimiteRattrapage("g.subject_id")})`,
     [String(CONFIG.DUREE_MAX_TENTATIVE_MIN)]);
   for (const s of stale) await finishAttempt(s.id, "cloturee");
   return stale.length;
 }
 
-/** Gèle les jours passés (job de 00h00) : clôture les tentatives abandonnées, puis fige les résultats. Idempotent. */
+/** Gèle les jours qui ne sont plus rattrapables (job de 00h00) : clôture les tentatives abandonnées, puis fige les résultats. Idempotent. */
 export async function freezePastDays(): Promise<number> {
   await closeStaleAttempts();
-  const days = await q<{ id: string }>(`select g.id from game_days g where g.date < ${sqlToday("g.subject_id")} and not g.fige`);
+  const days = await q<{ id: string }>(`select g.id from game_days g where g.date < ${sqlLimiteRattrapage("g.subject_id")} and not g.fige`);
   for (const d of days) {
     await q("update game_days set fige=true where id=$1", [d.id]);
     await recomputeDay(d.id); // provisoire = not fige → résultats définitifs
@@ -229,6 +232,9 @@ export async function freezePastDays(): Promise<number> {
 
 type StartResult = { status: number; body: any };
 
+/** Nombre de jours de `a` à `b` (dates AAAA-MM-JJ). */
+export const joursEntre = (a: string, b: string) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86_400_000);
+
 export async function startAttempt(gameDayId: string, userId: string): Promise<StartResult> {
   const [gd] = await q<{ id: string; date: string; group_id: string; subject_id: string; statut_generation: string }>(
     `select g.id, to_char(g.date,'YYYY-MM-DD') as date, s.group_id, g.subject_id, g.statut_generation
@@ -236,7 +242,8 @@ export async function startAttempt(gameDayId: string, userId: string): Promise<S
   if (!gd || !(await memberRole(gd.group_id, userId))) return { status: 404, body: { error: "Quiz introuvable." } };
   const today = await todayParis(gd.subject_id);
   if (gd.date > today) return { status: 403, body: { error: "Ce quiz n'est pas encore disponible." } };
-  if (gd.date < today) return { status: 403, body: { error: "Ce quiz est terminé : plus de tentative possible." } };
+  const retard = joursEntre(gd.date, today);
+  if (retard > CONFIG.RATTRAPAGE_JOURS) return { status: 403, body: { error: `Ce quiz est terminé : on ne peut le rattraper que pendant ${CONFIG.RATTRAPAGE_JOURS} jours.` } };
 
   await closeStaleAttempts();
   const get = async () => (await q<Attempt>("select * from attempts where game_day_id=$1 and user_id=$2", [gameDayId, userId]))[0];
@@ -256,8 +263,8 @@ export async function startAttempt(gameDayId: string, userId: string): Promise<S
       const idx = Array.from({ length: t.n }, (_, i) => i);
       choix[id] = t.type === "vrai_faux" ? idx : shuffled(idx, rand); // Vrai/Faux garde son ordre naturel
     }
-    await q("insert into attempts(game_day_id,user_id,ordre_questions,ordre_choix) values ($1,$2,$3,$4) on conflict (game_day_id,user_id) do nothing",
-      [gameDayId, userId, JSON.stringify(ordre), JSON.stringify(choix)]);
+    await q("insert into attempts(game_day_id,user_id,ordre_questions,ordre_choix,retard_jours) values ($1,$2,$3,$4,$5) on conflict (game_day_id,user_id) do nothing",
+      [gameDayId, userId, JSON.stringify(ordre), JSON.stringify(choix), retard]);
     a = await get();
   }
   const st = await currentState(a!);

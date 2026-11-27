@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ligueDe, series, vitrine, exploitsDuJour, calculerTrophees, deltaJoueur, type Resultat, type JourJeu } from "./trophees";
+import { ligueDe, series, vitrine, exploitsDuJour, tropheesFinSaison, type Resultat } from "./trophees";
 
 describe("ligues", () => {
   it("Bronze au départ, avec la progression vers Argent", () => {
@@ -61,44 +61,21 @@ describe("vitrine", () => {
   });
 });
 
-const jj = (dayId: string, date: string, res: [string, number, number][], passe = true, subjectId = "M"): JourJeu =>
-  ({ dayId, date, subjectId, passe, resultats: res.map(([userId, erreurs, dureeMs]) => ({ userId, erreurs, dureeMs })) });
-
-describe("trophées façon Clash Royale", () => {
-  it("groupe de 5 : +40, +20, 0, −20, −40", () => {
-    const res: [string, number, number][] = [["A", 0, 10], ["B", 0, 20], ["C", 1, 5], ["D", 2, 5], ["E", 3, 5]];
-    const j = jj("j", "2026-11-01", res).resultats;
-    expect(["A", "B", "C", "D", "E"].map((u) => deltaJoueur(j, u))).toEqual([40, 20, 0, -20, -40]);
+describe("trophées de fin de saison", () => {
+  const cl = (...rangs: [string, number][]) => rangs.map(([userId, rang]) => ({ userId, rang }));
+  it("saison de 30 jours, groupe de 5 : 120, 90, 60, 30, 0", () => {
+    const t = tropheesFinSaison(cl(["A", 1], ["B", 2], ["C", 3], ["D", 4], ["E", 5]), 30);
+    expect(["A", "B", "C", "D", "E"].map((u) => t.get(u))).toEqual([120, 90, 60, 30, 0]);
   });
-  it("égalité parfaite : 0 trophée l'un sur l'autre", () => {
-    const j = jj("j", "2026-11-01", [["A", 1, 10], ["B", 1, 10]]).resultats;
-    expect(deltaJoueur(j, "A")).toBe(0);
+  it("dépend de la durée de la saison : 10 jours, groupe de 3 → 20, 10, 0", () => {
+    const t = tropheesFinSaison(cl(["A", 1], ["B", 2], ["C", 3]), 10);
+    expect([t.get("A"), t.get("B"), t.get("C")]).toEqual([20, 10, 0]);
   });
-  it("jamais sous 0", () => {
-    const t = calculerTrophees([jj("j1", "2026-11-01", [["A", 0, 1], ["B", 5, 1]])], ["A", "B"]);
-    expect(t.total.get("A")).toBe(10);
-    expect(t.total.get("B")).toBe(0);
-    expect(t.deltas.get("j1")!.get("B")).toBe(-10);
+  it("égalité : les ex æquo ne se comptent pas", () => {
+    const t = tropheesFinSaison(cl(["A", 1], ["B", 1], ["C", 3]), 5);
+    expect([t.get("A"), t.get("B"), t.get("C")]).toEqual([5, 5, 0]);
   });
-  it("on ne retombe pas sous le palier d'une ligue atteinte (Argent = 100)", () => {
-    const gagne = Array.from({ length: 10 }, (_, i) => jj(`g${i}`, `2026-11-${String(i + 1).padStart(2, "0")}`, [["A", 0, 1], ["B", 5, 1]]));
-    const perd = Array.from({ length: 5 }, (_, i) => jj(`p${i}`, `2026-11-${String(i + 11).padStart(2, "0")}`, [["A", 5, 1], ["B", 0, 1]]));
-    const t = calculerTrophees([...gagne, ...perd], ["A", "B"]);
-    expect(t.total.get("A")).toBe(100); // 100 atteint, puis 5 défaites : reste à 100
-    expect(t.total.get("B")).toBe(50); // 0 (plancher) puis +50
-  });
-  it("absence : −10 seulement les jours passés d'une matière où l'on a déjà joué", () => {
-    const jours = [
-      jj("a", "2026-11-01", [["A", 0, 1], ["B", 1, 1]]), // A +10
-      jj("b", "2026-11-02", [["A", 0, 1], ["B", 1, 1]]), // A +10 → 20
-      jj("c", "2026-11-03", [["B", 0, 1]]), // A absent → 10
-      jj("d", "2026-11-04", [["B", 0, 1]], false), // aujourd'hui, pas encore joué : rien
-      jj("e", "2026-11-03", [["B", 0, 1]], true, "AUTRE"), // jamais joué cette matière : rien
-    ];
-    const t = calculerTrophees(jours, ["A", "B"]);
-    expect(t.total.get("A")).toBe(10);
-    expect(t.deltas.get("c")!.get("A")).toBe(-10);
-    expect(t.deltas.get("d")!.has("A")).toBe(false);
-    expect(t.deltas.get("e")!.has("A")).toBe(false);
+  it("joueur seul : 0 trophée", () => {
+    expect(tropheesFinSaison(cl(["A", 1]), 30).get("A")).toBe(0);
   });
 });

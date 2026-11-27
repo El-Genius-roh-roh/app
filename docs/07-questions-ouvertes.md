@@ -22,3 +22,7 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q16 | Un joueur qui rejoint un groupe en cours perd-il des trophées pour les jours manqués avant son arrivée ? | Non : la pénalité d'absence ne s'applique qu'après sa première partie dans la matière |
 | Q17 | Que faire si l'IA est indisponible ? | Le générateur simulé prend le relais pour que le quiz du jour existe toujours |
 | Q16 | Taille et formats de la photo de profil ? | 15 Mo maximum à l'envoi, JPEG/PNG/WebP ; stockée en 256 × 256 WebP. Le HEIC brut n'est pas lu (les iPhone convertissent en JPEG à l'envoi) |
+| Q18 | Le retard d'un rattrapage change-t-il le rang du jour ? | Non : il ne réduit que les gemmes (−10 % par jour) |
+| Q19 | Qui compte dans le classement de fin de saison (trophées) ? | Seulement les joueurs qui ont joué au moins un quiz de la saison : un membre inactif ne rapporte pas de trophées aux autres |
+| Q20 | Quand les trophées d'une saison sont-ils acquis ? | Dès le lendemain du dernier jour de la saison (pas d'attente de la fin du rattrapage) |
+

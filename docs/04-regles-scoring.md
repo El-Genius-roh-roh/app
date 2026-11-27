@@ -101,42 +101,58 @@ Fanny n'a pas joué le jour 11 : 0 point, et elle n'est comptée comme battue pa
 
 Un seul joueur a joué : 0 battu, base 10, multiplicateur 1,00 → 10 points.
 
-## 8. Trophées, ligues et badges (D24, remplace l'affichage de D16)
+## 8. Gemmes, rattrapage, trophées, ligues et badges (D29 à D31, remplacent D24)
 
-Les points des §1 à §6 restent calculés (et stockés), mais **l'application affiche des trophées** 🏆, comme dans Clash Royale.
+### Gemmes (chaque quiz du jour)
 
-### Trophées d'un quiz du jour
+Les « points du jour » du §4 s'affichent sous le nom de **gemmes**. Ils ne sont jamais négatifs :
 
 ```
-trophées(j) = +10 × joueurs_battus(j) − 10 × joueurs_devant(j)
+gemmes(j) = arrondi( (10 + 10 × joueurs_derrière(j)) × multiplicateur(jour) × (1 − 0,10 × retard) )
 ```
 
-`joueurs_devant(j)` = joueurs classés ce jour-là ayant (moins d'erreurs) ou (autant d'erreurs et moins de temps). Égalité parfaite : 0. Pas de multiplicateur.
+`joueurs_derrière(j)` = joueurs battus au §2 (égalité parfaite : ne compte pas). Le classement de saison (§5) et le classement général (§6) se font aux gemmes.
 
-Quiz du jour **non joué** (jour passé) dans une matière où le joueur a déjà joué au moins une fois : **−10**.
+### Rattrapage (D29)
 
-Exemple, groupe de 5 : +40, +20, 0, −20, −40.
+Un quiz du jour manqué peut être joué **jusqu'à 3 jours après** sa date (`RATTRAPAGE_JOURS`). Les retards s'accumulent : on peut rattraper plusieurs quiz. Au-delà de 3 jours, le quiz n'est plus jouable.
 
-### Total et paliers
+Chaque jour de retard retire **10 %** des gemmes (`PENALITE_RETARD_PAR_JOUR`) : 1 jour → 90 %, 2 jours → 80 %, 3 jours → 70 %. Le retard ne change pas le rang du joueur dans le classement de ce quiz.
 
-Les quiz de toutes les matières du groupe sont rejoués dans l'ordre chronologique. Le total ne descend **jamais sous 0**, ni **sous le seuil de la meilleure ligue déjà atteinte**.
+Les résultats d'un quiz restent provisoires (d'autres joueurs peuvent encore le rattraper) et ne sont figés qu'une fois le délai de rattrapage passé.
+
+### Trophées (fin de saison, D30)
+
+À la fin d'une saison d'une matière, d'après le classement de saison aux gemmes (joueurs ayant joué au moins un quiz de la saison) :
+
+```
+trophées = nombre_de_jours_de_la_saison × joueurs_classés_derrière
+```
+
+Ex. saison de 30 jours, groupe de 5 : 120, 90, 60, 30, 0. Saison de 10 jours, groupe de 3 : 20, 10, 0. Les ex æquo ne se comptent pas. On ne perd jamais de trophées.
+
+Pendant la saison, l'application affiche (en gris) les trophées « en jeu » : ce que chacun gagnerait si la saison s'arrêtait aujourd'hui.
+
+### Ligues
+
+Le total de trophées dans le groupe (somme des saisons terminées, toutes matières) donne la ligue :
 
 | Ligue | Bronze | Argent | Or | Platine | Diamant | Maître |
 |-------|--------|--------|----|---------|---------|--------|
 | À partir de (trophées) | 0 | 100 | 250 | 500 | 800 | 1 200 |
 
-### Classements affichés
+### Écrans (D31)
 
-- **Général (groupe)** : total de trophées, avec la ligue.
-- **Saison d'une matière** : trophées gagnés ou perdus pendant la saison (somme des variations, sans palier).
-- **Jour** : variation du jour (+40, −20…).
+Page d'un groupe, deux onglets :
+- **Défi du jour** : matières (quiz du jour fait ou à faire, quiz à rattraper) et **classement général** aux gemmes, en grand.
+- **Compétitif** : ma ligue, classement des trophées, badges, saisons en cours (trophées en jeu) et saisons terminées.
 
-### Badges (anciens « trophées » de D16)
+### Badges
 
 | Badge | Condition | Cumulable |
 |-------|-----------|-----------|
-| 🥇 1er du jour | rang 1 d'un quiz du jour, avec au moins 2 joueurs ce jour-là | oui (×N) |
-| 🎯 Sans faute | 0 erreur à un quiz du jour | oui |
-| ⚡ Le plus rapide | temps le plus court du jour, avec au moins 2 joueurs | oui |
-| 🔥 Série de 3 / 7 / 30 jours | jours consécutifs avec au moins un quiz terminé dans le groupe | non |
-| 📚 10 / 50 quiz joués | nombre de quiz terminés dans le groupe | non |
+| 1er du jour | rang 1 d'un quiz du jour, avec au moins 2 joueurs ce jour-là | oui (×N) |
+| Sans faute | 0 erreur à un quiz du jour | oui |
+| Le plus rapide | temps le plus court du jour, avec au moins 2 joueurs | oui |
+| Série de 3 / 7 / 30 jours | jours consécutifs avec au moins un quiz terminé dans le groupe | non |
+| 10 / 50 quiz joués | nombre de quiz terminés dans le groupe | non |

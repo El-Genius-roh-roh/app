@@ -18,7 +18,7 @@ export default async function Page() {
   await requireUser();
   return (
     <main className="page max-w-sm">
-      <Link href="/" className="back">← Accueil</Link>
+      <Link href="/" className="back">Accueil</Link>
       <h1 className="title">Nouveau groupe</h1>
       <form action={creer} className="card space-y-3">
         <input name="nom" required placeholder="Nom du groupe (ex. Promo 2027)" className="input" />

@@ -56,30 +56,32 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
   if (!st) {
     return (
       <div className="hero space-y-4 text-center">
-        <p className="text-6xl">🧠</p>
-        <p className="text-2xl font-extrabold">10 questions, un seul essai</p>
-        <button onClick={start} disabled={busy} className="btn bg-white/60 backdrop-blur-md text-xl text-fuchsia-600 shadow-lg">
-          {busy ? "Chargement…" : "▶ C'est parti"}
+        <p className="text-2xl font-bold">10 questions, un seul essai</p>
+        <button onClick={start} disabled={busy} className="btn-hero">
+          {busy ? "Chargement…" : "C'est parti"}
         </button>
         {err && <p className="rounded-2xl bg-white/90 p-2 text-sm font-bold text-rose-600">{err}</p>}
       </div>
     );
   }
   const pct = (st.index / st.total) * 100;
-  const COULEURS = ["from-violet-500 to-fuchsia-500", "from-orange-500 to-amber-400", "from-sky-500 to-cyan-400", "from-emerald-500 to-lime-500"];
+  // lettre de chaque choix (QCM), dans une pastille de couleur douce
+  const PASTILLES = ["bg-accent-100 text-accent-700", "bg-orange-100 text-orange-700", "bg-emerald-100 text-emerald-700", "bg-rose-100 text-rose-700"];
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <span className="chip bg-white/60 backdrop-blur-md text-violet-700 shadow-sm">{st.index + 1} / {st.total}</span>
-        <span className="chip bg-white/60 backdrop-blur-md font-mono text-base text-fuchsia-600 shadow-sm">⏱ {fmt(now)}</span>
+        <span className="chip bg-white text-slate-700 shadow-sm">{st.index + 1} / {st.total}</span>
+        <span className="chip bg-white font-mono text-base text-slate-700 tabular-nums shadow-sm">{fmt(now)}</span>
       </div>
-      <div className="h-3 rounded-full bg-white/60 backdrop-blur-md shadow-inner"><div className="h-3 rounded-full bg-gradient-to-r from-violet-500 to-orange-400 transition-all" style={{ width: `${pct}%` }} /></div>
-      <h2 className="card text-xl font-extrabold leading-snug break-words"><Tex>{st.question.enonce}</Tex></h2>
+      <div className="h-1.5 rounded-full bg-black/5"><div className="h-1.5 rounded-full bg-accent-500 transition-all duration-500 ease-(--ease-ios)" style={{ width: `${pct}%` }} /></div>
+      <h2 className="card text-xl leading-snug font-semibold break-words"><Tex>{st.question.enonce}</Tex></h2>
       <div className={st.question.type === "vrai_faux" ? "grid grid-cols-2 gap-3" : "space-y-3"}>
         {st.question.choices.map((c, i) => (
           <button key={i} disabled={busy} onClick={() => answer(i)}
-            className={`w-full rounded-2xl bg-gradient-to-r ${st.question.type === "vrai_faux" ? (i === 0 ? COULEURS[3] : "from-rose-500 to-pink-400") : COULEURS[i % 4]} p-4 text-left text-lg text-white shadow-md transition active:scale-[0.98] disabled:opacity-60 ${st.question.type === "vrai_faux" ? "py-6 text-center text-xl" : ""}`}>
-            <Tex className="block break-words">{c}</Tex>
+            className={`flex w-full items-center gap-3 rounded-[18px] bg-white p-4 text-left text-lg shadow-[0_1px_2px_rgb(0_0_0/0.05),0_8px_20px_-14px_rgb(0_0_0/0.3)] transition duration-200 ease-(--ease-ios) hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgb(0_0_0/0.06),0_14px_28px_-16px_rgb(0_0_0/0.35)] active:scale-[0.98] disabled:opacity-60
+              ${st.question.type === "vrai_faux" ? `justify-center py-6 text-xl font-semibold ${i === 0 ? "text-emerald-600" : "text-rose-600"}` : ""}`}>
+            {st.question.type !== "vrai_faux" && <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${PASTILLES[i % 4]}`}>{"ABCD"[i] ?? i + 1}</span>}
+            <Tex className="block min-w-0 break-words">{c}</Tex>
           </button>
         ))}
       </div>

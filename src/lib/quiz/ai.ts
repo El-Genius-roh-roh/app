@@ -7,15 +7,28 @@ import { buildChatPrompt, extractJson, importChatAnswer, type ImportResult, type
 
 const SYSTEME = "Tu es un professeur rigoureux qui rédige des quiz de révision en français. Tu réponds uniquement avec du JSON valide, sans texte autour.";
 
-/** Seconde passe : le modèle répond aux questions SANS connaître la bonne réponse. */
-export const verifierIA = (timeoutS?: number): Verifier => async (qs) => {
-  const liste = qs.map((x, i) => `${i + 1}. ${x.enonce}\n${x.choix.map((c, j) => `   ${j}) ${c}`).join("\n")}`).join("\n\n");
+/** Ordre aléatoire de 0..n-1. */
+const melange = (n: number) => {
+  const a = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+};
+
+/**
+ * Seconde passe : le modèle répond aux questions SANS connaître la bonne réponse.
+ * Les choix sont présentés MÉLANGÉS : l'IA de génération met souvent la bonne réponse en premier,
+ * et un vérificateur qui répondrait « 0 » à tout semblerait sinon toujours d'accord.
+ */
+export const verifierIA = (timeoutS?: number, reflexion: boolean = CONFIG.LLM_VERIF_REFLEXION): Verifier => async (qs) => {
+  const ordres = qs.map((x) => melange(x.choix.length));
+  const liste = qs.map((x, i) => `${i + 1}. ${x.enonce}\n${ordres[i].map((k, j) => `   ${j}) ${x.choix[k]}`).join("\n")}`).join("\n\n");
   const txt = await chatLLM([
     { role: "system", content: SYSTEME },
     { role: "user", content: `Réponds à chacune de ces questions de cours. Pour chaque question, donne l'index (à partir de 0) du choix correct, ou null si aucune réponse n'est correcte ou si plusieurs le sont.\n\n${liste}\n\nRéponds uniquement : {"reponses":[0,2,null,...]} (une valeur par question, dans l'ordre).` },
-  ], { maxTokens: 400, temperature: 0, timeoutS });
-  const r = (extractJson(txt) as { reponses?: unknown[] }).reponses ?? [];
-  return qs.map((_, i) => (typeof r[i] === "number" ? (r[i] as number) : null));
+  ], { maxTokens: reflexion ? 12000 : 400, temperature: 0, timeoutS, reflexion });
+  const r = (extractJson(txt.replace(/<think>[\s\S]*?<\/think>/g, "")) as { reponses?: unknown[] }).reponses ?? [];
+  // on remet chaque réponse dans l'ordre d'origine des choix
+  return qs.map((_, i) => (typeof r[i] === "number" && ordres[i][r[i] as number] !== undefined ? ordres[i][r[i] as number] : null));
 };
 
 /** Génération + vérification. Avec `budgetS`, les deux appels réunis tiennent dans ce budget. */

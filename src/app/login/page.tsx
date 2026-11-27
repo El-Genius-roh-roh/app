@@ -60,8 +60,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   return (
     <main className="page max-w-sm pt-16">
       <div className="hero text-center">
-        <div className="text-5xl">🧠</div>
-        <h1 className="mt-2 text-3xl font-extrabold">{APP_NAME}</h1>
+        <h1 className="text-3xl font-bold">{APP_NAME}</h1>
         <p className="mt-1 font-semibold text-white/90">Révise chaque jour, bats tes amis.</p>
       </div>
       <div className="card space-y-3">
@@ -73,7 +72,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
         ) : envoye ? (
           <p className="text-sm">
             {envoye === "mail"
-              ? "📬 C'est envoyé ! Ouvre l'e-mail et clique sur le lien (valable 15 minutes)."
+              ? "C'est envoyé ! Ouvre l'e-mail et clique sur le lien (valable 15 minutes)."
               : "Aucun service d'e-mail n'est configuré : le lien de connexion a été écrit dans la console du serveur."}
           </p>
         ) : (

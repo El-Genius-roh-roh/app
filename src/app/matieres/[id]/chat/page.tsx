@@ -14,9 +14,9 @@ export default async function ChatPage({ params }: { params: Promise<{ id: strin
   const p = await buildChatPrompt(id);
   return (
     <main className="page">
-      <Link href={`/matieres/${id}`} className="back">← {ctx.subject.nom}</Link>
+      <Link href={`/matieres/${id}`} className="back">{ctx.subject.nom}</Link>
       <header className="hero">
-        <h1 className="text-2xl">✨ Générer avec le chat</h1>
+        <h1 className="text-2xl">Générer avec le chat</h1>
         <p className="mt-1 font-semibold text-white/90">1. Copie le prompt · 2. Colle-le dans Claude · 3. Recolle sa réponse ici</p>
       </header>
       {p ? <ChatPanel subjectId={id} prompt={p.prompt} dates={p.dates} />

@@ -8,7 +8,7 @@ export const llmModel = () => process.env.LLM_MODEL || CONFIG.LLM_MODELE;
 export type LlmMessage = { role: "system" | "user" | "assistant"; content: string };
 
 /** Envoie une conversation au modèle et renvoie le texte de sa réponse. */
-export async function chatLLM(messages: LlmMessage[], opts: { maxTokens?: number; temperature?: number; timeoutS?: number } = {}): Promise<string> {
+export async function chatLLM(messages: LlmMessage[], opts: { maxTokens?: number; temperature?: number; timeoutS?: number; reflexion?: boolean } = {}): Promise<string> {
   if (!llmConfigured()) throw new Error("IA non configurée (OPENAI_API_KEY / OPENAI_BASE_URL manquants)");
   const base = process.env.OPENAI_BASE_URL!.replace(/\/+$/, "");
   const timeoutS = opts.timeoutS ?? CONFIG.LLM_TIMEOUT_S;
@@ -24,8 +24,8 @@ export async function chatLLM(messages: LlmMessage[], opts: { maxTokens?: number
         messages,
         max_tokens: opts.maxTokens ?? CONFIG.LLM_MAX_TOKENS,
         temperature: opts.temperature ?? 0.4,
-        // Qwen3 : pas de « réflexion » à voix haute (bien plus rapide, même qualité pour des QCM)
-        chat_template_kwargs: { enable_thinking: false },
+        // Qwen3 : « réflexion » (raisonnement avant de répondre) seulement si demandée : plus lent, mais plus juste
+        chat_template_kwargs: { enable_thinking: !!opts.reflexion },
       }),
     });
     if (!r.ok) throw new Error(`IA : erreur ${r.status} ${(await r.text()).slice(0, 200)}`);

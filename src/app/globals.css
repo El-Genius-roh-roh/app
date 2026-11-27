@@ -1,63 +1,114 @@
 @import "tailwindcss";
 
-/* Thème vif « verre dépoli » (façon iOS) : fond coloré fixe, cartes translucides floutées avec un liseré clair. */
+/*
+ * Thème « iOS » : police système d'Apple (San Francisco), fond gris clair, cartes blanches,
+ * une seule couleur d'accent (bleu adouci) et des couleurs secondaires désaturées.
+ * Les couleurs Tailwind vives utilisées dans l'app sont redéfinies ici en teintes douces.
+ */
 @theme {
-  --font-sans: var(--nf-texte), ui-rounded, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-titre: var(--nf-titre), ui-rounded, system-ui, sans-serif;
-  --font-action: var(--nf-action), ui-rounded, system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--nf-inter), "Helvetica Neue", system-ui, sans-serif;
+  --font-titre: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--nf-inter), "Helvetica Neue", system-ui, sans-serif;
+  --font-action: var(--font-sans);
+
+  --color-accent-50: #eef4ff; --color-accent-100: #dde9ff; --color-accent-200: #c0d6fe; --color-accent-300: #94b9fb;
+  --color-accent-400: #6a9cf6; --color-accent-500: #4a84f0; --color-accent-600: #3a6fd8; --color-accent-700: #305cb4;
+  --color-accent-800: #2a4c8f; --color-accent-900: #253f72;
+
+  --color-orange-50: #fff6ec; --color-orange-100: #ffead2; --color-orange-200: #fdd4a6; --color-orange-300: #f9b877;
+  --color-orange-400: #f3a052; --color-orange-500: #eb8d3a; --color-orange-600: #d4772a; --color-orange-700: #b06024;
+  --color-amber-50: #fffaeb; --color-amber-100: #fdf0c8; --color-amber-200: #fae29a; --color-amber-300: #f4cf6a;
+  --color-amber-400: #eebd4a; --color-amber-500: #e0a93a; --color-amber-600: #c38b2c; --color-amber-700: #9d6c22;
+  --color-emerald-50: #edf9f2; --color-emerald-100: #d4f1e1; --color-emerald-200: #a9e2c3; --color-emerald-300: #7ccfa3;
+  --color-emerald-400: #55bd88; --color-emerald-500: #3daa73; --color-emerald-600: #2f9061; --color-emerald-700: #26744f;
+  --color-rose-50: #fff1f1; --color-rose-100: #ffe0df; --color-rose-200: #fcc3c0; --color-rose-300: #f69c97;
+  --color-rose-400: #ee7a74; --color-rose-500: #e35e58; --color-rose-600: #c94a45; --color-rose-700: #a63c38;
+  --color-sky-50: #eef8fd; --color-sky-100: #d8eff9; --color-sky-200: #b3dff3; --color-sky-300: #84c9ea;
+  --color-sky-400: #5bb3df; --color-sky-500: #3f9dd0; --color-sky-600: #3182b2; --color-sky-700: #296890;
+  --color-pink-400: #ec8fb0; --color-pink-500: #de7299; --color-cyan-400: #5cc4d6; --color-cyan-500: #3fb0c4;
+  --color-lime-400: #a4d36a; --color-lime-500: #8cc152;
+
+  /* courbes d'animation façon iOS */
+  --ease-ios: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --ease-ressort: cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
-/* Polices selon le rôle : le texte qu'on lit (Nunito), les titres (Fredoka),
-   tout ce qui est cliquable (Lilita One). Un bouton désactivé repasse en police de texte, grisé. */
 @layer base {
-  h1, h2, h3 { font-family: var(--font-titre); font-weight: 700; }
-  a, button, summary, [role="button"], input[type="file"]::file-selector-button {
-    font-family: var(--font-action); font-weight: 400; letter-spacing: 0.01em; cursor: pointer;
-  }
-  button:disabled, [aria-disabled="true"] {
-    font-family: var(--nf-texte); font-weight: 700; font-style: italic; cursor: not-allowed;
-  }
-  input, textarea, select { font-family: var(--nf-texte); }
+  h1, h2, h3 { font-family: var(--font-titre); font-weight: 700; letter-spacing: -0.02em; }
+  a, button, summary, [role="button"], input[type="file"]::file-selector-button { cursor: pointer; }
+  button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 }
 
 body {
   min-height: 100dvh;
-  color: #1e1b4b;
-  background: #f5f0ff;
-}
-/* Taches de couleur fixes derrière le verre : c'est leur flou à travers les cartes qui donne l'effet. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: -10%;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(38% 32% at 8% 6%, #e879f9b0 0, transparent 70%),
-    radial-gradient(34% 30% at 96% 14%, #fb923ca0 0, transparent 70%),
-    radial-gradient(40% 34% at 70% 62%, #818cf8a0 0, transparent 70%),
-    radial-gradient(36% 30% at 12% 78%, #22d3eea0 0, transparent 70%),
-    radial-gradient(30% 26% at 92% 96%, #f472b6a0 0, transparent 70%),
-    linear-gradient(160deg, #faf5ff, #eef2ff 55%, #fdf2f8);
+  color: #1c1c1e;
+  background: #f2f2f7;
+  -webkit-font-smoothing: antialiased;
 }
 
 @layer components {
   .page { @apply mx-auto max-w-md space-y-5 px-4 pt-5 pb-12 lg:max-w-6xl lg:space-y-6 lg:px-8 lg:pt-8; }
-  .card { @apply rounded-3xl border border-white/70 bg-white/50 p-4 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_10px_36px_-12px_rgb(76_29_149/0.35)]; }
-  .verre { @apply border border-white/70 bg-white/45 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_10px_36px_-12px_rgb(76_29_149/0.35)]; }
-  .hero { @apply rounded-3xl border border-white/40 bg-gradient-to-br from-violet-600/80 via-fuchsia-500/75 to-orange-400/75 p-5 text-white backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.45),0_16px_40px_-14px_rgb(162_28_175/0.55)] lg:p-8; }
-  .title { @apply font-titre text-2xl font-bold tracking-tight lg:text-4xl; }
-  .h2 { @apply font-titre text-lg font-bold lg:text-xl; }
-  .back { @apply inline-flex items-center gap-1 rounded-full border border-white/70 bg-white/50 px-3 py-1 font-action text-sm font-normal text-violet-700 shadow-sm backdrop-blur-xl; }
-  .btn, .btn-primary, .btn-orange, .btn-white, .btn-ghost { @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 font-action text-[1.05rem] font-normal tracking-wide transition active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:font-sans disabled:font-bold disabled:italic; }
-  .btn-primary { @apply border border-white/30 bg-gradient-to-r from-violet-600/90 to-fuchsia-500/90 text-white backdrop-blur-xl shadow-[inset_0_1px_0_rgb(255_255_255/0.4),0_8px_20px_-8px_rgb(192_38_211/0.7)]; }
-  .btn-orange { @apply border border-white/30 bg-gradient-to-r from-orange-500/90 to-amber-400/90 text-white backdrop-blur-xl shadow-[inset_0_1px_0_rgb(255_255_255/0.4),0_8px_20px_-8px_rgb(249_115_22/0.7)]; }
-  .btn-white { @apply border border-white/70 bg-white/45 text-violet-700 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_10px_36px_-12px_rgb(76_29_149/0.35)]; }
-  .btn-ghost { @apply border border-violet-300/60 bg-white/35 text-violet-700 backdrop-blur-xl; }
-  .input { @apply w-full rounded-2xl border border-white/80 bg-white/55 px-4 py-3 shadow-inner shadow-violet-200/40 outline-none backdrop-blur-xl placeholder:text-slate-400 focus:border-fuchsia-400 focus:bg-white/75; }
-  .chip { @apply rounded-full px-3 py-1 text-xs font-bold; }
-  .lien { @apply font-action text-violet-600 underline decoration-2 underline-offset-2 hover:text-fuchsia-600; }
+  .card { @apply rounded-[22px] bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-14px_rgb(0_0_0/0.18)] lg:p-5; }
+  .verre { @apply bg-white/80 backdrop-blur-xl shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-14px_rgb(0_0_0/0.18)]; }
+  /* bandeau du haut : dégradé bleu doux */
+  .hero { @apply rounded-[26px] p-5 text-white shadow-[0_14px_34px_-18px_rgb(58_111_216/0.7)] lg:p-8; background: linear-gradient(135deg, #5a8ef2 0%, #6f86e8 55%, #8a8fe0 100%); }
+  .title { @apply text-[1.9rem] leading-tight font-bold tracking-tight lg:text-4xl; }
+  .h2 { @apply text-lg font-semibold tracking-tight lg:text-xl; }
+  .back { @apply inline-flex items-center gap-1 text-[0.95rem] font-medium text-accent-600 transition hover:text-accent-700; }
+  .back::before { content: "‹"; font-size: 1.5em; line-height: 0.6; margin-top: -0.1em; }
+
+  .btn, .btn-primary, .btn-orange, .btn-white, .btn-ghost, .btn-hero {
+    @apply inline-flex w-full items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-[1.02rem] font-semibold
+      transition duration-200 ease-(--ease-ios) hover:-translate-y-px active:translate-y-0 active:scale-[0.97]
+      disabled:translate-y-0 disabled:scale-100 disabled:opacity-45;
+  }
+  .btn-primary { @apply bg-accent-500 text-white shadow-[0_6px_16px_-8px_rgb(58_111_216/0.8)] hover:bg-accent-600 hover:shadow-[0_10px_22px_-10px_rgb(58_111_216/0.9)]; }
+  .btn-orange { @apply bg-orange-500 text-white shadow-[0_6px_16px_-8px_rgb(212_119_42/0.7)] hover:bg-orange-600; }
+  .btn-white { @apply bg-white text-accent-600 shadow-[0_1px_2px_rgb(0_0_0/0.05),0_6px_16px_-10px_rgb(0_0_0/0.25)] hover:shadow-[0_2px_4px_rgb(0_0_0/0.05),0_10px_22px_-12px_rgb(0_0_0/0.3)]; }
+  .btn-ghost { @apply bg-accent-50 text-accent-600 hover:bg-accent-100; }
+  /* bouton principal posé sur le bandeau bleu */
+  .btn-hero { @apply bg-white text-lg text-accent-600 shadow-[0_8px_20px_-10px_rgb(0_0_0/0.35)] hover:shadow-[0_12px_26px_-12px_rgb(0_0_0/0.4)]; }
+
+  .input { @apply w-full rounded-xl border border-black/10 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-accent-400 focus:ring-4 focus:ring-accent-100; }
+  .chip { @apply rounded-full px-3 py-1 text-xs font-semibold; }
+  .lien { @apply font-medium text-accent-600 underline decoration-accent-200 decoration-2 underline-offset-2 transition hover:decoration-accent-500; }
   .muted { @apply text-sm text-slate-500; }
+
+  /* ligne cliquable façon liste iOS */
+  .card-lien { @apply rounded-[18px] bg-white px-4 py-3 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_18px_-14px_rgb(0_0_0/0.2)] transition duration-200 ease-(--ease-ios) hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgb(0_0_0/0.05),0_12px_26px_-14px_rgb(0_0_0/0.28)] active:scale-[0.985]; }
+  .chevron { @apply text-xl leading-none text-slate-300 transition duration-200 ease-(--ease-ios); }
+  .card-lien:hover .chevron, .group:hover .chevron { @apply translate-x-0.5 text-slate-400; }
+
+  /* contrôle segmenté iOS (onglets) : liens ou boutons, l'élément actif porte aria-current="page" */
+  .segmented { @apply flex gap-1 rounded-xl bg-[#e4e4ea] p-1; }
+  .segmented > * { @apply flex-1 rounded-[9px] px-3 py-1.5 text-center text-sm font-medium text-slate-600 transition duration-200 ease-(--ease-ios) hover:text-slate-900; }
+  .segmented > [aria-current="page"] { @apply bg-white text-slate-900 shadow-[0_1px_3px_rgb(0_0_0/0.12),0_1px_1px_rgb(0_0_0/0.04)]; }
+}
+
+/* --- animations ------------------------------------------------------------------------------ */
+
+/* entrée de page (app/template.tsx) : léger fondu + glissement vers le haut */
+@keyframes entree-page { from { opacity: 0; transform: translateY(10px) scale(0.995); } to { opacity: 1; transform: none; } }
+.entree-page { animation: entree-page 0.38s var(--ease-ios) both; }
+
+/* les cartes d'une page apparaissent l'une après l'autre */
+@keyframes apparition { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.entree-page .page > * { animation: apparition 0.45s var(--ease-ios) both; }
+.entree-page .page > *:nth-child(2) { animation-delay: 40ms; }
+.entree-page .page > *:nth-child(3) { animation-delay: 80ms; }
+.entree-page .page > *:nth-child(4) { animation-delay: 120ms; }
+.entree-page .page > *:nth-child(n + 5) { animation-delay: 160ms; }
+
+/* transitions entre pages du navigateur (Chrome, Edge, Safari 18) */
+@view-transition { navigation: auto; }
+
+/* petits mouvements au survol des éléments cliquables restants */
+details > summary { transition: color 0.2s; list-style: none; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary::before { content: "›"; display: inline-block; margin-right: 0.45em; transition: transform 0.25s var(--ease-ios); }
+details[open] > summary::before { transform: rotate(90deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
 /* Questions et réponses « façon LaTeX » : police Computer Modern de KaTeX, formules sans barre de défilement. */

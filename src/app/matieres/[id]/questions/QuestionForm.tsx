@@ -28,10 +28,10 @@ export default function QuestionForm({ subjectId, dayId, docs, question, onDone 
       {question && <input type="hidden" name="question" value={question.id} />}
       <input type="hidden" name="type" value={type} />
 
-      <div className="flex rounded-2xl bg-white/45 backdrop-blur-md p-1">
+      <div className="segmented">
         {([["qcm", "QCM (4 choix)"], ["vrai_faux", "Vrai / Faux"]] as const).map(([t, label]) => (
           <button key={t} type="button" onClick={() => setType(t)}
-            className={`flex-1 rounded-xl px-3 py-1.5 text-sm transition ${type === t ? "bg-white/60 backdrop-blur-md text-violet-700 shadow" : "text-slate-500"}`}>{label}</button>
+            aria-current={type === t ? "page" : undefined}>{label}</button>
         ))}
       </div>
 
@@ -45,7 +45,7 @@ export default function QuestionForm({ subjectId, dayId, docs, question, onDone 
           {LETTRES.map((l, i) => (
             <label key={l} className="flex items-center gap-2">
               <input type="radio" name="bonne" value={i} required defaultChecked={question?.type === "qcm" ? question.correct_index === i : i === 0} className="h-5 w-5 accent-emerald-500" />
-              <span className="w-5 font-bold text-violet-500">{l}</span>
+              <span className="w-5 font-bold text-accent-500">{l}</span>
               <input name={`choix${i}`} required defaultValue={qcmChoix[i]} className="input py-2" />
             </label>
           ))}
@@ -54,7 +54,7 @@ export default function QuestionForm({ subjectId, dayId, docs, question, onDone 
         <fieldset className="flex gap-3">
           <legend className="mb-1 text-sm font-semibold">Bonne réponse</legend>
           {["Vrai", "Faux"].map((v, i) => (
-            <label key={v} className="flex flex-1 items-center gap-2 rounded-2xl border-2 border-violet-100 px-4 py-2 font-semibold has-[:checked]:border-emerald-400 has-[:checked]:bg-emerald-50">
+            <label key={v} className="flex flex-1 items-center gap-2 rounded-2xl border-2 border-accent-100 px-4 py-2 font-semibold has-[:checked]:border-emerald-400 has-[:checked]:bg-emerald-50">
               <input type="radio" name="bonne_vf" value={i} defaultChecked={question?.type === "vrai_faux" ? question.correct_index === i : i === 0} className="accent-emerald-500" /> {v}
             </label>
           ))}
@@ -79,9 +79,9 @@ export default function QuestionForm({ subjectId, dayId, docs, question, onDone 
         </div>
       )}
 
-      {state?.erreur && <p className="rounded-2xl bg-rose-50/70 backdrop-blur-md p-2 text-sm font-bold text-rose-600">{state.erreur}</p>}
-      {state?.ok && !question && <p className="rounded-2xl bg-emerald-50/70 backdrop-blur-md p-2 text-sm font-bold text-emerald-700">✓ Question ajoutée</p>}
-      <button disabled={pending} className="btn-primary">{pending ? "Enregistrement…" : question ? "💾 Enregistrer" : "＋ Ajouter la question"}</button>
+      {state?.erreur && <p className="rounded-2xl bg-rose-50 p-2 text-sm font-bold text-rose-600">{state.erreur}</p>}
+      {state?.ok && !question && <p className="rounded-2xl bg-emerald-50 p-2 text-sm font-bold text-emerald-700">✓ Question ajoutée</p>}
+      <button disabled={pending} className="btn-primary">{pending ? "Enregistrement…" : question ? "Enregistrer" : "＋ Ajouter la question"}</button>
     </form>
   );
 }
