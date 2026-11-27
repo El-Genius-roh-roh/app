@@ -43,11 +43,39 @@ export type GenOptions = {
 
 export const MARQUE_VF = "Vrai ou faux : ";
 
+/** Prépare une seule fois les faits du cours (texte + forme normalisée) : évite de tout recalculer à chaque question. */
+function indexPool(pool: SrcPage[]) {
+  const facts: { f: string; n: string; notion: string }[] = [];
+  const seenN = new Set<string>();
+  for (const p of pool) for (const f of factsOf(p)) {
+    const n = norm(f);
+    if (seenN.has(n)) continue; // un même fait n'est proposé qu'une fois comme distracteur
+    seenN.add(n);
+    facts.push({ f, n, notion: p.notion });
+  }
+  return facts;
+}
+
 export function generateQuestions(o: GenOptions): GenQuestion[] {
   const rand = rng(o.seed + o.round * 7919);
   const out: GenQuestion[] = [];
   const maxLayer = Math.max(0, ...o.pages.map((p) => factsOf(p).length));
   const seen = new Set<string>();
+  const all = indexPool(o.pool);
+  const order = new Int32Array(all.length);
+
+  /** Jusqu'à 3 distracteurs tirés au hasard (mélange partiel de Fisher-Yates : on s'arrête dès qu'on en a 3). */
+  const pickDistractors = (notion: string, srcNorm: string, factNorm: string): string[] => {
+    for (let i = 0; i < order.length; i++) order[i] = i;
+    const res: string[] = [];
+    for (let i = 0; i < order.length && res.length < 3; i++) {
+      const j = i + Math.floor(rand() * (order.length - i));
+      const k = order[j]; order[j] = order[i]; order[i] = k;
+      const c = all[k];
+      if (c.notion !== notion && c.n !== factNorm && !srcNorm.includes(c.n)) res.push(c.f);
+    }
+    return res;
+  };
 
   for (let layer = 0; layer < maxLayer && out.length < o.count; layer++) {
     for (const page of o.pages) {
@@ -59,17 +87,7 @@ export function generateQuestions(o: GenOptions): GenQuestion[] {
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const srcNorm = norm(page.texte);
-      const others = shuffled(
-        o.pool
-          .filter((p) => p.notion !== page.notion)
-          .flatMap((p) => factsOf(p))
-          .filter((f) => !srcNorm.includes(norm(f)) && norm(f) !== norm(fact)),
-        rand,
-      );
-      const distinct: string[] = [];
-      for (const f of others) if (!distinct.some((d) => norm(d) === norm(f))) distinct.push(f);
-
+      const distinct = pickDistractors(page.notion, norm(page.texte), norm(fact));
       const wantVF = ((o.typeOffset ?? 0) + out.length) % 5 === 4 || distinct.length < 3;
       if (distinct.length < 1) continue;
       const title = page.notion;
