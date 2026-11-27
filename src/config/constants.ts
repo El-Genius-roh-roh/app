@@ -68,3 +68,11 @@ export const ARENA = {
   CODE_LONGUEUR: 4,
   BOTS: ["Gauss", "Fisher", "Bayes", "Turing", "Pearson", "Markov", "Laplace", "Student"],
 } as const;
+// Memory : retrouver, face cachée, chaque question et sa bonne réponse (questions vérifiées des jours passés)
+export const MEMORY = {
+  PAIRES: 6, // 12 cartes
+  MIN_PAIRES: 4, // en dessous, la partie n'est pas proposée
+  NOTION_MAX: 110, // caractères : au-delà, la carte devient illisible sur téléphone
+  DEFINITION_MAX: 80,
+  DELAI_ERREUR_MS: 1800, // deux cartes qui ne vont pas ensemble restent visibles ce temps (ou jusqu'au clic suivant)
+};
