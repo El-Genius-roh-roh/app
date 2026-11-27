@@ -100,7 +100,9 @@ NEXT_PUBLIC_APP_NAME=Révis'Arena
 | `DATABASE_URL` | Connexion PostgreSQL. Sous Linux avec l'utilisateur système : `postgres:///revision`. |
 | `SESSION_SECRET` | Signe les cookies de session. **Obligatoire en production.** |
 | `JOB_SECRET` | Protège les tâches planifiées (`/api/jobs/...`). |
-| `DEMO_MODE` | `1` = la connexion se fait sans e-mail et des « outils de démo » apparaissent (avancer d'un jour, générer les quiz). |
+| `DEMO_MODE` | `1` = le lien de connexion s'affiche à l'écran (sans e-mail) et des « outils de démo » apparaissent (avancer d'un jour, générer les quiz). ⚠️ Dans ce mode, connaître l'e-mail de quelqu'un suffit pour entrer sur son compte : ne l'expose pas publiquement sans `CODE_ACCES`. |
+| `CODE_ACCES` | Optionnel : code à saisir en plus de l'e-mail pour se connecter. Réserve l'app à ceux qui le connaissent. `lancer-app.sh` en génère un automatiquement en accès public. |
+| `RESEND_API_KEY` + `MAIL_FROM` | Optionnel : envoi d'un **vrai e-mail** de connexion via [Resend](https://resend.com) (ex. `MAIL_FROM=Révis'Arena <connexion@ton-domaine.fr>`). C'est le mode à utiliser pour un usage réel. Sans eux et hors mode démo, le lien est écrit dans la console du serveur. |
 | `NEXT_PUBLIC_APP_NAME` | Nom affiché dans l'application. |
 | `OPENAI_API_KEY` + `OPENAI_BASE_URL` | Optionnel : active la génération des quiz **par l'IA**. N'importe quelle API compatible OpenAI convient (service IA d'Onyxia, OpenAI, Mistral, Ollama en local…). La clé reste côté serveur. Sans elles, les questions sont simulées ou passent par le « Chat » (copier-coller). |
 | `LLM_MODEL` | Optionnel : nom du modèle (par défaut `qwen3-6-35b-moe`, celui d'Onyxia). |
@@ -115,7 +117,7 @@ NEXT_PUBLIC_APP_NAME=Révis'Arena
 npx tsx --env-file=.env.local db/migrate.ts
 ```
 
-Tu dois voir une ligne `ok` par fichier de `db/migrations/` (`001_init.sql` à `005_demo_par_matiere.sql` aujourd'hui). La commande peut être relancée sans risque, et **doit l'être après chaque `git pull`** qui ajoute une migration.
+Tu dois voir une ligne `ok` par fichier de `db/migrations/` (`001_init.sql` à `006_avatar.sql` aujourd'hui). La commande peut être relancée sans risque, et **doit l'être après chaque `git pull`** qui ajoute une migration.
 
 ### 7. (Recommandé) Charger les données de démo
 
@@ -138,8 +140,8 @@ Ouvre **http://localhost:3000**. 🎉
 ## 🎮 Prise en main
 
 ### Se connecter
-1. Sur `/login`, saisis une adresse (par exemple `alice@demo.fr`).
-2. En mode démo, aucun e-mail n'est envoyé : clique directement sur **« Se connecter »**.
+1. Sur `/login`, saisis une adresse (par exemple `alice@demo.fr`), et le code d'accès si l'app en demande un.
+2. En mode démo, aucun e-mail n'est envoyé : clique directement sur **« Se connecter »**. Avec `RESEND_API_KEY`, ouvre l'e-mail reçu ; sinon, le lien est dans la console du serveur.
 3. Au premier login, choisis un pseudo.
 
 Pour simuler plusieurs joueurs sur un même ordinateur, ouvre une **fenêtre de navigation privée** (ou un autre navigateur) et connecte-toi avec un autre e-mail.
@@ -149,6 +151,8 @@ Pour simuler plusieurs joueurs sur un même ordinateur, ouvre une **fenêtre de 
 2. Choisis un mode (**Quiz Blitz**, **Vrai ou Faux**, **Mix**) et un nombre de manches, puis **Créer une partie**.
 3. Partage le **code à 4 lettres** (les autres le saisissent dans « Rejoindre avec un code ») ou clique **+ Ajouter un bot** pour t'entraîner seul.
 4. **Lancer la partie** : réponds vite (souris ou touches `1`-`4`). Correction et classement après chaque manche, podium et points de ligue à la fin.
+
+> Seules les parties entre **au moins 2 joueurs humains** comptent pour le classement de l'Arène (Elo calculé entre humains). Une partie seul contre des bots est un entraînement non classé.
 
 > L'Arène n'utilise que les questions des **jours passés**, pour ne jamais dévoiler le quiz du jour. Sur un groupe neuf, joue d'abord un ou deux jours (ou utilise les données de démo).
 
