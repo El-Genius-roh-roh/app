@@ -5,6 +5,25 @@ Le cahier des charges complet est dans [`CLAUDE.md`](CLAUDE.md) et le dossier [`
 
 ---
 
+## ⚡ Lancement express sur Onyxia (SSP Cloud)
+
+Si tu travailles dans un service **VS Code d'Onyxia**, un script fait tout (Node.js, dépendances, tables, secret de session, démarrage) :
+
+1. Lance un service VS Code avec la **connexion à PostgreSQL activée** (et le **service IA** si tu veux que les quiz soient écrits par l'IA).
+2. Dans son terminal :
+   ```bash
+   git clone https://github.com/El-Genius-roh-roh/app.git && cd app
+   bash lancer-app.sh                        # accès privé (via le proxy VS Code)
+   bash lancer-app.sh https://ton-adresse     # ou : accès public (port 3000 ouvert dans Onyxia)
+   ```
+3. Ouvre l'adresse affichée par le script.
+
+Le script relit `$PGHOST`, `$PGUSER`, `$PGPASSWORD`… fournis par Onyxia, ainsi que `OPENAI_API_KEY` / `OPENAI_BASE_URL` pour l'IA. Il peut être relancé après chaque `git pull` (il réinstalle les dépendances si besoin).
+
+Sur ton propre ordinateur, suis plutôt le guide ci-dessous.
+
+---
+
 ## 🚀 Lancer l'application en local
 
 Il faut environ 10 minutes la première fois. Les commandes sont données pour **Windows (PowerShell)** ; l'équivalent macOS/Linux est indiqué quand il diffère.
@@ -69,6 +88,11 @@ SESSION_SECRET=une-longue-phrase-secrete-au-hasard
 JOB_SECRET=un-autre-secret
 DEMO_MODE=1
 NEXT_PUBLIC_APP_NAME=Révis'Arena
+
+# Facultatif : IA qui écrit les quiz (API compatible OpenAI)
+# OPENAI_API_KEY=ta-cle
+# OPENAI_BASE_URL=https://adresse-du-service/v1
+# LLM_MODEL=qwen3-6-35b-moe
 ```
 
 | Variable | Rôle |
@@ -78,7 +102,10 @@ NEXT_PUBLIC_APP_NAME=Révis'Arena
 | `JOB_SECRET` | Protège les tâches planifiées (`/api/jobs/...`). |
 | `DEMO_MODE` | `1` = la connexion se fait sans e-mail et des « outils de démo » apparaissent (avancer d'un jour, générer les quiz). |
 | `NEXT_PUBLIC_APP_NAME` | Nom affiché dans l'application. |
+| `OPENAI_API_KEY` + `OPENAI_BASE_URL` | Optionnel : active la génération des quiz **par l'IA**. N'importe quelle API compatible OpenAI convient (service IA d'Onyxia, OpenAI, Mistral, Ollama en local…). La clé reste côté serveur. Sans elles, les questions sont simulées ou passent par le « Chat » (copier-coller). |
+| `LLM_MODEL` | Optionnel : nom du modèle (par défaut `qwen3-6-35b-moe`, celui d'Onyxia). |
 | `NEXT_PUBLIC_BASE_PATH` | Optionnel : préfixe d'URL si l'app tourne derrière un proxy (ex. `/absproxy/3000` sur Onyxia). |
+| `APP_ORIGIN` | Optionnel : nom d'hôte public autorisé quand l'app est servie derrière une adresse externe (rempli automatiquement par `lancer-app.sh`). |
 
 > 💡 Sous Windows, crée ce fichier avec un éditeur (VS Code, ou Bloc-notes en « UTF-8 ») plutôt qu'avec `Set-Content` de PowerShell : ce dernier ajoute un caractère invisible (BOM) en début de fichier, et `DATABASE_URL` n'est alors plus lu.
 
@@ -88,7 +115,7 @@ NEXT_PUBLIC_APP_NAME=Révis'Arena
 npx tsx --env-file=.env.local db/migrate.ts
 ```
 
-Tu dois voir `ok 001_init.sql`, `ok 002_settings.sql`, `ok 003_arena.sql`. La commande peut être relancée sans risque (elle ne crée que ce qui manque).
+Tu dois voir une ligne `ok` par fichier de `db/migrations/` (`001_init.sql` à `005_demo_par_matiere.sql` aujourd'hui). La commande peut être relancée sans risque, et **doit l'être après chaque `git pull`** qui ajoute une migration.
 
 ### 7. (Recommandé) Charger les données de démo
 
@@ -134,10 +161,12 @@ Pour simuler plusieurs joueurs sur un même ordinateur, ouvre une **fenêtre de 
    Cela génère `storage/demo-cours.pdf` et `storage/demo-annale.pdf`.
 3. Le cours est découpé automatiquement en jours (programme visible dans la matière).
 4. Génère les questions, au choix :
-   - **Outils de démo → « Générer (simulé) »** : questions fabriquées automatiquement à partir des slides ;
-   - **Chat** : copie le prompt proposé dans ChatGPT ou Claude, puis colle sa réponse dans l'application.
-5. Joue le quiz du jour (10 questions, une seule tentative), puis consulte la correction et les classements.
-6. **Outils de démo → « Jour suivant »** avance la date d'un jour pour voir la saison progresser (gel des résultats, nouveau quiz).
+   - **🤖 Questions par l'IA → « ✨ Générer avec l'IA »** : l'IA écrit les quiz à partir des slides (nécessite `OPENAI_API_KEY` et `OPENAI_BASE_URL`) ;
+   - **Chat** : copie le prompt proposé dans ChatGPT ou Claude, puis colle sa réponse dans l'application ;
+   - **Outils de démo → « Générer (simulé) »** : questions fabriquées sans IA à partir des slides, pour tester ;
+   - **Questions** : écris ou corrige des questions à la main (elles sont conservées lors des générations suivantes).
+5. Joue le quiz du jour (10 questions, une seule tentative), puis consulte la correction, les classements, le graphique d'évolution et les trophées.
+6. **Outils de démo → « Jour suivant »** avance la date **de cette matière** d'un jour pour voir la saison progresser (gel des résultats, nouveau quiz). Chaque matière a sa propre date de démo.
 
 ### Jouer à plusieurs sur le même Wi-Fi
 ```powershell
@@ -180,13 +209,16 @@ curl -X POST -H "x-job-secret: $JOB_SECRET" http://localhost:3000/api/jobs/close
 | `ECONNREFUSED 127.0.0.1:5432` | PostgreSQL n'est pas démarré (Windows : service `postgresql-x64-16` ; macOS : `brew services start postgresql@16`). |
 | `relation ... does not exist` | Refais l'étape 6 (migrations). |
 | Port 3000 déjà utilisé | `npm run dev -- -p 3001` |
+| `column ... does not exist` après un `git pull` | Une nouvelle migration est arrivée : refais l'étape 6. |
+| « IA non configurée » | Renseigne `OPENAI_API_KEY` et `OPENAI_BASE_URL` dans `.env.local`, puis redémarre `npm run dev`. |
+| `IA : pas de réponse après … s` | Le service IA est lent ou indisponible : réessaie, ou utilise le « Chat ». |
 | « Pas assez de questions archivées » dans l'Arène | Charge les données de démo (étape 7) ou joue d'abord quelques quiz du jour. |
 
 ---
 
 ## 🧱 Stack
 
-Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · PostgreSQL (`pg`) · Vitest.
+Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · PostgreSQL (`pg`) · Vitest · IA via une API compatible OpenAI (`src/lib/ai/llm.ts`).
 
 - `src/app` : pages et routes API
 - `src/lib` : logique métier (quiz, scoring, classements, Arène)
