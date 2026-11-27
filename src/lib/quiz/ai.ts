@@ -8,19 +8,22 @@ import { buildChatPrompt, extractJson, importChatAnswer, type ImportResult, type
 const SYSTEME = "Tu es un professeur rigoureux qui rédige des quiz de révision en français. Tu réponds uniquement avec du JSON valide, sans texte autour.";
 
 /** Seconde passe : le modèle répond aux questions SANS connaître la bonne réponse. */
-export const verifierIA: Verifier = async (qs) => {
+export const verifierIA = (timeoutS?: number): Verifier => async (qs) => {
   const liste = qs.map((x, i) => `${i + 1}. ${x.enonce}\n${x.choix.map((c, j) => `   ${j}) ${c}`).join("\n")}`).join("\n\n");
   const txt = await chatLLM([
     { role: "system", content: SYSTEME },
     { role: "user", content: `Réponds à chacune de ces questions de cours. Pour chaque question, donne l'index (à partir de 0) du choix correct, ou null si aucune réponse n'est correcte ou si plusieurs le sont.\n\n${liste}\n\nRéponds uniquement : {"reponses":[0,2,null,...]} (une valeur par question, dans l'ordre).` },
-  ], { maxTokens: 400, temperature: 0 });
+  ], { maxTokens: 400, temperature: 0, timeoutS });
   const r = (extractJson(txt) as { reponses?: unknown[] }).reponses ?? [];
   return qs.map((_, i) => (typeof r[i] === "number" ? (r[i] as number) : null));
 };
 
-async function unAppel(subjectId: string, prompt: string): Promise<ImportResult> {
-  const txt = await chatLLM([{ role: "system", content: SYSTEME }, { role: "user", content: prompt }]);
-  return importChatAnswer(subjectId, txt, { verifier: verifierIA });
+/** Génération + vérification. Avec `budgetS`, les deux appels réunis tiennent dans ce budget. */
+async function unAppel(subjectId: string, prompt: string, budgetS?: number): Promise<ImportResult> {
+  const t0 = Date.now();
+  const txt = await chatLLM([{ role: "system", content: SYSTEME }, { role: "user", content: prompt }], { timeoutS: budgetS });
+  const reste = budgetS === undefined ? undefined : Math.max(5, budgetS - (Date.now() - t0) / 1000);
+  return importChatAnswer(subjectId, txt, { verifier: verifierIA(reste) });
 }
 
 /** Génère (ou refait) les quiz des prochains jours d'une matière avec l'IA. Un appel par jour. */
@@ -33,9 +36,10 @@ export async function genererAvecIA(subjectId: string, o: PromptOptions = {}): P
     if (!p) break;
     faits.push(...p.ids);
     try {
-      let res = await unAppel(subjectId, p.prompt);
-      // des questions de l'IA ont été écartées et complétées par le générateur simulé : un second essai, si personne n'a joué
-      if (res.some((r) => r.report && r.report.simulees > 0)) {
+      let res = await unAppel(subjectId, p.prompt, o.timeoutS);
+      // des questions de l'IA ont été écartées et complétées par le générateur simulé : un second essai, si personne
+      // n'a joué (pas quand un joueur attend devant « Commencer » : o.timeoutS)
+      if (o.timeoutS === undefined && res.some((r) => r.report && r.report.simulees > 0)) {
         const p2 = await buildChatPrompt(subjectId, { dayId: p.ids[0], regenerer: true, limit: 1 });
         if (p2) {
           const res2 = await unAppel(subjectId, p2.prompt).catch(() => null);
@@ -64,20 +68,39 @@ function unique(key: string, f: () => Promise<ImportResult>): Promise<ImportResu
   return n;
 }
 
+// Dernière tentative de préparation par matière : la page d'une matière appelle preparerEnArrierePlan à chaque
+// affichage ; sans ce frein, un service IA en panne serait relancé à chaque clic (coût, charge).
+const derniereTentative = new Map<string, number>();
+
 /** Prépare en arrière-plan les quiz des prochains jours (sans bloquer la page). */
 export function preparerEnArrierePlan(subjectId: string): void {
   if (!llmConfigured()) return;
+  const now = Date.now();
+  if (now - (derniereTentative.get(subjectId) ?? 0) < CONFIG.LLM_PREPARATION_INTERVALLE_MIN * 60_000) return;
+  derniereTentative.set(subjectId, now);
   void unique(subjectId, async () => {
     const today = await todayParis(subjectId);
     return genererAvecIA(subjectId, { limit: CONFIG.LLM_JOURS_A_L_AVANCE, jusquA: addDays(today, CONFIG.LLM_JOURS_A_L_AVANCE - 1) });
   }).catch((e) => console.error("IA arrière-plan", subjectId, (e as Error).message));
 }
 
-/** Avant de lancer un quiz encore vide : tente l'IA pour ce jour (sinon le générateur simulé prendra le relais). */
+/**
+ * Avant de lancer un quiz encore vide : tente l'IA pour ce jour, mais le joueur n'attend jamais plus de
+ * LLM_TIMEOUT_DEMARRAGE_S secondes ; au-delà, le générateur simulé prend le relais.
+ */
 export async function genererJourAvecIA(subjectId: string, dayId: string): Promise<void> {
   if (!llmConfigured()) return;
-  try { await unique(subjectId, () => genererAvecIA(subjectId, { dayId, limit: 1 })); }
-  catch (e) { console.error("IA jour", dayId, (e as Error).message); }
+  const t = CONFIG.LLM_TIMEOUT_DEMARRAGE_S;
+  try {
+    const deja = enCours.get(subjectId);
+    if (deja) {
+      // une préparation tourne déjà (elle couvre sans doute ce jour) : on l'attend un peu, pas plus
+      await Promise.race([deja, new Promise((r) => setTimeout(r, t * 1000))]);
+    } else {
+      // appel dédié, interrompu (AbortController) au bout du budget : il ne peut pas écrire après coup
+      await unique(subjectId, () => genererAvecIA(subjectId, { dayId, limit: 1, timeoutS: t }));
+    }
+  } catch (e) { console.error("IA jour", dayId, (e as Error).message); }
 }
 
 export { llmConfigured };

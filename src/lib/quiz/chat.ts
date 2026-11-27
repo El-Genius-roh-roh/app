@@ -29,6 +29,8 @@ export type PromptOptions = {
   jusquA?: string;
   /** Jours à ignorer (déjà traités). */
   exclure?: string[];
+  /** Génération par l'IA : délai maximal de chaque appel (secondes). Par défaut CONFIG.LLM_TIMEOUT_S. */
+  timeoutS?: number;
 };
 
 /** Prochains jours (à partir d'aujourd'hui) encore sans questions, ou à refaire. */
@@ -172,17 +174,23 @@ export async function importChatAnswer(subjectId: string, text: string, opts: { 
         notion: src[0].notion,
       });
     }
-    // vérification indépendante (IA) : une question dont la bonne réponse n'est pas retrouvée est écartée
+    // vérification indépendante (IA, docs/03 étape 6) : la question n'est gardée que si le correcteur, sans connaître
+    // la réponse, retrouve exactement la même. Réponse différente, « null » (ambiguë / aucune bonne réponse) ou
+    // absente = rejet. Si la vérification échoue, on n'enregistre RIEN de non vérifié pour ce jour.
     if (opts.verifier && qs.length) {
+      let rep: (number | null)[];
       try {
-        const rep = await opts.verifier(qs.map((x) => ({ type: x.type, enonce: x.enonce, choix: x.choix })));
-        for (let i = qs.length - 1; i >= 0; i--) {
-          if (rep[i] !== undefined && rep[i] !== null && rep[i] !== qs[i].correct_index) {
-            rejets.push(`« ${qs[i].enonce.slice(0, 60)} » : le correcteur trouve une autre réponse`);
-            qs.splice(i, 1);
-          }
-        }
-      } catch (e) { rejets.push(`vérification impossible : ${(e as Error).message.slice(0, 80)}`); }
+        rep = await opts.verifier(qs.map((x) => ({ type: x.type, enonce: x.enonce, choix: x.choix })));
+      } catch (e) {
+        out.push({ date: jour.date, erreur: `vérification impossible, quiz non enregistré : ${(e as Error).message.slice(0, 80)}` });
+        continue;
+      }
+      for (let i = qs.length - 1; i >= 0; i--) {
+        if (rep[i] === qs[i].correct_index) continue;
+        const raison = rep[i] === null || rep[i] === undefined ? "jugée ambiguë par le correcteur" : "le correcteur trouve une autre réponse";
+        rejets.push(`« ${qs[i].enonce.slice(0, 60)} » : ${raison}`);
+        qs.splice(i, 1);
+      }
     }
     try {
       const report = (await ensureQuestions(gd.id, qs))!;

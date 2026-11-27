@@ -21,6 +21,8 @@ export const CONFIG = {
   // génération automatique par l'IA (API compatible OpenAI, ex. service IA d'Onyxia)
   LLM_MODELE: "qwen3-6-35b-moe", // remplaçable par la variable d'environnement LLM_MODEL
   LLM_TIMEOUT_S: 240,
+  LLM_TIMEOUT_DEMARRAGE_S: 25, // quiz encore vide au clic sur « Commencer » : au-delà, génération simulée
+  LLM_PREPARATION_INTERVALLE_MIN: 10, // préparation en arrière-plan : au plus une tentative par matière toutes les N min
   LLM_MAX_TOKENS: 12000,
   LLM_JOURS_PAR_APPEL: 1, // un quiz par appel : réponse rapide (~15 s) et moins d'erreurs
   LLM_JOURS_A_L_AVANCE: 3, // quiz préparés en arrière-plan : aujourd'hui + 2 jours
