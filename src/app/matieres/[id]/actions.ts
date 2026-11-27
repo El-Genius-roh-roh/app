@@ -42,7 +42,12 @@ export async function importer(fd: FormData) {
 export async function supprimer(fd: FormData) {
   const id = await manager(fd);
   if (!id) return;
-  await q("delete from documents where id=$1 and subject_id=$2", [String(fd.get("doc")), id]);
+  const gone = await q<{ id: string; fichier_path: string }>(
+    "delete from documents where id=$1 and subject_id=$2 returning id, fichier_path", [String(fd.get("doc")), id]);
+  for (const d of gone) { // le PDF et les images des pages ne restent pas sur le disque
+    fs.rmSync(d.fichier_path, { force: true });
+    fs.rmSync(path.join(STORAGE, "pages", d.id), { recursive: true, force: true });
+  }
   await rebuildSchedule(id);
   revalidatePath(`/matieres/${id}`);
 }

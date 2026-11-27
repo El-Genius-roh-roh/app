@@ -4,7 +4,28 @@
 import { CONFIG } from "@/config/constants";
 import { q } from "../db";
 import { todayParis } from "../clock";
-import { validateTechnical } from "./generate";
+import { norm, validateTechnical } from "./generate";
+
+type Source = { document_id: string; pages: number[]; page_ids: string[] };
+
+/**
+ * Slide source devinée pour une question écrite sans slide : la page du programme du jour qui partage le plus de
+ * mots avec l'énoncé et la bonne réponse (à défaut, la première page du jour). Sans source, la question ne
+ * compterait pas dans le choix des révisions (pages les moins revues / les plus ratées).
+ */
+async function sourceDevinee(dayId: string, texte: string): Promise<Source | null> {
+  const pages = await q<{ id: string; document_id: string; numero: number; texte: string | null }>(
+    `select p.id, p.document_id, p.numero, p.texte from game_day_pages gp join document_pages p on p.id=gp.page_id
+       join documents d on d.id=p.document_id where gp.game_day_id=$1 order by d.ordre, p.numero`, [dayId]);
+  if (!pages.length) return null;
+  const mots = new Set(norm(texte).split(" ").filter((m) => m.length > 3));
+  let best = pages[0], score = -1;
+  for (const p of pages) {
+    const s = norm(p.texte ?? "").split(" ").filter((m) => mots.has(m)).length;
+    if (s > score) { best = p; score = s; }
+  }
+  return { document_id: best.document_id, pages: [best.numero], page_ids: [best.id] };
+}
 
 export type EditDay = { id: string; date: string; saison: number; jour: number; statut: string; nb: number; joue: boolean };
 export type EditQuestion = {
@@ -55,7 +76,7 @@ export async function saveQuestion(subjectId: string, x: QuestionInput): Promise
   const enonce = x.enonce.trim();
   if (enonce.length < 3) return "L'énoncé est trop court.";
 
-  let source: { document_id: string; pages: number[]; page_ids: string[] } | null = null;
+  let source: Source | null = null;
   if (x.documentId) {
     const [p] = await q<{ id: string; numero: number }>(
       `select p.id, p.numero from document_pages p join documents d on d.id=p.document_id
@@ -73,11 +94,13 @@ export async function saveQuestion(subjectId: string, x: QuestionInput): Promise
   const err = validateTechnical(cand, used);
   if (err) return ({ "4 choix distincts requis": "Il faut 4 choix différents et non vides.", "doublon de question": "Cette question existe déjà dans la saison." } as Record<string, string>)[err] ?? `Question invalide : ${err}.`;
 
+  // slide choisie > slide déjà connue (modification) > slide devinée dans le programme du jour
+  const devinee = source ? null : await sourceDevinee(x.dayId, `${enonce} ${choix[x.correct_index] ?? ""}`);
   if (x.id) {
     const r = await q(
-      `update questions set type=$3, enonce=$4, choix=$5, correct_index=$6, explication=$7, source_pages=coalesce($8, source_pages),
+      `update questions set type=$3, enonce=$4, choix=$5, correct_index=$6, explication=$7, source_pages=coalesce($8, source_pages, $9),
               manuelle=true, verifiee=true where id=$1 and game_day_id=$2 returning id`,
-      [x.id, x.dayId, x.type, enonce, JSON.stringify(choix), x.correct_index, x.explication.trim(), source && JSON.stringify(source)]);
+      [x.id, x.dayId, x.type, enonce, JSON.stringify(choix), x.correct_index, x.explication.trim(), source && JSON.stringify(source), devinee && JSON.stringify(devinee)]);
     if (!r.length) return "Question introuvable.";
   } else {
     const [{ n }] = await q<{ n: number }>("select count(*)::int n from questions where game_day_id=$1", [x.dayId]);
@@ -88,7 +111,7 @@ export async function saveQuestion(subjectId: string, x: QuestionInput): Promise
     await q(
       `insert into questions(subject_id,game_day_id,kind,type,enonce,choix,correct_index,explication,source_pages,notion,verifiee,manuelle)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,true)`,
-      [subjectId, x.dayId, kind, x.type, enonce, JSON.stringify(choix), x.correct_index, x.explication.trim(), source && JSON.stringify(source), enonce.slice(0, 80)]);
+      [subjectId, x.dayId, kind, x.type, enonce, JSON.stringify(choix), x.correct_index, x.explication.trim(), (source ?? devinee) && JSON.stringify(source ?? devinee), enonce.slice(0, 80)]);
   }
   await majStatut(x.dayId);
   return null;
