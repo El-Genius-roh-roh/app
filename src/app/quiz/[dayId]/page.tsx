@@ -12,6 +12,7 @@ import { getDayRanking, getGroupTrophees } from "@/lib/ranking";
 import { exploitsDuJour, ligueDe } from "@/lib/trophees";
 import { LigueBlason, TropheeIcone, TropheesCompteur } from "@/components/Trophees";
 import NextButton from "@/components/NextButton";
+import Icon from "@/components/Icon";
 
 export default async function QuizPage({ params }: { params: Promise<{ dayId: string }> }) {
   const { dayId } = await params;
@@ -24,7 +25,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
   await closeStaleAttempts();
   const { attempt, items } = await getCorrection(dayId, u.id);
   const finished = attempt && attempt.statut !== "en_cours";
-  const back = <Link href={`/matieres/${gd.subject_id}`} className="back">← {gd.nom}</Link>;
+  const back = <Link href={`/matieres/${gd.subject_id}`} className="back"><Icon name="arrowLeft" size={16} />{gd.nom}</Link>;
   // suivant : le quiz du jour d'une autre matière du groupe pas encore joué, sinon retour à la matière
   const [autre] = await q<{ id: string; nom: string }>(
     `select g.id, s.nom from game_days g join subjects s on s.id=g.subject_id
@@ -48,31 +49,40 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
     return (
       <main className="page lg:max-w-3xl">
         {back}
-        <section className="hero text-center">
-          <p className="text-5xl">{score === items.length ? "🏆" : score >= items.length * 0.7 ? "🎉" : "💪"}</p>
-          <p className="mt-1 text-5xl font-extrabold">{score}/{items.length}</p>
-          <p className="mt-2 font-semibold text-white/90">{fmtMs(a.duree_ms)}{res ? ` · ${res.rang}${res.rang === 1 ? "er" : "e"} du jour` : ""}</p>
+        <section className="hero entree">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow text-accent">Résultat · jour {gd.jour}</p>
+              <p className="num mt-1 text-6xl leading-none font-bold">{score}<span className="text-3xl text-texte-3">/{items.length}</span></p>
+              <p className="num mt-2 text-texte-2">
+                <Icon name="clock" size={15} className="mr-1 inline align-[-2px]" />{fmtMs(a.duree_ms)}
+                {res && <> · <b className="text-or">{res.rang === 1 ? "1er" : `${res.rang}e`}</b> du jour</>}
+              </p>
+            </div>
+            {res && (
+              <div className="flex items-center gap-3 rounded-xl border border-ligne bg-fond/60 p-3">
+                <LigueBlason ligue={ligue.ligue} size={40} />
+                <div>
+                  <p className={`num text-2xl leading-none font-bold ${delta > 0 ? "text-ok" : delta < 0 ? "text-ko" : "text-texte-2"}`}>
+                    {delta > 0 ? "+" : delta < 0 ? "−" : "±"}{Math.abs(delta)} <TropheeIcone size={18} />
+                  </p>
+                  <p className="mt-1 text-xs text-texte-2">Ligue {ligue.ligue.nom} · <TropheesCompteur n={mesTrophees} className="text-or" /></p>
+                </div>
+              </div>
+            )}
+          </div>
           {ex && (ex.premier || ex.sansFaute || ex.plusRapide) && (
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {ex.premier && <span className="chip bg-white/25 text-sm text-white">🥇 1er du jour !</span>}
-              {ex.sansFaute && <span className="chip bg-white/25 text-sm text-white">🎯 Sans faute !</span>}
-              {ex.plusRapide && <span className="chip bg-white/25 text-sm text-white">⚡ Le plus rapide !</span>}
+            <div className="mt-4 flex flex-wrap gap-2">
+              {ex.premier && <span className="chip border-or/40 bg-or/10 text-or"><Icon name="trophy" size={13} />1er du jour</span>}
+              {ex.sansFaute && <span className="chip border-ok/40 bg-ok/10 text-ok"><Icon name="target" size={13} />Sans faute</span>}
+              {ex.plusRapide && <span className="chip border-accent/40 bg-accent/10 text-accent"><Icon name="clock" size={13} />Le plus rapide</span>}
             </div>
           )}
           {res && (
-            <div className="mx-auto mt-4 max-w-sm space-y-2 rounded-2xl bg-white/15 p-4">
-              <div className="flex items-center justify-center gap-3">
-                <LigueBlason ligue={ligue.ligue} size={44} />
-                <div className="text-left">
-                  <p className={`text-2xl font-black tabular-nums ${delta >= 0 ? "text-white" : "text-rose-100"}`}>
-                    {delta > 0 ? "+" : delta < 0 ? "−" : "±"}{Math.abs(delta)} <TropheeIcone size={22} />
-                  </p>
-                  <p className="text-sm font-bold text-white/90">Ligue {ligue.ligue.nom} · <TropheesCompteur n={mesTrophees} /></p>
-                </div>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-black/20"><div className="h-2 rounded-full bg-white/60 backdrop-blur-md" style={{ width: `${Math.round(ligue.progression * 100)}%` }} /></div>
-              {ligue.suivante && <p className="text-xs font-semibold text-white/85">Encore {ligue.manque} trophées pour la ligue {ligue.suivante.nom}</p>}
-              {!jour?.fige && <p className="text-[11px] text-white/70">Provisoire : ça bouge encore si d&apos;autres joueurs font mieux aujourd&apos;hui.</p>}
+            <div className="mt-4 space-y-1.5">
+              <div className="h-1.5 overflow-hidden rounded-full bg-fond"><div className="h-1.5 rounded-full" style={{ width: `${Math.round(ligue.progression * 100)}%`, background: ligue.ligue.clair }} /></div>
+              {ligue.suivante && <p className="text-xs text-texte-3">Encore <span className="num text-texte-2">{ligue.manque}</span> trophées pour la ligue {ligue.suivante.nom}</p>}
+              {!jour?.fige && <p className="text-xs text-texte-3">Provisoire : ça bouge encore si d&apos;autres joueurs font mieux aujourd&apos;hui.</p>}
             </div>
           )}
         </section>
@@ -85,7 +95,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
     return (
       <main className="page lg:max-w-3xl">
         {back}
-        <p className="card font-semibold">{gd.date > today ? `Ce quiz ouvrira le ${gd.date}.` : "Quiz non joué : pas de rattrapage."}</p>
+        <p className="card text-texte-2">{gd.date > today ? `Ce quiz ouvrira le ${gd.date}.` : "Quiz non joué : pas de rattrapage."}</p>
         {gd.date < today && items.length > 0 && <Correction items={items} />}
         {suivant}
       </main>
