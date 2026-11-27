@@ -1,5 +1,6 @@
 import { LIGUES } from "@/config/constants";
 import type { Ligue, LigueInfo, Vitrine as VitrineData } from "@/lib/trophees";
+import Icon from "./Icon";
 
 const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n);
 const indexDe = (l: Ligue) => Math.max(0, LIGUES.findIndex((x) => x.nom === l.nom));
@@ -27,7 +28,7 @@ export function TropheeIcone({ size = 18, className = "" }: { size?: number; cla
 /** « 🏆 1 240 » avec la coupe dessinée. */
 export function TropheesCompteur({ n, className = "" }: { n: number; className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-1 font-extrabold tabular-nums ${className}`}>
+    <span className={`inline-flex items-center gap-1 font-num font-bold tabular-nums ${className}`}>
       <TropheeIcone />{fmt(n)}
     </span>
   );
@@ -35,9 +36,9 @@ export function TropheesCompteur({ n, className = "" }: { n: number; className?:
 
 /** Variation du jour : +40 en vert, −20 en rouge. */
 export function DeltaTrophees({ d }: { d: number }) {
-  const cls = d > 0 ? "bg-emerald-100 text-emerald-700" : d < 0 ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-600";
+  const cls = d > 0 ? "bg-ok/12 text-ok" : d < 0 ? "bg-ko/12 text-ko" : "bg-surface-2 text-texte-2";
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-extrabold tabular-nums ${cls}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-num text-xs font-bold tabular-nums ${cls}`}>
       {d > 0 ? "+" : d < 0 ? "−" : "±"}{fmt(Math.abs(d))}<TropheeIcone size={14} />
     </span>
   );
@@ -91,7 +92,7 @@ export function LigueBlason({ ligue, size = 48, verrouille = false }: { ligue: L
           <stop offset="0" stopColor={ligue.clair} /><stop offset=".55" stopColor={ligue.clair} stopOpacity=".85" /><stop offset="1" stopColor={ligue.fonce} />
         </linearGradient>
         <linearGradient id={`${g}-i`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={ligue.fonce} /><stop offset="1" stopColor="#140a2e" stopOpacity=".9" />
+          <stop offset="0" stopColor={ligue.fonce} /><stop offset="1" stopColor="#0a0d14" stopOpacity=".9" />
         </linearGradient>
         <linearGradient id={`${g}-c`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff3b0" /><stop offset="1" stopColor="#d99a00" />
@@ -112,7 +113,7 @@ export function LigueBlason({ ligue, size = 48, verrouille = false }: { ligue: L
 /** Pastille de ligue pour les classements : petit blason + nom. */
 export function LigueBadge({ ligue }: { ligue: Ligue }) {
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-extrabold text-slate-700">
+    <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: ligue.clair }}>
       <LigueBlason ligue={ligue} size={18} />{ligue.nom}
     </span>
   );
@@ -122,25 +123,30 @@ export function LigueBadge({ ligue }: { ligue: Ligue }) {
 export function LigueCard({ info, trophees, serie }: { info: LigueInfo; trophees: number; serie: number }) {
   const { ligue, suivante, progression, manque, index } = info;
   return (
-    <section className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${ligue.fond} p-5 text-white shadow-lg lg:p-6`}>
-      <div className="flex items-center gap-4">
-        <LigueBlason ligue={ligue} size={76} />
+    <section className="card relative overflow-hidden" style={{ borderColor: `${ligue.clair}55` }}>
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-25" style={{ background: `radial-gradient(60% 100% at 20% 0%, ${ligue.clair}, transparent)` }} />
+      <div className="relative flex items-center gap-4">
+        <LigueBlason ligue={ligue} size={72} />
         <div className="min-w-0">
-          <p className="text-xs font-bold tracking-widest uppercase text-white/80">Ligue</p>
-          <p className="text-3xl font-black tracking-tight drop-shadow-sm">{ligue.nom}</p>
-          <p className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-black/20 px-3 py-1 text-lg font-black tabular-nums">
-            <TropheeIcone size={22} />{fmt(trophees)}
+          <p className="eyebrow">Ma ligue</p>
+          <p className="font-titre text-3xl" style={{ color: ligue.clair }}>{ligue.nom}</p>
+          <p className="mt-1 inline-flex items-center gap-1.5 font-num text-xl font-bold tabular-nums text-or">
+            <TropheeIcone size={20} />{fmt(trophees)}
           </p>
         </div>
+        {serie > 0 && (
+          <span className="ml-auto inline-flex items-center gap-1 self-start rounded-full bg-or/12 px-2.5 py-1 font-num text-sm font-bold text-or" title="Jours joués d'affilée">
+            <Icon name="flame" size={15} />{serie}
+          </span>
+        )}
       </div>
-      <div className="mt-4 h-3 overflow-hidden rounded-full bg-black/20">
-        <div className="h-3 rounded-full bg-gradient-to-r from-yellow-200 to-white shadow transition-all" style={{ width: `${Math.round(progression * 100)}%` }} />
+      <div className="relative mt-4 h-2 overflow-hidden rounded-full bg-fond" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progression * 100)} aria-label="Progression vers la ligue suivante">
+        <div className="h-2 rounded-full transition-[width] duration-500" style={{ width: `${Math.round(progression * 100)}%`, background: ligue.clair }} />
       </div>
-      <p className="mt-2 flex flex-wrap items-center gap-1 text-sm font-semibold text-white/90">
-        {suivante ? <>Encore <b className="tabular-nums">{fmt(manque)}</b> <TropheeIcone size={14} /> pour la ligue <b>{suivante.nom}</b></> : "Ligue maximale atteinte !"}
-        {serie > 0 && <span className="ml-auto rounded-full bg-black/20 px-2 py-0.5">🔥 {serie} jour{serie > 1 ? "s" : ""}</span>}
+      <p className="relative mt-2 flex flex-wrap items-center gap-1 text-sm text-texte-2">
+        {suivante ? <>Encore <b className="num text-texte">{fmt(manque)}</b> <TropheeIcone size={14} /> pour la ligue <b className="text-texte">{suivante.nom}</b></> : "Ligue maximale atteinte !"}
       </p>
-      <div className="mt-3 flex items-end gap-1.5" aria-label={`Ligue ${index + 1} sur ${LIGUES.length}`}>
+      <div className="relative mt-3 flex items-end gap-1.5" aria-label={`Ligue ${index + 1} sur ${LIGUES.length}`}>
         {LIGUES.map((l, i) => (
           <span key={l.nom} title={`${l.nom} · ${fmt(l.min)} trophées`}><LigueBlason ligue={l} size={i === index ? 30 : 22} verrouille={i > index} /></span>
         ))}
@@ -152,24 +158,24 @@ export function LigueCard({ info, trophees, serie }: { info: LigueInfo; trophees
 /* ------------------------------------------------------------------ badges */
 
 /** Badges à débloquer : gagnés en couleur, à débloquer en gris avec un cadenas. */
-export function Vitrine({ data, titre = "🎖️ Mes badges" }: { data: VitrineData; titre?: string }) {
+export function Vitrine({ data, titre = "Mes badges" }: { data: VitrineData; titre?: string }) {
   const gagnes = data.trophees.filter((t) => t.nombre > 0).length;
   return (
     <section className="card space-y-3">
       <div className="flex items-baseline justify-between">
         <h2 className="h2">{titre}</h2>
-        <span className="muted font-semibold">{gagnes}/{data.trophees.length} débloqués</span>
+        <span className="num text-sm text-texte-3">{gagnes}/{data.trophees.length}</span>
       </div>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+      <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
         {data.trophees.map((t) => {
           const ok = t.nombre > 0;
           return (
             <li key={t.id} title={t.description}
-              className={`relative flex flex-col items-center rounded-2xl p-3 text-center transition ${ok ? "bg-gradient-to-b from-amber-50 to-orange-100 shadow-sm ring-1 ring-amber-200" : "bg-slate-50/70 backdrop-blur-md"}`}>
-              <span className={`text-3xl ${ok ? "drop-shadow" : "opacity-30 grayscale"}`} aria-hidden>{t.emoji}</span>
-              {!ok && <span className="absolute top-1.5 right-2 text-xs" aria-hidden>🔒</span>}
-              {ok && t.cumulable && <span className="absolute top-1.5 right-1.5 rounded-full bg-fuchsia-600 px-1.5 text-[11px] font-black text-white">×{t.nombre}</span>}
-              <span className={`mt-1 text-xs leading-tight font-extrabold ${ok ? "text-slate-800" : "text-slate-400"}`}>{t.nom}</span>
+              className={`relative flex flex-col items-center rounded-xl border p-2.5 text-center ${ok ? "border-or/40 bg-or/8" : "border-ligne bg-fond"}`}>
+              <span className={`text-2xl ${ok ? "" : "opacity-25 grayscale"}`} aria-hidden>{t.emoji}</span>
+              {ok && t.cumulable && <span className="absolute top-1 right-1 rounded-full bg-or px-1.5 font-num text-[11px] font-bold text-fond">×{t.nombre}</span>}
+              <span className={`mt-1 text-[11px] leading-tight font-medium ${ok ? "text-texte" : "text-texte-3"}`}>{t.nom}</span>
+              <span className="sr-only">{ok ? "débloqué" : "à débloquer"}</span>
             </li>
           );
         })}
@@ -181,10 +187,10 @@ export function Vitrine({ data, titre = "🎖️ Mes badges" }: { data: VitrineD
 /** Pastilles des exploits d'un jour (classement du jour). */
 export function Exploits({ premier, sansFaute, plusRapide }: { premier: boolean; sansFaute: boolean; plusRapide: boolean }) {
   return (
-    <>
-      {premier && <span title="1er du jour">🥇</span>}
-      {sansFaute && <span title="Sans faute">🎯</span>}
-      {plusRapide && <span title="Le plus rapide">⚡</span>}
-    </>
+    <span className="inline-flex items-center gap-1 text-or">
+      {premier && <span title="1er du jour"><Icon name="trophy" size={15} label="1er du jour" /></span>}
+      {sansFaute && <span title="Sans faute"><Icon name="target" size={15} label="Sans faute" /></span>}
+      {plusRapide && <span title="Le plus rapide"><Icon name="clock" size={15} label="Le plus rapide" /></span>}
+    </span>
   );
 }

@@ -5,6 +5,8 @@ import { createMagicLink } from "@/lib/auth";
 import { mailConfigured, sendLoginMail } from "@/lib/mail";
 import { APP_NAME } from "@/config/constants";
 import { url } from "@/lib/url";
+import Icon from "@/components/Icon";
+import { Logo } from "@/components/TopBar";
 
 /**
  * Comment le lien de connexion arrive à l'utilisateur :
@@ -58,30 +60,39 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
   // le bouton n'apparaît qu'en mode démo : ailleurs, un ?token= dans l'URL est ignoré
   const montrer = token && mode() === "ecran";
   return (
-    <main className="page max-w-sm pt-16">
-      <div className="hero text-center">
-        <div className="text-5xl">🧠</div>
-        <h1 className="mt-2 text-3xl font-extrabold">{APP_NAME}</h1>
-        <p className="mt-1 font-semibold text-white/90">Révise chaque jour, bats tes amis.</p>
+    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-8 px-5 py-10">
+      <div className="entree space-y-4">
+        <Logo size={44} />
+        <h1 className="font-titre text-4xl leading-tight">{APP_NAME}</h1>
+        <p className="text-lg text-texte-2">10 questions par jour sur tes cours. Le plus juste et le plus rapide prend la tête du classement.</p>
       </div>
-      <div className="card space-y-3">
+      <div className="card space-y-4">
         {montrer ? (
           <>
-            <p className="text-sm text-gray-600">Mode démo : aucun e-mail n&apos;est envoyé.</p>
-            <a className="btn-primary" href={url(`/auth/verify?token=${token}`)}>Se connecter</a>
+            <p className="text-sm text-texte-2">Mode démo : aucun e-mail n&apos;est envoyé, ton lien est prêt.</p>
+            <a className="btn-primary" href={url(`/auth/verify?token=${token}`)}>Se connecter<Icon name="arrowRight" size={18} /></a>
           </>
         ) : envoye ? (
-          <p className="text-sm">
+          <p className="text-sm text-texte-2" role="status">
             {envoye === "mail"
-              ? "📬 C'est envoyé ! Ouvre l'e-mail et clique sur le lien (valable 15 minutes)."
+              ? "C'est envoyé ! Ouvre l'e-mail et clique sur le lien (valable 15 minutes)."
               : "Aucun service d'e-mail n'est configuré : le lien de connexion a été écrit dans la console du serveur."}
           </p>
         ) : (
-          <form action={demander} className="space-y-3">
-            <input name="email" type="email" required placeholder="ton@email.fr" className="input" />
-            {process.env.CODE_ACCES && <input name="code" required placeholder="Code d'accès" autoComplete="off" className="input" />}
-            {err && <p className="text-sm font-semibold text-rose-600">{ERREURS[err] ?? "Erreur."}</p>}
-            <button className="btn-primary">Recevoir mon lien</button>
+          <form action={demander} className="space-y-4">
+            <label className="block space-y-1.5">
+              <span className="text-sm font-medium text-texte-2">Adresse e-mail</span>
+              <input name="email" type="email" required autoComplete="email" inputMode="email" placeholder="prenom.nom@ecole.fr" className="input"
+                aria-invalid={err === "email" || undefined} />
+            </label>
+            {process.env.CODE_ACCES && (
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-texte-2">Code d&apos;accès</span>
+                <input name="code" required autoComplete="off" className="input num tracking-[0.2em] uppercase" aria-invalid={err === "code" || undefined} />
+              </label>
+            )}
+            {err && <p className="text-sm font-medium text-ko" role="alert">{ERREURS[err] ?? "Erreur."}</p>}
+            <button className="btn-primary">Recevoir mon lien de connexion</button>
           </form>
         )}
       </div>
