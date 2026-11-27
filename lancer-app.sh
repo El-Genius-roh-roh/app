@@ -14,9 +14,12 @@ fi
 export PATH="$NODE_DIR/bin:$PATH"
 
 cd "$(dirname "$0")"
-if [ ! -d node_modules ]; then
+# Réinstalle les dépendances si elles manquent ou si package-lock.json a changé (après un git pull, par exemple).
+LOCK_HASH="$(sha256sum package-lock.json | cut -d' ' -f1)"
+if [ ! -d node_modules ] || [ "$(cat node_modules/.lock-hash 2>/dev/null)" != "$LOCK_HASH" ]; then
   echo "== Installation des dépendances (quelques minutes) =="
   npm ci
+  echo "$LOCK_HASH" > node_modules/.lock-hash
 fi
 
 if [ -z "$PGHOST" ]; then

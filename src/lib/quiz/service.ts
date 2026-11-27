@@ -52,7 +52,7 @@ export async function loadDayContext(cq: Cq, gd: DayInfo) {
 }
 
 /**
- * Génère (idempotent) les 10 questions d'un jour : 7 nouvelles + 3 révision.
+ * Génère (idempotent) les 10 questions d'un jour : 6 nouvelles + 4 révision.
  * `preset` = questions rédigées par le chat (copier-coller) : elles sont validées puis complétées par le générateur simulé.
  * Avec `preset`, un jour déjà généré est remplacé tant que personne n'a commencé le quiz.
  */

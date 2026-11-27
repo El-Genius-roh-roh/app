@@ -7,10 +7,10 @@ Ces règles font foi. Toutes les constantes sont dans un fichier de configuratio
 | Constante | Valeur | Source |
 |-----------|--------|--------|
 | `QUESTIONS_PAR_JOUR` | 10 | D4 |
-| `QUESTIONS_NOUVELLES` | 7 | D8 |
-| `QUESTIONS_REVISION` | 3 | D8 |
+| `QUESTIONS_NOUVELLES` | 6 | D8, D14 |
+| `QUESTIONS_REVISION` | 4 | D8, D14 |
 | `POINTS_PARTICIPATION` | 10 | valeur par défaut (doc 07) |
-| `POINTS_PAR_JOUEUR_BATTU` | 5 | valeur par défaut (doc 07) |
+| `POINTS_PAR_JOUEUR_BATTU` | 10 | D15 |
 | `BONUS_MULTIPLICATEUR_PAR_JOUR` | 0,05 | D6 |
 | `DUREE_MAX_TENTATIVE_MIN` | 15 | valeur par défaut (doc 07) |
 | `FUSEAU` | Europe/Paris | D9 |
@@ -36,7 +36,7 @@ joueurs_battus(j) = nombre de joueurs classés ce jour-là ayant
 
 Les joueurs n'ayant pas joué ne comptent **pas** comme battus (voir doc 07).
 
-Décision D5 : nombre **brut**, non normalisé par la taille du groupe.
+Décision D5 : nombre **brut**, non normalisé par la taille du groupe : plus le groupe est grand, plus il y a de joueurs à battre (D15).
 
 ## 3. Multiplicateur
 
@@ -85,10 +85,10 @@ Périodes affichables : « depuis le début » (par défaut) et « 30 derniers j
 
 | Joueur | Erreurs | Temps | Rang | Battus | Base | Points |
 |--------|---------|-------|------|--------|------|--------|
-| Alice | 0 | 42 300 ms | 1 | 4 | 10 + 5×4 = 30 | 45 |
-| Bob | 0 | 51 000 ms | 2 | 3 | 25 | 38 (37,5 → 38) |
-| Chloé | 1 | 39 000 ms | 3 | 1 | 15 | 23 (22,5 → 23) |
-| David | 1 | 39 000 ms | 3 | 1 | 15 | 23 (22,5 → 23) |
+| Alice | 0 | 42 300 ms | 1 | 4 | 10 + 10×4 = 50 | 75 |
+| Bob | 0 | 51 000 ms | 2 | 3 | 40 | 60 |
+| Chloé | 1 | 39 000 ms | 3 | 1 | 20 | 30 |
+| David | 1 | 39 000 ms | 3 | 1 | 20 | 30 |
 | Emma | 3 | 30 000 ms | 5 | 0 | 10 | 15 |
 
 Chloé et David sont à égalité parfaite : même rang, ils ne se battent pas l'un l'autre. Chacun ne bat qu'Emma, donc battus = 1. Emma est la plus rapide, mais elle a le plus d'erreurs : les erreurs passent avant le temps.
@@ -100,3 +100,27 @@ Fanny n'a pas joué le jour 11 : 0 point, et elle n'est comptée comme battue pa
 ### Exemple C — jour 1, joueur seul
 
 Un seul joueur a joué : 0 battu, base 10, multiplicateur 1,00 → 10 points.
+
+## 8. Ligues et trophées (D16)
+
+Les points ci-dessus restent la base de **tous les classements**, mais ne sont plus affichés tels quels.
+
+**Ligue** d'un joueur dans un groupe = selon ses points cumulés dans le groupe (§6) :
+
+| Ligue | Bronze 🥉 | Argent 🥈 | Or 🥇 | Platine 💠 | Diamant 💎 | Maître 👑 |
+|-------|-----------|-----------|-------|-----------|-----------|-----------|
+| À partir de | 0 | 200 | 500 | 1 000 | 2 000 | 3 500 |
+
+La page du groupe montre la ligue, la progression vers la suivante (« encore N pts ») et la série de jours en cours.
+
+**Trophées** (calculés à partir des résultats quotidiens du groupe, toutes matières) :
+
+| Trophée | Condition | Cumulable |
+|---------|-----------|-----------|
+| 🏆 1er du jour | rang 1 d'un quiz du jour, avec au moins 2 joueurs ce jour-là | oui (×N) |
+| 🎯 Sans faute | 0 erreur à un quiz du jour | oui |
+| ⚡ Le plus rapide | temps le plus court du jour, avec au moins 2 joueurs (même s'il a fait des erreurs) | oui |
+| 🔥 Série de 3 / 7 / 30 jours | jours consécutifs avec au moins un quiz terminé dans le groupe | non (débloqué une fois) |
+| 📚 10 / 50 quiz joués | nombre de quiz terminés dans le groupe | non |
+
+Série en cours : elle continue tant que le dernier jour joué est aujourd'hui ou hier.

@@ -26,7 +26,7 @@ Chaque phase se termine par une app **fonctionnelle et testée** avant de passer
 
 ## Phase 3 — Quiz
 
-- [ ] Génération des 7 nouvelles + 3 révision (consignes et JSON du doc 03)
+- [ ] Génération des 6 nouvelles + 4 révision (consignes et JSON du doc 03)
 - [ ] Passe de vérification IA + régénération des questions rejetées
 - [ ] Job de génération J-1 + rattrapage
 - [ ] Parcours de quiz : start / answer / fin, temps serveur, ordre mélangé, une seule tentative

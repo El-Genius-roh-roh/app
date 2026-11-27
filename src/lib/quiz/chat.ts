@@ -58,6 +58,11 @@ ${blocks.join("\n\n")}
 ## Règles
 - Environ ${Math.round(CONFIG.RATIO_QCM * 100)} % de QCM (4 choix, une seule bonne réponse) et le reste en vrai/faux.
 - Chaque question porte uniquement sur le contenu des slides indiquées ; la bonne réponse doit s'y trouver sans ambiguïté.
+- Interroge uniquement sur la MATIÈRE (notions, définitions, propriétés, méthodes, résultats). Ignore tout ce qui est hors matière : enseignant, contacts, organisation du cours, planning, modalités d'examen, bibliographie, plan, remerciements. Si une slide indiquée ne contient que ce genre d'informations, prends une autre slide de la liste.
+- Les EXEMPLES du cours servent à comprendre une méthode : ne pose jamais de question sur leurs données précises (valeurs, noms, chiffres, résultats de l'exemple). Fais plutôt une question d'APPLICATION : la même méthode avec de nouvelles valeurs ou une nouvelle situation, ou « quelle méthode / quelle formule utiliser », « que signifie ce résultat ».
+- Privilégie la compréhension et l'application plutôt que le par-cœur mot pour mot.
+- Écris TOUTES les formules, variables et symboles mathématiques en LaTeX entre dollars : $\\hat{\\beta} = (X^\\top X)^{-1} X^\\top y$, $\\alpha = 5\\,\\%$, $n \\geq 30$. Cela vaut pour l'énoncé, les choix et l'explication. Dans le JSON, double chaque antislash (\\\\frac, \\\\beta…).
+- Chaque choix fait au plus une phrase courte (moins de 150 caractères), écrite en entier.
 - Distracteurs plausibles, de longueur comparable à la bonne réponse. Pas de « toutes les réponses ».
 - Explication courte (1 à 2 phrases) qui justifie la bonne réponse.
 - Pas deux questions identiques, y compris d'un jour à l'autre.${annales.length ? "\n- Inspire-toi du style et du niveau des annales fournies." : ""}
@@ -88,12 +93,33 @@ const AnswerSchema = z.object({ jours: z.array(z.object({ date: z.string(), ques
 
 export type ImportResult = { date: string; report?: GenReport; erreur?: string }[];
 
-/** Extrait le JSON d'une réponse du chat (accepte les blocs ```json et le texte autour). */
+/** Commandes LaTeX qui commencent par une lettre d'échappement JSON (\n, \t, \r, \b, \f) : « \neq » n'est pas « saut de ligne + eq ». */
+const LATEX_AMBIGU = /^(n(e|eq|u|abla|eg|ot|otin|i|ewline|leq|geq|subseteq)|t(imes|au|heta|o|ext[a-z]*|ilde|op|herefore|frac|riangle[a-z]*|anh?|extstyle)|r(ho|ight[a-z]*|angle|m|vert|ceil|floor)|b(eta|ar|inom|f|ig[a-z]*|oldsymbol|ullet|ackslash|egin|ot|mod|eta)|f(rac|orall|lat|ootnotesize))$/;
+
+/**
+ * Répare les antislashs LaTeX non doublés dans un JSON (« \frac » au lieu de « \\frac ») :
+ * - antislash suivi d'un mot : commande LaTeX, sauf un vrai échappement JSON suivi de texte (« \nLigne ») ;
+ * - antislash suivi d'un caractère qui n'est pas un échappement JSON valide (« \( », « \{ », « \, »…).
+ * Les vrais échappements JSON (\n, \t, \", \\, \uXXXX) sont conservés.
+ */
+export function fixLatexEscapes(json: string): string {
+  return json.replace(/\\(\\|u[0-9a-fA-F]{4}|[a-zA-Z]+|.)/g, (m, x: string) => {
+    if (x === "\\" || /^u[0-9a-fA-F]{4}$/.test(x)) return m;
+    const echappementJson = /^["/bfnrt]/.test(x);
+    if (!echappementJson) return "\\\\" + x; // \alpha, \(, \{, \, …
+    if (x.length >= 2 && LATEX_AMBIGU.test(x)) return "\\\\" + x; // \frac, \neq, \times…
+    return m; // \n, \t, \" … suivis éventuellement de texte
+  });
+}
+
+/** Extrait le JSON d'une réponse du chat (accepte les blocs ```json, le texte autour et le LaTeX mal échappé). */
 export function extractJson(text: string): unknown {
   const t = text.replace(/```(?:json)?/gi, "");
   const a = t.indexOf("{"), b = t.lastIndexOf("}");
   if (a < 0 || b <= a) throw new Error("Aucun JSON trouvé dans la réponse.");
-  return JSON.parse(t.slice(a, b + 1));
+  const raw = t.slice(a, b + 1);
+  // toujours réparer : « \frac » passerait JSON.parse sans erreur mais deviendrait un saut de page + « rac »
+  return JSON.parse(fixLatexEscapes(raw));
 }
 
 export async function importChatAnswer(subjectId: string, text: string): Promise<ImportResult> {

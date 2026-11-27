@@ -10,7 +10,8 @@ export const fmtMs = (ms: number) => {
   return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` : `${s} s`;
 };
 
-type Line = { userId: string; pseudo: string; rang: number; points: number; detail?: string };
+/** `badge` remplace l'ancien affichage des points (ligue, exploits du jour…). */
+type Line = { userId: string; pseudo: string; rang: number; detail?: string; badge?: React.ReactNode };
 
 export default function RankTable({ lines, meId, empty }: { lines: Line[]; meId: string; empty?: string }) {
   if (lines.length === 0) return <p className="muted">{empty ?? "Pas encore de classement."}</p>;
@@ -22,7 +23,7 @@ export default function RankTable({ lines, meId, empty }: { lines: Line[]; meId:
           <RankBadge rang={l.rang} />
           <span className="flex-1 truncate font-bold">{l.pseudo}</span>
           {l.detail && <span className="text-xs font-semibold text-slate-600">{l.detail}</span>}
-          <span className="chip bg-white text-violet-700">{l.points} pts</span>
+          {l.badge && <span className="flex shrink-0 items-center gap-1">{l.badge}</span>}
         </li>
       ))}
     </ol>

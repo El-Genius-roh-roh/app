@@ -1,6 +1,8 @@
+import { horsMatiere } from "../quiz/generate";
+
 // IA SIMULÉE (aucune clé API) : heuristiques déterministes qui reproduisent le contrat de docs/03.
 export type PageAnalysis = {
-  type: "titre" | "sommaire" | "contenu" | "exercice" | "vide";
+  type: "titre" | "sommaire" | "contenu" | "exercice" | "vide" | "admin";
   chapitre: string | null;
   densite: number;
   notions: string[];
@@ -18,6 +20,8 @@ export function mockAnalyzePages(texts: string[]): PageAnalysis[] {
     let type: PageAnalysis["type"] = "contenu";
     if (L.length === 0 || /merci|remerciements|fin\b/.test(joined) && L.length <= 2) type = "vide";
     else if (/^(sommaire|plan|table des mati)/i.test(L[0])) type = "sommaire";
+    // page d'organisation (enseignant, contact, évaluation…) : pas de questions dessus
+    else if (horsMatiere(L[0]) || L.filter((l) => horsMatiere(l)).length * 2 >= L.length) type = "admin";
     else if (L.length <= 2 && bullets === 0) type = "titre";
     else if (/exercice|application num/i.test(L[0] + (L[1] ?? ""))) type = "exercice";
 

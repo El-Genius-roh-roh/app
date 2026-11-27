@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { url } from "@/lib/url";
+import Tex from "./Tex";
 
 type Q = { id: string; type: "qcm" | "vrai_faux"; enonce: string; choices: string[] };
 type State = { attemptId: string; index: number; total: number; question: Q; elapsedMs: number };
@@ -73,12 +74,12 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
         <span className="chip bg-white font-mono text-base text-fuchsia-600 shadow-sm">⏱ {fmt(now)}</span>
       </div>
       <div className="h-3 rounded-full bg-white shadow-inner"><div className="h-3 rounded-full bg-gradient-to-r from-violet-500 to-orange-400 transition-all" style={{ width: `${pct}%` }} /></div>
-      <h2 className="card text-xl font-extrabold leading-snug">{st.question.enonce}</h2>
+      <h2 className="card text-xl font-extrabold leading-snug break-words"><Tex>{st.question.enonce}</Tex></h2>
       <div className={st.question.type === "vrai_faux" ? "grid grid-cols-2 gap-3" : "space-y-3"}>
         {st.question.choices.map((c, i) => (
           <button key={i} disabled={busy} onClick={() => answer(i)}
             className={`w-full rounded-2xl bg-gradient-to-r ${st.question.type === "vrai_faux" ? (i === 0 ? COULEURS[3] : "from-rose-500 to-pink-400") : COULEURS[i % 4]} p-4 text-left text-lg font-bold text-white shadow-md transition active:scale-[0.98] disabled:opacity-60 ${st.question.type === "vrai_faux" ? "py-6 text-center text-xl" : ""}`}>
-            {c}
+            <Tex className="block break-words">{c}</Tex>
           </button>
         ))}
       </div>

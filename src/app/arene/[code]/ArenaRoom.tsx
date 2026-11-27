@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { url } from "@/lib/url";
+import Tex from "@/components/Tex";
 
 type P = {
   id: string; name: string; bot: boolean; left: boolean; host: boolean; score: number; streak: number; rank: number;
@@ -153,9 +154,9 @@ export default function ArenaRoom({ code }: { code: string }) {
             <h2 className="font-bold">📚 À revoir</h2>
             {v.final.recap.filter((r) => !r.ok).map((r, i) => (
               <div key={i} className="border-t pt-2 text-sm">
-                <p className="whitespace-pre-line font-medium">{r.enonce}</p>
-                <p className="text-emerald-700">✓ {r.bonne}</p>
-                {r.explication && <p className="text-gray-600">{r.explication}</p>}
+                <p className="whitespace-pre-line font-medium"><Tex>{r.enonce}</Tex></p>
+                <p className="text-emerald-700">✓ <Tex>{r.bonne}</Tex></p>
+                {r.explication && <p className="text-gray-600"><Tex>{r.explication}</Tex></p>}
               </div>
             ))}
           </section>
@@ -185,7 +186,7 @@ export default function ArenaRoom({ code }: { code: string }) {
       <div className="h-2 overflow-hidden rounded bg-white/20">
         <div className={`h-2 ${question ? "bg-emerald-300" : "bg-white/60"}`} style={{ width: `${(left / total) * 100}%`, transition: "width 100ms linear" }} />
       </div>
-      <h2 className="min-h-20 whitespace-pre-line rounded-2xl bg-white p-4 text-lg font-bold text-gray-900 shadow lg:p-6 lg:text-2xl">{r.enonce}</h2>
+      <h2 className="min-h-20 whitespace-pre-line rounded-2xl bg-white p-4 text-lg font-bold text-gray-900 shadow lg:p-6 lg:text-2xl"><Tex>{r.enonce}</Tex></h2>
 
       <div className={`grid gap-3 ${r.kind === "vf" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
         {r.choices.map((c, i) => {
@@ -198,7 +199,7 @@ export default function ArenaRoom({ code }: { code: string }) {
             <button key={i} disabled={!question || chosen !== null} onClick={() => send(i)}
               className={`${cls} flex min-h-16 items-center gap-3 rounded-2xl p-4 text-left font-bold text-white shadow-lg transition active:scale-95 ${r.kind === "vf" ? "justify-center text-2xl" : ""}`}>
               {r.kind !== "vf" && <span className="text-xl opacity-80">{SHAPES[i]}</span>}
-              <span>{c}</span>
+              <Tex className="min-w-0 break-words">{c}</Tex>
               {!question && isKey && <span className="ml-auto">✓</span>}
             </button>
           );
@@ -214,7 +215,7 @@ export default function ArenaRoom({ code }: { code: string }) {
           <div className={`rounded-2xl p-3 text-center text-lg font-black ${mine?.ok ? "bg-emerald-400 text-emerald-950" : "bg-rose-500"}`}>
             {mine?.ok ? `Bravo ! +${mine.pts}${mine.bonus ? ` (dont 🔥 +${mine.bonus})` : ""}` : mine?.missed ? "Temps écoulé…" : "Raté !"}
           </div>
-          {r.explication && <p className="rounded-xl bg-white/15 p-3 text-sm">💡 {r.explication}</p>}
+          {r.explication && <p className="rounded-xl bg-white/15 p-3 text-sm">💡 <Tex>{r.explication}</Tex></p>}
           <Ranking players={v.players} me={v.me} />
         </div>
       )}

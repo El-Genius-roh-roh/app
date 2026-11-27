@@ -4,7 +4,7 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 
 | # | Question | Valeur par défaut appliquée |
 |---|----------|-----------------------------|
-| Q1 | Combien de points pour avoir joué, et par joueur battu ? | 10 pts de participation, 5 pts par joueur battu |
+| ~~Q1~~ | ~~Combien de points pour avoir joué, et par joueur battu ?~~ | **Décidé (D15)** : 10 pts de participation, 10 pts par joueur battu |
 | Q2 | Un joueur qui n'a pas joué compte-t-il comme « battu » par ceux qui ont joué ? | Non : seuls les joueurs ayant joué comptent |
 | Q3 | Le cours est-il réparti sur toutes les saisons, ou chaque saison reprend-elle tout le cours ? | Réparti sur l'ensemble des jours de toutes les saisons (N × S jours), à la suite |
 | Q4 | Joue-t-on aussi le week-end ? | Oui, tous les jours (option « sans week-end » possible plus tard) |
@@ -15,3 +15,5 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q9 | Qui paie les appels à l'API IA (modèle économique) ? | Une seule clé API côté serveur, payée par le propriétaire de l'app ; pas de paiement dans le MVP |
 | Q10 | Nom de l'application ? | Nom provisoire configurable (`APP_NAME`), à définir |
 | Q11 | Un joueur peut-il signaler une question fausse ? | Non (décision D1 : pas de validation humaine). À reconsidérer après les tests réels |
+| Q12 | Seuils des ligues | Bronze 0, Argent 200, Or 500, Platine 1000, Diamant 2000, Maître 3500 points cumulés dans le groupe (`LIGUES` dans `src/config/constants.ts`) — à ajuster après quelques semaines de jeu |
+| Q13 | « 1er du jour » et « le plus rapide » quand on est seul à jouer ? | Non attribués : il faut au moins 2 joueurs ce jour-là (`TROPHEES.MIN_JOUEURS_DUEL`) |

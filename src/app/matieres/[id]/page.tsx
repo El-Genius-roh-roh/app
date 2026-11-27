@@ -69,7 +69,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
 
       <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
         <div className="space-y-5">
-          <Classements subjectId={id} userId={u.id} today={today} saisonParam={saisonParam} />
+          <Classements subjectId={id} groupId={s.group_id} userId={u.id} today={today} saisonParam={saisonParam} />
         </div>
         <div className="space-y-5">
           {canManage && (

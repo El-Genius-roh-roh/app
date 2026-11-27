@@ -1,14 +1,18 @@
 import Link from "next/link";
 import RankTable, { fmtMs, RankBadge } from "@/components/RankTable";
-import { defaultSeason, getDayRanking, getSeasonRanking, getSeasons, pickDay } from "@/lib/ranking";
+import { defaultSeason, getDayRanking, getGroupRanking, getSeasonRanking, getSeasons, pickDay } from "@/lib/ranking";
+import { exploitsDuJour, ligueDe } from "@/lib/trophees";
+import { Exploits, LigueBadge } from "@/components/Trophees";
 import { CONFIG } from "@/config/constants";
 
-export default async function Classements({ subjectId, userId, today, saisonParam }: { subjectId: string; userId: string; today: string; saisonParam?: string }) {
+export default async function Classements({ subjectId, groupId, userId, today, saisonParam }: { subjectId: string; groupId: string; userId: string; today: string; saisonParam?: string }) {
   const seasons = await getSeasons(subjectId);
   if (seasons.length === 0) return null;
   const wanted = Number(saisonParam);
   const saison = seasons.some((s) => s.saison === wanted) ? wanted : defaultSeason(seasons, today);
   const season = await getSeasonRanking(subjectId, saison);
+  // la ligue d'un joueur dépend de ses points cumulés dans tout le groupe
+  const pointsGroupe = new Map((await getGroupRanking(groupId)).map((l) => [l.userId, l.points]));
   const dayId = await pickDay(subjectId, saison, today);
   const day = dayId ? await getDayRanking(dayId) : null;
   const finies = seasons.filter((s) => s.termine);
@@ -29,13 +33,14 @@ export default async function Classements({ subjectId, userId, today, saisonPara
         <section className="card space-y-3">
           <h2 className="h2">⚡ Classement du jour {day.date !== today && <span className="text-sm font-semibold text-slate-500">(jour {day.jour})</span>}</h2>
           <RankTable meId={userId} empty="Personne n'a encore joué."
-            lines={day.lines.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, points: l.points, detail: `${CONFIG.QUESTIONS_PAR_JOUR - l.erreurs}/${CONFIG.QUESTIONS_PAR_JOUR} · ${fmtMs(l.dureeMs)}` }))} />
+            lines={day.lines.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, detail: `${CONFIG.QUESTIONS_PAR_JOUR - l.erreurs}/${CONFIG.QUESTIONS_PAR_JOUR} · ${fmtMs(l.dureeMs)}`,
+              badge: <Exploits {...exploitsDuJour(day.lines.map((x) => ({ ...x, dayId: day.dayId, date: day.date })), l.userId)} /> }))} />
         </section>
       )}
 
       <section className="card space-y-3">
         <h2 className="h2">🏆 Classement de la saison{seasons.length > 1 ? ` ${saison}` : ""}</h2>
-        <RankTable meId={userId} lines={season.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, points: l.points }))} />
+        <RankTable meId={userId} lines={season.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, badge: <LigueBadge ligue={ligueDe(pointsGroupe.get(l.userId) ?? 0).ligue} /> }))} />
       </section>
 
       {podiums.length > 0 && (
@@ -45,7 +50,7 @@ export default async function Classements({ subjectId, userId, today, saisonPara
             <div key={s.saison} className="rounded-2xl bg-amber-50 p-3">
               <p className="text-sm font-extrabold text-orange-600">Saison {s.saison}</p>
               {top.length === 0 ? <p className="muted">Personne n&apos;a joué.</p> : top.map((l) => (
-                <p key={l.userId} className="font-semibold"><RankBadge rang={l.rang} /> {l.pseudo} · {l.points} pts</p>
+                <p key={l.userId} className="font-semibold"><RankBadge rang={l.rang} /> {l.pseudo}</p>
               ))}
             </div>
           ))}

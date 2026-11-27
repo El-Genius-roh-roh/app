@@ -23,7 +23,7 @@ Le problème des révisions n'est pas le manque de contenu, c'est le manque de *
 | **Annale** | Ancien sujet d'examen importé dans une matière, utilisé pour adapter le style et le niveau des questions. |
 | **Saison** | Période de N jours de jeu pour une matière. Une matière a S saisons. Le classement de saison repart de zéro à chaque saison. |
 | **Jour de jeu** | Un jour du calendrier d'une saison, associé à un ensemble de slides annoncées à l'avance. |
-| **Quiz du jour** | 10 questions (7 nouvelles + 3 révision), identiques pour tous les joueurs de la matière ce jour-là, dans un ordre mélangé. |
+| **Quiz du jour** | 10 questions (6 nouvelles + 4 révision), identiques pour tous les joueurs de la matière ce jour-là, dans un ordre mélangé. |
 | **Classement du jour** | Classement des joueurs ayant joué : erreurs croissantes, puis temps croissant. |
 | **Classement de saison** | Somme des points quotidiens d'une matière sur la saison. |
 | **Classement général du groupe** | Somme des points de toutes les matières du groupe. |

@@ -75,3 +75,13 @@ export async function pickDay(subjectId: string, saison: number, today: string):
       order by (date = $3::date) desc, exists (select 1 from daily_results r where r.game_day_id=game_days.id) desc, date desc limit 1`, [subjectId, saison, today]);
   return d?.id ?? null;
 }
+
+/** Tous les résultats quotidiens d'un groupe (toutes matières), jusqu'à aujourd'hui : base des trophées. */
+export async function getGroupResults(groupId: string): Promise<import("./trophees").Resultat[]> {
+  const today = await todayParis();
+  return q(
+    `select r.game_day_id as "dayId", to_char(g.date,'YYYY-MM-DD') as date, r.user_id as "userId",
+            r.rang, r.erreurs, r.duree_ms::float8 as "dureeMs"
+       from daily_results r join game_days g on g.id=r.game_day_id join subjects s on s.id=g.subject_id
+      where s.group_id=$1 and g.date <= $2::date`, [groupId, today]);
+}

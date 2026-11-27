@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import "katex/dist/katex.min.css";
 import "./globals.css";
 import { APP_NAME } from "@/config/constants";
 import { BASE } from "@/lib/url";

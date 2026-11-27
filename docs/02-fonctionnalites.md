@@ -48,7 +48,7 @@ Création d'une matière (par un admin du groupe, voir `07-questions-ouvertes.md
 ## 6. Quiz du jour
 
 - Disponible de **00h00 à 23h59, heure de Paris**.
-- **10 questions** : 7 nouvelles sur les slides du jour + 3 de révision sur les slides des jours précédents (questions nouvellement générées). Les premiers jours, s'il n'y a pas encore de slides passées, les 10 questions portent sur le jour.
+- **10 questions** : 6 nouvelles sur les slides du jour + 4 de révision sur les slides des jours précédents (questions nouvellement générées). Les premiers jours, s'il n'y a pas encore de slides passées, les 10 questions portent sur le jour.
 - Types de questions : **QCM à 4 choix (une seule bonne réponse)** et **vrai/faux**.
 - Les mêmes 10 questions pour tous les joueurs de la matière ce jour-là ; **ordre des questions et ordre des choix mélangés** pour chaque joueur.
 - **Une seule tentative.** Une fois le quiz commencé, la tentative est verrouillée.

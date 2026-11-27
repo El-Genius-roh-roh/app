@@ -4,7 +4,10 @@ import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { memberRole } from "@/lib/groups";
 import { creerMatiere } from "./actions";
-import { getGroupRanking } from "@/lib/ranking";
+import { getGroupRanking, getGroupResults } from "@/lib/ranking";
+import { ligueDe, vitrine } from "@/lib/trophees";
+import { todayParis } from "@/lib/clock";
+import { LigueBadge, LigueCard, Vitrine } from "@/components/Trophees";
 import RankTable from "@/components/RankTable";
 
 const COULEURS = ["from-sky-500 to-cyan-400", "from-orange-500 to-amber-400", "from-emerald-500 to-lime-400", "from-rose-500 to-pink-400", "from-violet-500 to-fuchsia-500"];
@@ -17,6 +20,8 @@ export default async function Groupe({ params }: { params: Promise<{ id: string 
   const [g] = await q<{ nom: string; code_invitation: string }>("select nom,code_invitation from groups where id=$1", [id]);
   const matieres = await q<{ id: string; nom: string }>("select id,nom from subjects where group_id=$1 order by created_at", [id]);
   const general = await getGroupRanking(id);
+  const maVitrine = vitrine(await getGroupResults(id), u.id, await todayParis());
+  const mesPoints = general.find((l) => l.userId === u.id)?.points ?? 0;
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -59,10 +64,14 @@ export default async function Groupe({ params }: { params: Promise<{ id: string 
       )}
       </div>
 
-      <section className="card space-y-3 lg:sticky lg:top-6">
-        <h2 className="h2">🏆 Classement général</h2>
-        <RankTable meId={u.id} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, points: l.points }))} />
-      </section>
+      <div className="space-y-5">
+        <LigueCard info={ligueDe(mesPoints)} serie={maVitrine.serieActuelle} />
+        <Vitrine data={maVitrine} />
+        <section className="card space-y-3">
+          <h2 className="h2">🏆 Classement général</h2>
+          <RankTable meId={u.id} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, badge: <LigueBadge ligue={ligueDe(l.points).ligue} /> }))} />
+        </section>
+      </div>
       </div>
     </main>
   );

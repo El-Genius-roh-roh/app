@@ -48,3 +48,13 @@ Points soulevés lors de la revue de l'idée :
 | D9 | Journée de jeu | Quiz disponible de **00h00 à 23h59 (heure de Paris)**, **une seule tentative**. Quiz raté = 0 point, pas de rattrapage. | Créneau limité ; rattrapage sans points | Simplicité, règle claire. |
 
 Les points restés sans décision explicite ont reçu une valeur par défaut, listée dans `07-questions-ouvertes.md`.
+
+## 2026-11-27 — Retours après les premiers tests
+
+| # | Sujet | Décision | Alternatives écartées | Raison |
+|---|-------|----------|-----------------------|--------|
+| D14 | Révision | Quiz du jour = **6 nouvelles + 4 révision** (remplace le 7 + 3 de D8). | 7 + 3 | Plus de révision pour lutter contre l'oubli. |
+| D15 | Points | **10 pts pour avoir joué + 10 pts par joueur battu** (au lieu de 5). Égalité parfaite : aucun point l'un sur l'autre. Nombre brut : plus le groupe est grand, plus il y a de joueurs à battre. Multiplicateur D6 inchangé. | Pourcentage du groupe battu ; bonus selon la taille du groupe | Choix produit : simple, et récompense de battre plus de monde. |
+| D16 | Affichage | Les points ne sont plus affichés dans les classements : on affiche des **ligues** (Bronze → Argent → Or → Platine → Diamant → Maître, selon les points cumulés dans le groupe) et une **vitrine de trophées** (1er du jour, sans faute, le plus rapide, séries de 3/7/30 jours, 10/50 quiz joués). Les points restent la base du tri. Voir doc 04 §8. | Trophées seuls ; médailles du jour | Plus motivant et plus « addictif » qu'un nombre de points. |
+| D17 | Contenu des questions | Pas de question sur ce qui n'est pas la matière (enseignant, contacts, organisation, examens, bibliographie). Sur les exemples du cours : questions d'**application** (même méthode, autres valeurs), jamais sur les données précises de l'exemple. | — | Questions jugées inutiles lors des tests. |
+| D18 | Formules | Toutes les formules sont écrites en **LaTeX** (`$…$`) et affichées avec KaTeX (énoncés, choix, explications). Une réponse n'est jamais tronquée : un fait trop long est écarté plutôt que coupé. | Texte brut | Lisibilité des cours de maths/stats ; réponses coupées constatées. |

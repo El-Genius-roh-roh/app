@@ -12,7 +12,7 @@ Import annale ─► Profil d'examen
                                          │
              (chaque jour J-1, par un job planifié)
                                          ▼
-        Génération des 7 nouvelles + 3 révision ─► Vérification ─► Stockage
+        Génération des 6 nouvelles + 4 révision ─► Vérification ─► Stockage
 ```
 
 ## Étape 1 — Extraction des pages
@@ -52,9 +52,9 @@ S'il y a plusieurs annales, le profil est fusionné. Le profil est injecté dans
 
 Un job planifié génère le quiz du **lendemain** (J-1, par exemple à 03h00), et la veille du premier jour à la création de la saison. Il génère aussi les jours manquants si un job a échoué.
 
-**7 questions nouvelles** — entrée : texte + images des pages du jour, profil d'examen, liste des énoncés déjà posés dans la matière (pour éviter les doublons).
+**6 questions nouvelles** — entrée : texte + images des pages du jour, profil d'examen, liste des énoncés déjà posés dans la matière (pour éviter les doublons).
 
-**3 questions de révision** — entrée : pages de **tous les jours précédents** de la matière (toutes saisons confondues). Ce sont des **questions nouvelles**, jamais des questions déjà posées. Sélection des pages : priorité aux notions les plus anciennes ou jamais révisées, et à celles où le groupe a fait le plus d'erreurs.
+**4 questions de révision** — entrée : pages de **tous les jours précédents** de la matière (toutes saisons confondues). Ce sont des **questions nouvelles**, jamais des questions déjà posées. Sélection des pages : priorité aux notions les plus anciennes ou jamais révisées, et à celles où le groupe a fait le plus d'erreurs.
 
 ### Consignes données à l'IA
 
@@ -104,3 +104,10 @@ Validations techniques en plus : JSON valide, 4 choix distincts (QCM), `correct_
 - Un seul jeu de questions par jour et par matière, partagé par tout le groupe.
 - Journaliser chaque appel IA (matière, étape, tokens, durée, statut) pour suivre les coûts.
 - Si la génération du jour a échoué à 00h00 : nouvelle tentative immédiate. En dernier recours, le quiz du jour est composé de 10 questions de révision.
+
+## Règles de contenu ajoutées après les tests (D17, D18)
+
+- **Hors matière interdit** : aucune question sur l'enseignant, les contacts, l'organisation du cours, les examens, la bibliographie. Le générateur simulé écarte ces slides et ces phrases (`horsMatiere` dans `src/lib/quiz/generate.ts`) ; le prompt du chat le demande explicitement.
+- **Exemples du cours** : questions d'application (même méthode, nouvelles valeurs), jamais sur les données de l'exemple. Le générateur simulé ignore les slides d'exemple et les phrases surtout chiffrées.
+- **LaTeX** : formules entre `$…$` dans l'énoncé, les choix et l'explication. L'import répare les antislashs non doublés (`fixLatexEscapes`).
+- **Réponses complètes** : une réponse trop longue est écartée, jamais tronquée.

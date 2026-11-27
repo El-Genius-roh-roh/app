@@ -18,7 +18,19 @@ export type GenQuestion = {
 export const norm = (s: string) =>
   s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
-const MAX_FACT = 140;
+/** Longueur max d'un fait utilisé comme réponse : au-delà on l'écarte (jamais de réponse coupée au milieu). */
+const MAX_FACT = 220;
+
+/** Informations hors matière : enseignant, contact, organisation, évaluation, bibliographie… */
+const HORS_MATIERE = /@|https?:\/\/|www\.|(?<!\p{L})(e-?mail|courriel|t[ée]l[ée]phone|bureau \w*\d|permanences?|horaires? (du cours|des s[ée]ances)|enseignante?s? ?:|professeure? ?:|charg[ée]e? de (cours|td|tp)|intervenante?s? ?:|moodle|contr[ôo]le continu|partiels?|examen (final|terminal)|modalit[ée]s (de contr[ôo]le|d'[ée]valuation)|bar[èe]me|note finale|rattrapage|bibliographie|polycopi[ée]|plan du cours|objectifs? du cours|pr[ée]requis|organisation du cours|remerciements?)(?!\p{L})/iu;
+
+/** Titre de slide d'exemple : ses données (valeurs, noms, chiffres) ne doivent pas devenir des réponses. */
+export const EST_EXEMPLE = /^(exemples?|ex\.|illustrations?|cas pratique|application( num[ée]rique)?|exercices?|corrig[ée]s?)(?!\p{L})/iu;
+
+/** Un fait qui contient surtout des données chiffrées d'un exemple (au moins 3 nombres). */
+const DONNEES_CHIFFREES = (f: string) => (f.match(/\d+(?:[.,]\d+)?/g) ?? []).length >= 3;
+
+export const horsMatiere = (s: string) => HORS_MATIERE.test(s);
 
 /** Clé d'unicité d'une question : énoncé + bonne réponse (deux QCM sur la même notion mais avec une autre bonne réponse sont distincts). */
 export const qkey = (q: { enonce: string; choix: string[]; correct_index: number }) => `${q.enonce}||${q.choix[q.correct_index]}`;
@@ -26,8 +38,12 @@ export const qkey = (q: { enonce: string; choix: string[]; correct_index: number
 export function factsOf(p: SrcPage): string[] {
   const lines = p.texte.split("\n").map((l) => l.trim()).filter(Boolean);
   const bullets = lines.filter((l) => l.startsWith("- ")).map((l) => l.slice(2).trim());
+  // slide d'exemple ou administrative : aucune question (on interroge sur la méthode, pas sur les données)
+  if (EST_EXEMPLE.test(p.notion ?? "") || EST_EXEMPLE.test(lines[0] ?? "") || horsMatiere(lines[0] ?? "")) return [];
   const facts = bullets.length ? bullets : lines.slice(1).filter((l) => l.length >= 30);
-  return facts.map((f) => f.slice(0, MAX_FACT)).filter((f) => f.length >= 8);
+  return facts
+    .map((f) => f.replace(/\s+/g, " ").trim())
+    .filter((f) => f.length >= 8 && f.length <= MAX_FACT && !horsMatiere(f) && !DONNEES_CHIFFREES(f));
 }
 
 export type GenOptions = {
@@ -125,7 +141,7 @@ export function generateQuestions(o: GenOptions): GenQuestion[] {
 }
 
 export function validateTechnical(q: GenQuestion, used: Set<string>): string | null {
-  if (!q.enonce || q.enonce.length > 300) return "énoncé invalide";
+  if (!q.enonce || q.enonce.length > 500) return "énoncé invalide";
   if (q.type === "qcm" && (q.choix.length !== 4 || new Set(q.choix.map(norm)).size !== 4)) return "4 choix distincts requis";
   if (q.type === "vrai_faux" && (q.choix.length !== 2 || q.choix[0] !== "Vrai" || q.choix[1] !== "Faux")) return "choix vrai/faux invalides";
   if (!Number.isInteger(q.correct_index) || q.correct_index < 0 || q.correct_index >= q.choix.length) return "correct_index hors bornes";

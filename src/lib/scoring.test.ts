@@ -24,13 +24,20 @@ describe("exemple A — jour 11", () => {
   );
   const get = (n: string) => r.find((x) => x.userId === n)!;
   it.each([
-    ["Alice", 1, 4, 30, 45],
-    ["Bob", 2, 3, 25, 38],
-    ["Chloé", 3, 1, 15, 23],
-    ["David", 3, 1, 15, 23],
+    ["Alice", 1, 4, 50, 75],
+    ["Bob", 2, 3, 40, 60],
+    ["Chloé", 3, 1, 20, 30],
+    ["David", 3, 1, 20, 30],
     ["Emma", 5, 0, 10, 15],
   ])("%s", (n, rang, battus, base, points) => {
     expect(get(n)).toMatchObject({ rang, battus, base, points });
+  });
+});
+
+describe("arrondi .5 vers le haut", () => {
+  it("jour 2 (×1,05) : 30 × 1,05 = 31,5 → 32", () => {
+    const r = classementDuJour([{ userId: "A", erreurs: 0, dureeMs: 1 }, { userId: "B", erreurs: 0, dureeMs: 2 }, { userId: "C", erreurs: 1, dureeMs: 1 }], 2);
+    expect(r[0]).toMatchObject({ battus: 2, base: 30, points: 32 });
   });
 });
 
