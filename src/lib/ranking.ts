@@ -1,4 +1,5 @@
 import { q } from "./db";
+import { CONFIG } from "@/config/constants";
 import { classementCumule, type CumulRanked } from "./scoring";
 import { todayParis } from "./clock";
 
@@ -84,4 +85,31 @@ export async function getGroupResults(groupId: string): Promise<import("./trophe
             r.rang, r.erreurs, r.duree_ms::float8 as "dureeMs"
        from daily_results r join game_days g on g.id=r.game_day_id join subjects s on s.id=g.subject_id
       where s.group_id=$1 and g.date <= $2::date`, [groupId, today]);
+}
+
+export type HistoryPlayer = { userId: string; pseudo: string; points: (number | null)[]; scores: (number | null)[] };
+export type SeasonHistory = { jours: { jour: number; date: string }[]; joueurs: HistoryPlayer[] };
+
+/** Évolution jour par jour d'une saison (jours passés et aujourd'hui) : points et bonnes réponses de chaque joueur, null si absent. */
+export async function getSeasonHistory(subjectId: string, saison: number): Promise<SeasonHistory> {
+  const today = await todayParis();
+  const jours = await q<{ id: string; jour: number; date: string }>(
+    `select id, jour_dans_saison as jour, to_char(date,'YYYY-MM-DD') as date from game_days
+      where subject_id=$1 and saison=$2 and date <= $3::date order by date`, [subjectId, saison, today]);
+  const players = await q<{ userId: string; pseudo: string }>(
+    `select p.id as "userId", p.pseudo from subjects s join group_members gm on gm.group_id=s.group_id
+       join subject_players sp on sp.subject_id=s.id and sp.user_id=gm.user_id and sp.actif
+       join profiles p on p.id=gm.user_id where s.id=$1 order by lower(p.pseudo), p.id`, [subjectId]);
+  const res = await q<{ dayId: string; userId: string; points: number; erreurs: number }>(
+    `select r.game_day_id as "dayId", r.user_id as "userId", r.points, r.erreurs from daily_results r
+      where r.game_day_id = any($1)`, [jours.map((j) => j.id)]);
+  const idx = new Map(jours.map((j, i) => [j.id, i]));
+  const joueurs = new Map(players.map((p) => [p.userId, { ...p, points: jours.map(() => null as number | null), scores: jours.map(() => null as number | null) }]));
+  for (const r of res) {
+    const pl = joueurs.get(r.userId), i = idx.get(r.dayId);
+    if (!pl || i === undefined) continue;
+    pl.points[i] = r.points;
+    pl.scores[i] = CONFIG.QUESTIONS_PAR_JOUR - r.erreurs;
+  }
+  return { jours: jours.map(({ jour, date }) => ({ jour, date })), joueurs: [...joueurs.values()] };
 }

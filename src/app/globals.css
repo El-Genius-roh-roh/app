@@ -2,7 +2,22 @@
 
 /* Thème vif : violet / rose / orange, cartes blanches arrondies. */
 @theme {
-  --font-sans: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--nf-texte), ui-rounded, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-titre: var(--nf-titre), ui-rounded, system-ui, sans-serif;
+  --font-action: var(--nf-action), ui-rounded, system-ui, sans-serif;
+}
+
+/* Polices selon le rôle : le texte qu'on lit (Nunito), les titres (Fredoka),
+   tout ce qui est cliquable (Lilita One). Un bouton désactivé repasse en police de texte, grisé. */
+@layer base {
+  h1, h2, h3 { font-family: var(--font-titre); font-weight: 700; }
+  a, button, summary, [role="button"], input[type="file"]::file-selector-button {
+    font-family: var(--font-action); font-weight: 400; letter-spacing: 0.01em; cursor: pointer;
+  }
+  button:disabled, [aria-disabled="true"] {
+    font-family: var(--nf-texte); font-weight: 700; font-style: italic; cursor: not-allowed;
+  }
+  input, textarea, select { font-family: var(--nf-texte); }
 }
 
 body {
@@ -19,15 +34,16 @@ body {
   .page { @apply mx-auto max-w-md space-y-5 px-4 pt-5 pb-12 lg:max-w-6xl lg:space-y-6 lg:px-8 lg:pt-8; }
   .card { @apply rounded-3xl bg-white p-4 shadow-[0_6px_24px_-8px_rgb(124_58_237/0.25)]; }
   .hero { @apply rounded-3xl bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 p-5 text-white shadow-lg shadow-fuchsia-300/50 lg:p-8; }
-  .title { @apply text-2xl font-extrabold tracking-tight lg:text-4xl; }
-  .h2 { @apply text-lg font-extrabold lg:text-xl; }
-  .back { @apply inline-flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-violet-700 shadow-sm; }
-  .btn, .btn-primary, .btn-orange, .btn-white, .btn-ghost { @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 font-bold transition active:scale-[0.98] disabled:opacity-50; }
+  .title { @apply font-titre text-2xl font-bold tracking-tight lg:text-4xl; }
+  .h2 { @apply font-titre text-lg font-bold lg:text-xl; }
+  .back { @apply inline-flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 font-action text-sm font-normal text-violet-700 shadow-sm; }
+  .btn, .btn-primary, .btn-orange, .btn-white, .btn-ghost { @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 font-action text-[1.05rem] font-normal tracking-wide transition active:scale-[0.98] disabled:opacity-50 disabled:grayscale disabled:font-sans disabled:font-bold disabled:italic; }
   .btn-primary { @apply bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-fuchsia-300/60; }
   .btn-orange { @apply bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md shadow-orange-300/60; }
   .btn-white { @apply bg-white text-violet-700 shadow-md; }
   .btn-ghost { @apply border-2 border-violet-200 bg-white text-violet-700; }
   .input { @apply w-full rounded-2xl border-2 border-violet-100 bg-white px-4 py-3 outline-none focus:border-fuchsia-400; }
   .chip { @apply rounded-full px-3 py-1 text-xs font-bold; }
+  .lien { @apply font-action text-violet-600 underline decoration-2 underline-offset-2 hover:text-fuchsia-600; }
   .muted { @apply text-sm text-slate-500; }
 }

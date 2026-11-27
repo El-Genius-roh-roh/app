@@ -11,6 +11,7 @@ import { fmtMs } from "@/components/RankTable";
 import { getDayRanking, getGroupRanking } from "@/lib/ranking";
 import { exploitsDuJour, ligueDe } from "@/lib/trophees";
 import { LigueBadge } from "@/components/Trophees";
+import NextButton from "@/components/NextButton";
 
 export default async function QuizPage({ params }: { params: Promise<{ dayId: string }> }) {
   const { dayId } = await params;
@@ -24,6 +25,15 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
   const { attempt, items } = await getCorrection(dayId, u.id);
   const finished = attempt && attempt.statut !== "en_cours";
   const back = <Link href={`/matieres/${gd.subject_id}`} className="back">← {gd.nom}</Link>;
+  // suivant : le quiz du jour d'une autre matière du groupe pas encore joué, sinon retour à la matière
+  const [autre] = await q<{ id: string; nom: string }>(
+    `select g.id, s.nom from game_days g join subjects s on s.id=g.subject_id
+      where s.group_id=$1 and s.id<>$2 and g.date=$3::date
+        and not exists (select 1 from attempts a where a.game_day_id=g.id and a.user_id=$4 and a.statut<>'en_cours')
+      order by s.created_at limit 1`, [gd.group_id, gd.subject_id, today, u.id]);
+  const suivant = autre
+    ? <NextButton href={`/quiz/${autre.id}`} sub="Quiz suivant">{autre.nom}</NextButton>
+    : <NextButton href={`/matieres/${gd.subject_id}`} sub="Voir le classement">Retour à {gd.nom}</NextButton>;
 
   if (finished) {
     const a = attempt as typeof attempt & { erreurs: number; duree_ms: number };
@@ -55,6 +65,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
           )}
         </section>
         <Correction items={items} />
+        {suivant}
       </main>
     );
   }
@@ -64,6 +75,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
         {back}
         <p className="card font-semibold">{gd.date > today ? `Ce quiz ouvrira le ${gd.date}.` : "Quiz non joué : pas de rattrapage."}</p>
         {gd.date < today && items.length > 0 && <Correction items={items} />}
+        {suivant}
       </main>
     );
   }

@@ -17,7 +17,7 @@ async function logAi(subjectId: string, etape: string, ms: number, statut: strin
   await q("insert into ai_calls(subject_id,etape,modele,duree_ms,statut) values ($1,$2,'mock',$3,$4)", [subjectId, etape, ms, statut]);
 }
 
-export type GenReport = { chat: number; simulees: number; rejets: string[] };
+export type GenReport = { chat: number; simulees: number; manuelles: number; rejets: string[] };
 
 type Cq = <T = any>(text: string, params?: unknown[]) => Promise<T[]>;
 type DayInfo = { id: string; subject_id: string; saison: number; jour_dans_saison: number; statut_generation: string };
@@ -70,7 +70,15 @@ export async function ensureQuestions(gameDayId: string, preset?: GenQuestion[])
       if (Number(n) > 0) throw new Error("des joueurs ont déjà commencé ce quiz");
     }
     const t0 = Date.now();
-    const { today, pool_, used, nNew, nRev, revSource } = await loadDayContext(cq, gd);
+    const ctx = await loadDayContext(cq, gd);
+    const { today, pool_, used, revSource } = ctx;
+    // questions manuelles du jour : conservées telles quelles, la génération ne remplit que les places restantes
+    const fixes = await cq<{ kind: "new" | "revision"; enonce: string; choix: string[]; correct_index: number }>(
+      "select kind,enonce,choix,correct_index from questions where game_day_id=$1 and manuelle", [gameDayId]);
+    for (const f of fixes) used.add(qkey(f));
+    const besoin = Math.max(0, CONFIG.QUESTIONS_PAR_JOUR - fixes.length);
+    const nNew = Math.min(besoin, Math.max(0, ctx.nNew - fixes.filter((f) => f.kind === "new").length));
+    const nRev = besoin - nNew;
 
     const fail = async (msg: string) => {
       await client.query("update game_days set statut_generation='echec' where id=$1", [gameDayId]);
@@ -78,7 +86,7 @@ export async function ensureQuestions(gameDayId: string, preset?: GenQuestion[])
       await logAi(gd.subject_id, "generation", Date.now() - t0, "echec");
       throw new Error(msg);
     };
-    if (pool_.length === 0) return fail("aucun contenu de cours");
+    if (pool_.length === 0 && besoin > 0) return fail("aucun contenu de cours");
 
     // 1) questions du chat : validation technique, puis répartition nouvelles / révision
     const rejets: string[] = [];
@@ -92,7 +100,7 @@ export async function ensureQuestions(gameDayId: string, preset?: GenQuestion[])
     const chatNew = ok.filter((x) => x.kind === "new").slice(0, nNew);
     const chatRev = ok.filter((x) => x.kind === "revision").slice(0, nRev);
     const extra = ok.filter((x) => !chatNew.includes(x) && !chatRev.includes(x));
-    while (chatNew.length + chatRev.length < CONFIG.QUESTIONS_PAR_JOUR && extra.length) chatRev.push(extra.shift()!);
+    while (chatNew.length + chatRev.length < besoin && extra.length) chatRev.push(extra.shift()!);
     const fromChat = new Set([...chatNew, ...chatRev]);
 
     // 2) complément par le générateur simulé
@@ -124,11 +132,11 @@ export async function ensureQuestions(gameDayId: string, preset?: GenQuestion[])
     const nouvelles = [...chatNew, ...(await produce("new", nNew - chatNew.length, today, chatNew.length))];
     const revision = [...chatRev, ...(await produce("revision", nRev - chatRev.length, revSource, nouvelles.length + chatRev.length))];
     let all = [...nouvelles, ...revision];
-    if (all.length < CONFIG.QUESTIONS_PAR_JOUR) all = [...all, ...(await produce("revision", CONFIG.QUESTIONS_PAR_JOUR - all.length, pool_, all.length))];
-    if (all.length < CONFIG.QUESTIONS_PAR_JOUR) return fail(`seulement ${all.length} questions valides`);
-    all = all.slice(0, CONFIG.QUESTIONS_PAR_JOUR);
+    if (all.length < besoin) all = [...all, ...(await produce("revision", besoin - all.length, pool_, all.length))];
+    if (all.length < besoin) return fail(`seulement ${all.length + fixes.length} questions valides`);
+    all = all.slice(0, besoin);
 
-    await client.query("delete from questions where game_day_id=$1", [gameDayId]);
+    await client.query("delete from questions where game_day_id=$1 and not manuelle", [gameDayId]);
     for (const x of all) {
       await client.query(
         `insert into questions(subject_id,game_day_id,kind,type,enonce,choix,correct_index,explication,source_pages,notion,verifiee)
@@ -139,7 +147,7 @@ export async function ensureQuestions(gameDayId: string, preset?: GenQuestion[])
     await client.query("commit");
     const nChat = all.filter((x) => fromChat.has(x)).length;
     await logAi(gd.subject_id, nChat ? "generation_chat" : "generation", Date.now() - t0, "ok");
-    return { chat: nChat, simulees: all.length - nChat, rejets };
+    return { chat: nChat, simulees: all.length - nChat, manuelles: fixes.length, rejets };
   } catch (e) {
     try { await client.query("rollback"); } catch { /* déjà commité */ }
     throw e;
@@ -285,7 +293,7 @@ export async function submitAnswer(attemptId: string, userId: string, questionId
 
 export type CorrectionItem = {
   id: string; enonce: string; choix: string[]; correct_index: number; chosen: number | null; correct: boolean | null;
-  explication: string; kind: string; source: { document_id: string; pages: number[] };
+  explication: string; kind: string; source: { document_id: string; pages: number[] } | null;
 };
 
 export async function getCorrection(gameDayId: string, userId: string | null) {

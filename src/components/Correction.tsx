@@ -13,10 +13,12 @@ export default function Correction({ items }: { items: CorrectionItem[] }) {
             {it.chosen !== null && !it.correct && <p className="text-sm text-rose-600 line-through"><Tex>{it.choix[it.chosen]}</Tex></p>}
             <p className="font-bold text-emerald-600">✓ <Tex>{it.choix[it.correct_index]}</Tex></p>
             {it.explication && <p className="text-sm text-slate-600"><Tex>{it.explication}</Tex></p>}
-            <a className="text-xs font-bold text-violet-600" target="_blank"
-              href={url(`/api/documents/${it.source.document_id}/file#page=${it.source.pages[0]}`)}>
-              Voir la slide {it.source.pages.join(", ")} →
-            </a>
+            {it.source?.document_id && (
+              <a className="text-xs text-violet-600" target="_blank"
+                href={url(`/api/documents/${it.source.document_id}/file#page=${it.source.pages[0]}`)}>
+                Voir la slide {it.source.pages.join(", ")} →
+              </a>
+            )}
           </li>
         );
       })}

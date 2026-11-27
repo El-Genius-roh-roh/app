@@ -20,7 +20,7 @@ export default async function Accueil() {
       <ul className="space-y-3 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0">
         {groupes.map((g, i) => (
           <li key={g.id}>
-            <Link href={`/groupes/${g.id}`} className={`flex items-center justify-between rounded-3xl bg-gradient-to-r ${COULEURS[i % COULEURS.length]} p-5 text-lg font-extrabold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl lg:min-h-32 lg:items-end lg:text-2xl`}>
+            <Link href={`/groupes/${g.id}`} className={`flex items-center justify-between rounded-3xl bg-gradient-to-r ${COULEURS[i % COULEURS.length]} p-5 text-lg text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl lg:min-h-32 lg:items-end lg:text-2xl`}>
               {g.nom}<span aria-hidden>→</span>
             </Link>
           </li>

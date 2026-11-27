@@ -17,3 +17,5 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q11 | Un joueur peut-il signaler une question fausse ? | Non (décision D1 : pas de validation humaine). À reconsidérer après les tests réels |
 | Q12 | Seuils des ligues | Bronze 0, Argent 200, Or 500, Platine 1000, Diamant 2000, Maître 3500 points cumulés dans le groupe (`LIGUES` dans `src/config/constants.ts`) — à ajuster après quelques semaines de jeu |
 | Q13 | « 1er du jour » et « le plus rapide » quand on est seul à jouer ? | Non attribués : il faut au moins 2 joueurs ce jour-là (`TROPHEES.MIN_JOUEURS_DUEL`) |
+| Q14 | Peut-on modifier la date de début, le nombre de jours ou de saisons d'une matière existante ? | Non : seul le nom est modifiable (D22). Supprimer et recréer la matière si besoin |
+| Q15 | Faut-il garder une trace de qui a modifié une question ? | Non : simple marqueur `manuelle`, pas d'historique |

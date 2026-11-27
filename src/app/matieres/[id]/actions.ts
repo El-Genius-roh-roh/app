@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { getSubjectFor } from "@/lib/subjects";
@@ -93,4 +94,26 @@ export async function importerChat(_prev: ChatState, fd: FormData): Promise<Chat
   } catch (e) {
     return { erreur: (e as Error).message };
   }
+}
+
+/* ---- gestion de la matière ---- */
+export async function renommerMatiere(fd: FormData) {
+  const id = await manager(fd);
+  const nom = String(fd.get("nom") ?? "").trim().slice(0, 80);
+  if (!id || !nom) return;
+  await q("update subjects set nom=$2 where id=$1", [id, nom]);
+  revalidatePath(`/matieres/${id}`);
+}
+
+export async function supprimerMatiere(fd: FormData) {
+  const id = await manager(fd);
+  if (!id) return;
+  const [s] = await q<{ group_id: string }>("select group_id from subjects where id=$1", [id]);
+  const docs = await q<{ id: string; fichier_path: string }>("select id,fichier_path from documents where subject_id=$1", [id]);
+  await q("delete from subjects where id=$1", [id]); // cascade : documents, jours, questions, tentatives, résultats
+  for (const d of docs) {
+    fs.rmSync(d.fichier_path, { force: true });
+    fs.rmSync(path.join(STORAGE, "pages", d.id), { recursive: true, force: true });
+  }
+  redirect(`/groupes/${s.group_id}`);
 }

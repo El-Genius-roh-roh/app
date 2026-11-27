@@ -37,10 +37,10 @@ export default function ChatPanel({ subjectId, prompt, dates }: { subjectId: str
               <li key={r.date} className={`rounded-2xl p-3 text-sm ${r.erreur ? "bg-rose-50" : "bg-emerald-50"}`}>
                 <p className="font-bold">{r.erreur ? "❌" : "✅"} {r.date}</p>
                 {r.erreur ? <p>{r.erreur}</p> : (
-                  <p>{r.report!.chat} question(s) du chat{r.report!.simulees ? ` + ${r.report!.simulees} simulée(s) pour compléter` : ""}</p>
+                  <p>{r.report!.chat} question(s) du chat{r.report!.manuelles ? ` + ${r.report!.manuelles} manuelle(s) conservée(s)` : ""}{r.report!.simulees ? ` + ${r.report!.simulees} simulée(s) pour compléter` : ""}</p>
                 )}
                 {r.report?.rejets.length ? (
-                  <details className="mt-1"><summary className="cursor-pointer text-xs font-bold">{r.report.rejets.length} rejetée(s)</summary>
+                  <details className="mt-1"><summary className="cursor-pointer text-xs">{r.report.rejets.length} rejetée(s)</summary>
                     <ul className="mt-1 list-disc pl-4 text-xs">{r.report.rejets.map((x, i) => <li key={i}>{x}</li>)}</ul></details>
                 ) : null}
               </li>

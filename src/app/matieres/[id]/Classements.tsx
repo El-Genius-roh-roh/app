@@ -1,6 +1,7 @@
 import Link from "next/link";
 import RankTable, { fmtMs, RankBadge } from "@/components/RankTable";
-import { defaultSeason, getDayRanking, getGroupRanking, getSeasonRanking, getSeasons, pickDay } from "@/lib/ranking";
+import { defaultSeason, getDayRanking, getGroupRanking, getSeasonHistory, getSeasonRanking, getSeasons, pickDay } from "@/lib/ranking";
+import ScoreChart from "@/components/ScoreChart";
 import { exploitsDuJour, ligueDe } from "@/lib/trophees";
 import { Exploits, LigueBadge } from "@/components/Trophees";
 import { CONFIG } from "@/config/constants";
@@ -15,6 +16,7 @@ export default async function Classements({ subjectId, groupId, userId, today, s
   const pointsGroupe = new Map((await getGroupRanking(groupId)).map((l) => [l.userId, l.points]));
   const dayId = await pickDay(subjectId, saison, today);
   const day = dayId ? await getDayRanking(dayId) : null;
+  const history = await getSeasonHistory(subjectId, saison);
   const finies = seasons.filter((s) => s.termine);
   const podiums = await Promise.all(finies.map(async (s) => ({ s, top: (await getSeasonRanking(subjectId, s.saison)).filter((l) => l.jours > 0).slice(0, 3) })));
 
@@ -41,6 +43,11 @@ export default async function Classements({ subjectId, groupId, userId, today, s
       <section className="card space-y-3">
         <h2 className="h2">🏆 Classement de la saison{seasons.length > 1 ? ` ${saison}` : ""}</h2>
         <RankTable meId={userId} lines={season.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, badge: <LigueBadge ligue={ligueDe(pointsGroupe.get(l.userId) ?? 0).ligue} /> }))} />
+      </section>
+
+      <section className="card space-y-3">
+        <h2 className="h2">📈 Évolution des scores</h2>
+        <ScoreChart data={history} meId={userId} maxQuestions={CONFIG.QUESTIONS_PAR_JOUR} />
       </section>
 
       {podiums.length > 0 && (

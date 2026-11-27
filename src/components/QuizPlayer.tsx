@@ -78,7 +78,7 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
       <div className={st.question.type === "vrai_faux" ? "grid grid-cols-2 gap-3" : "space-y-3"}>
         {st.question.choices.map((c, i) => (
           <button key={i} disabled={busy} onClick={() => answer(i)}
-            className={`w-full rounded-2xl bg-gradient-to-r ${st.question.type === "vrai_faux" ? (i === 0 ? COULEURS[3] : "from-rose-500 to-pink-400") : COULEURS[i % 4]} p-4 text-left text-lg font-bold text-white shadow-md transition active:scale-[0.98] disabled:opacity-60 ${st.question.type === "vrai_faux" ? "py-6 text-center text-xl" : ""}`}>
+            className={`w-full rounded-2xl bg-gradient-to-r ${st.question.type === "vrai_faux" ? (i === 0 ? COULEURS[3] : "from-rose-500 to-pink-400") : COULEURS[i % 4]} p-4 text-left text-lg text-white shadow-md transition active:scale-[0.98] disabled:opacity-60 ${st.question.type === "vrai_faux" ? "py-6 text-center text-xl" : ""}`}>
             <Tex className="block break-words">{c}</Tex>
           </button>
         ))}

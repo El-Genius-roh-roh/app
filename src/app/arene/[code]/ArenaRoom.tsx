@@ -115,7 +115,7 @@ export default function ArenaRoom({ code }: { code: string }) {
         </ul>
         {meHost ? (
           <div className="space-y-2">
-            <button onClick={() => act("bot")} className="w-full rounded-xl bg-white/20 p-3 font-semibold">+ Ajouter un bot 🤖</button>
+            <button onClick={() => act("bot")} className="w-full rounded-xl bg-white/20 p-3">+ Ajouter un bot 🤖</button>
             <button onClick={() => act("start")} className="w-full rounded-xl bg-emerald-400 p-4 text-lg font-black text-emerald-950 shadow-lg">
               Lancer la partie ({v.players.length} joueur{v.players.length > 1 ? "s" : ""})
             </button>
@@ -161,7 +161,7 @@ export default function ArenaRoom({ code }: { code: string }) {
             ))}
           </section>
         )}
-        <Link href="/arene" className="block rounded-xl bg-emerald-400 p-3 text-center font-bold text-emerald-950">Rejouer / retour à l&apos;Arène</Link>
+        <Link href="/arene" className="block rounded-xl bg-emerald-400 p-3 text-center text-emerald-950">Rejouer / retour à l&apos;Arène</Link>
       </Shell>
     );
   }
@@ -197,7 +197,7 @@ export default function ArenaRoom({ code }: { code: string }) {
           else if (chosen !== null && !isMine) cls += " opacity-40";
           return (
             <button key={i} disabled={!question || chosen !== null} onClick={() => send(i)}
-              className={`${cls} flex min-h-16 items-center gap-3 rounded-2xl p-4 text-left font-bold text-white shadow-lg transition active:scale-95 ${r.kind === "vf" ? "justify-center text-2xl" : ""}`}>
+              className={`${cls} flex min-h-16 items-center gap-3 rounded-2xl p-4 text-left text-white shadow-lg transition active:scale-95 ${r.kind === "vf" ? "justify-center text-2xl" : ""}`}>
               {r.kind !== "vf" && <span className="text-xl opacity-80">{SHAPES[i]}</span>}
               <Tex className="min-w-0 break-words">{c}</Tex>
               {!question && isKey && <span className="ml-auto">✓</span>}
