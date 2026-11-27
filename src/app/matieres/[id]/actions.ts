@@ -81,6 +81,26 @@ export async function jourSuivant(fd: FormData) {
 }
 
 /* ---- génération automatique par l'IA ---- */
+
+/** Explique précisément pourquoi il n'y a aucun quiz à générer. */
+async function pourquoiRienAGenerer(id: string, regenerer: boolean): Promise<string> {
+  const today = await todayParis(id);
+  const [d] = await q<{ cours: number; prets: number; jours: number; fin: string | null; avenir: number; avenir_libres: number }>(
+    `select (select count(*) from documents where subject_id=$1 and categorie='cours')::int as cours,
+            (select count(*) from documents where subject_id=$1 and categorie='cours' and statut='pret')::int as prets,
+            (select count(*) from game_days where subject_id=$1)::int as jours,
+            (select to_char(max(date),'DD/MM/YYYY') from game_days where subject_id=$1) as fin,
+            (select count(*) from game_days where subject_id=$1 and date >= $2::date)::int as avenir,
+            (select count(*) from game_days g where subject_id=$1 and date >= $2::date
+               and not exists (select 1 from attempts a where a.game_day_id=g.id))::int as avenir_libres`, [id, today]);
+  if (!d.cours) return "Aucun cours importé : ajoutez un PDF dans « Cours ».";
+  if (!d.prets) return "Le cours est encore en cours d'analyse (ou son import a échoué) : patientez puis réessayez.";
+  if (!d.jours || !d.avenir) return `La saison de cette matière est terminée (dernier quiz le ${d.fin ?? "?"}). Créez une nouvelle matière ou ajoutez une saison.`;
+  if (!regenerer) return "Tous les quiz à venir ont déjà leurs questions. Cochez « Refaire aussi les quiz déjà prêts » pour les réécrire avec l'IA.";
+  if (!d.avenir_libres) return "Tous les quiz à venir ont déjà été commencés par des joueurs : ils ne peuvent plus être modifiés.";
+  return "Rien à générer pour le moment.";
+}
+
 export type IaState = { resultats?: ImportResult; erreur?: string } | null;
 
 /** Écrit (ou réécrit, si personne n'a commencé) les quiz des prochains jours avec l'IA. */
@@ -88,9 +108,10 @@ export async function genererIA(_prev: IaState, fd: FormData): Promise<IaState> 
   const id = await manager(fd);
   if (!id) return { erreur: "Action réservée aux gestionnaires de la matière." };
   if (!llmConfigured()) return { erreur: "IA non configurée sur ce serveur (variables OPENAI_API_KEY et OPENAI_BASE_URL)." };
-  const resultats = await genererAvecIA(id, { regenerer: fd.get("regenerer") === "1", limit: 3 });
+  const regenerer = fd.get("regenerer") === "1";
+  const resultats = await genererAvecIA(id, { regenerer, limit: 3 });
   revalidatePath(`/matieres/${id}`);
-  if (!resultats.length) return { erreur: "Rien à générer : aucun quiz à venir sans questions (ou aucun cours importé)." };
+  if (!resultats.length) return { erreur: await pourquoiRienAGenerer(id, regenerer) };
   return { resultats };
 }
 

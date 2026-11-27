@@ -27,6 +27,8 @@ export type PromptOptions = {
   dayId?: string;
   /** Ne pas dépasser cette date (AAAA-MM-JJ). */
   jusquA?: string;
+  /** Jours à ignorer (déjà traités). */
+  exclure?: string[];
 };
 
 /** Prochains jours (à partir d'aujourd'hui) encore sans questions, ou à refaire. */
@@ -34,13 +36,13 @@ async function pendingDays(subjectId: string, o: PromptOptions = {}) {
   return q<{ id: string; subject_id: string; saison: number; jour_dans_saison: number; statut_generation: string; date: string }>(
     `select id, subject_id, saison, jour_dans_saison, statut_generation, to_char(date,'YYYY-MM-DD') as date
        from game_days g where subject_id=$1 and date >= $2::date
-        and ($4::uuid is null or id=$4::uuid) and ($6::date is null or date <= $6::date)
+        and ($4::uuid is null or id=$4::uuid) and ($6::date is null or date <= $6::date) and not (id = any($7::uuid[]))
         and (statut_generation<>'ok' or ($5 and not exists (select 1 from attempts a where a.game_day_id=g.id)))
       order by date limit $3`,
-    [subjectId, await todayParis(subjectId), o.limit ?? CONFIG.CHAT_JOURS_PAR_LOT, o.dayId ?? null, !!o.regenerer, o.jusquA ?? null]);
+    [subjectId, await todayParis(subjectId), o.limit ?? CONFIG.CHAT_JOURS_PAR_LOT, o.dayId ?? null, !!o.regenerer, o.jusquA ?? null, o.exclure ?? []]);
 }
 
-export async function buildChatPrompt(subjectId: string, o: PromptOptions = {}): Promise<{ prompt: string; dates: string[] } | null> {
+export async function buildChatPrompt(subjectId: string, o: PromptOptions = {}): Promise<{ prompt: string; dates: string[]; ids: string[] } | null> {
   const days = await pendingDays(subjectId, o);
   if (!days.length) return null;
   const [s] = await q<{ nom: string }>("select nom from subjects where id=$1", [subjectId]);
@@ -77,6 +79,7 @@ ${blocks.join("\n\n")}
 - Privilégie la compréhension et l'application plutôt que le par-cœur mot pour mot.
 - Écris TOUTES les formules, variables et symboles mathématiques en LaTeX entre dollars : $\\hat{\\beta} = (X^\\top X)^{-1} X^\\top y$, $\\alpha = 5\\,\\%$, $n \\geq 30$. Cela vaut pour l'énoncé, les choix et l'explication. Dans le JSON, double chaque antislash (\\\\frac, \\\\beta…).
 - Chaque choix fait au plus une phrase courte (moins de 150 caractères), écrite en entier.
+- Un QCM a TOUJOURS exactement 4 choix, tous différents. Si tu ne trouves pas 4 choix crédibles, fais plutôt un vrai/faux.
 - Distracteurs plausibles, de longueur comparable à la bonne réponse. Pas de « toutes les réponses ».
 - Explication courte (1 à 2 phrases) qui justifie la bonne réponse.
 - Pas deux questions identiques, y compris d'un jour à l'autre.${annales.length ? "\n- Inspire-toi du style et du niveau des annales fournies." : ""}
@@ -91,7 +94,7 @@ Réponds UNIQUEMENT avec un JSON valide, sans texte autour :
 ## Slides
 ${[...slides.entries()].map(([r, p]) => `[${r}]\n${clip(p.texte.trim(), CONFIG.CHAT_SLIDE_MAX_CARACTERES)}`).join("\n\n")}
 ${annales.length ? `\n## Annales (exemples de style)\n${annalesTxt}` : ""}`;
-  return { prompt, dates: days.map((d) => d.date) };
+  return { prompt, dates: days.map((d) => d.date), ids: days.map((d) => d.id) };
 }
 
 const QuestionSchema = z.object({

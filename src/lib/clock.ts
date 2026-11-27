@@ -11,14 +11,12 @@ const cle = (subjectId: string) => `demo_today:${subjectId}`;
  * Date du jour (YYYY-MM-DD) à Paris.
  * En mode démo (`DEMO_MODE=1`), **chaque matière a sa propre date** (réglage `demo_today:<id matière>`),
  * avancée par le bouton « Jour suivant » de la matière, indépendamment des autres matières.
- * Sans matière : la date démo commune (ancien réglage `demo_today`), sinon la vraie date.
+ * Une matière jamais avancée (ex. une matière qu'on vient de créer) suit la vraie date.
  */
 export async function todayParis(subjectId?: string): Promise<string> {
-  if (demo()) {
-    const rows = await q<{ key: string; value: string }>(
-      "select key, value from app_settings where key = any($1)", [subjectId ? [cle(subjectId), "demo_today"] : ["demo_today"]]);
-    const v = (subjectId && rows.find((r) => r.key === cle(subjectId))?.value) || rows.find((r) => r.key === "demo_today")?.value;
-    if (v) return v;
+  if (demo() && subjectId) {
+    const [r] = await q<{ value: string }>("select value from app_settings where key=$1", [cle(subjectId)]);
+    if (r?.value) return r.value;
   }
   return realToday();
 }
@@ -35,8 +33,7 @@ export async function setDemoToday(date: string, subjectId: string) {
 export function sqlToday(col: string): string {
   const real = `'${realToday()}'::date`; // format AAAA-MM-JJ produit par Intl : sûr dans la requête
   if (!demo()) return real;
-  return `coalesce((select value::date from app_settings where key = 'demo_today:' || ${col}::text),
-                   (select value::date from app_settings where key = 'demo_today'), ${real})`;
+  return `coalesce((select value::date from app_settings where key = 'demo_today:' || ${col}::text), ${real})`;
 }
 
 /** Date du jour la plus avancée parmi les matières d'un groupe (séries de jours, trophées). */

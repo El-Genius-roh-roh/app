@@ -18,16 +18,30 @@ export const verifierIA: Verifier = async (qs) => {
   return qs.map((_, i) => (typeof r[i] === "number" ? (r[i] as number) : null));
 };
 
+async function unAppel(subjectId: string, prompt: string): Promise<ImportResult> {
+  const txt = await chatLLM([{ role: "system", content: SYSTEME }, { role: "user", content: prompt }]);
+  return importChatAnswer(subjectId, txt, { verifier: verifierIA });
+}
+
 /** Génère (ou refait) les quiz des prochains jours d'une matière avec l'IA. Un appel par jour. */
 export async function genererAvecIA(subjectId: string, o: PromptOptions = {}): Promise<ImportResult> {
   const out: ImportResult = [];
   const max = o.limit ?? CONFIG.CHAT_JOURS_PAR_LOT;
+  const faits: string[] = []; // jours déjà traités : on passe au suivant (sinon « refaire » reprendrait toujours le même)
   for (let i = 0; i < max; i++) {
-    const p = await buildChatPrompt(subjectId, { ...o, limit: CONFIG.LLM_JOURS_PAR_APPEL });
+    const p = await buildChatPrompt(subjectId, { ...o, exclure: faits, limit: CONFIG.LLM_JOURS_PAR_APPEL });
     if (!p) break;
+    faits.push(...p.ids);
     try {
-      const txt = await chatLLM([{ role: "system", content: SYSTEME }, { role: "user", content: p.prompt }]);
-      const res = await importChatAnswer(subjectId, txt, { verifier: verifierIA });
+      let res = await unAppel(subjectId, p.prompt);
+      // des questions de l'IA ont été écartées et complétées par le générateur simulé : un second essai, si personne n'a joué
+      if (res.some((r) => r.report && r.report.simulees > 0)) {
+        const p2 = await buildChatPrompt(subjectId, { dayId: p.ids[0], regenerer: true, limit: 1 });
+        if (p2) {
+          const res2 = await unAppel(subjectId, p2.prompt).catch(() => null);
+          if (res2 && !res2.every((r) => r.erreur)) res = res2; // c'est ce second essai qui est maintenant en base
+        }
+      }
       out.push(...res);
       if (res.every((r) => r.erreur)) break; // rien d'importé : on n'insiste pas (évite une boucle)
     } catch (e) {
