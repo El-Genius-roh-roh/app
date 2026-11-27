@@ -20,6 +20,7 @@ export default async function Accueil() {
           <li key={g.id}><Link href={`/groupes/${g.id}`} className="block rounded border p-3">{g.nom} <span className="text-xs text-gray-500">({g.role})</span></Link></li>
         ))}
       </ul>
+      <Link href="/arene" className="block rounded-2xl bg-gradient-to-br from-indigo-600 to-fuchsia-600 p-4 text-white shadow"><b className="text-lg">⚔️ Arène</b><span className="block text-sm opacity-90">Duels en direct entre amis, classement par ligues</span></Link>
       <div className="flex gap-2">
         <Link href="/groupes/nouveau" className="flex-1 rounded bg-indigo-600 p-2 text-center text-white">Créer un groupe</Link>
         <Link href="/rejoindre" className="flex-1 rounded border p-2 text-center">Rejoindre</Link>
