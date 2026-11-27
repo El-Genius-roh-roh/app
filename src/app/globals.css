@@ -1,94 +1,98 @@
 @import "tailwindcss";
 
 /*
-  Direction « tableau d'affichage académique »
-  - Papier crème + encre presque noire, filets fins : on lit et on compare, rien ne flotte.
-  - UN seul accent d'action (orange brûlé). Vert / rouge = juste / faux, rien d'autre.
-  - Les couleurs de ligue (Bronze → Diamant) sont la seule autre famille de couleurs.
-  - Tous les chiffres (rangs, scores, chrono, Elo) en chiffres condensés de stade, à chasse fixe.
+  Direction « Arène de nuit » (skills ui-ux-pro-max + design-taste-frontend)
+  - Fond nuit, un seul accent d'action : bleu ciel (#5ab9fc), le « bleu quiz ».
+  - L'or est réservé aux classements (podium, rang, trophées) ; vert / rouge = juste / faux, rien d'autre.
+  - Couleurs de ligue (Bronze → Diamant) = seule autre famille. Jamais de violet.
+  - Titres Russo One (énergie compétitive), texte Geist (lecture), chiffres et étiquettes Chakra Petch à chasse fixe.
+  - Une seule famille de cartes, une seule paire de boutons, une seule échelle de rayons (8 / 12 / 16).
 */
 @theme {
   --font-sans: var(--nf-texte), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-titre: var(--nf-titre), ui-sans-serif, system-ui, sans-serif;
   --font-action: var(--nf-texte), ui-sans-serif, system-ui, sans-serif;
-  --font-num: var(--nf-num), ui-sans-serif, system-ui, sans-serif;
+  --font-num: var(--nf-num), ui-monospace, ui-sans-serif, system-ui, sans-serif;
 
-  --color-papier: #f4f1ea;
-  --color-papier-2: #ebe6db;
-  --color-carte: #fffdf8;
-  --color-trait: #ddd6c8;
-  --color-encre: #16151a;
-  --color-encre-2: #4a4750;
-  --color-encre-3: #7b7782;
-  --color-accent: #c2410c;
-  --color-accent-fonce: #9a3412;
-  --color-accent-pale: #fde7d9;
-  --color-ok: #15803d;
-  --color-ok-pale: #dcf3e3;
-  --color-ko: #b91c1c;
-  --color-ko-pale: #fbe1e1;
-  --color-nuit: #0f0f13;
-  --color-nuit-2: #1b1b22;
-  --color-nuit-trait: #2c2c36;
+  --color-fond: #0a0d14;
+  --color-surface: #131824;
+  --color-surface-2: #1a2131;
+  --color-ligne: #263044;
+  --color-texte: #e9edf3;
+  --color-texte-2: #aab4c6;
+  --color-texte-3: #7a869c;
+  --color-accent: #5ab9fc;
+  --color-accent-fort: #8fd0ff;
+  --color-sur-accent: #06101c;
+  --color-or: #f5b931;
+  --color-ok: #3ecf8e;
+  --color-ko: #ff6b6b;
 
-  --color-bronze: #a0632b;
-  --color-argent: #7d8794;
-  --color-or: #c9971c;
-  --color-platine: #2f8f9d;
-  --color-diamant: #5b5bd6;
+  --color-bronze: #c98a52;
+  --color-argent: #b6c0cc;
+  --color-platine: #4fd1c5;
+  --color-diamant: #8fb7ff;
 }
 
 @layer base {
-  html { -webkit-tap-highlight-color: transparent; }
-  body { min-height: 100dvh; background: var(--color-papier); color: var(--color-encre); }
-  h1, h2, h3 { font-family: var(--font-titre); letter-spacing: -0.02em; }
-  a, button, summary, [role="button"] { cursor: pointer; }
+  html { -webkit-tap-highlight-color: transparent; color-scheme: dark; }
+  body { min-height: 100dvh; background: var(--color-fond); color: var(--color-texte); }
+  /* place réservée à la barre d'onglets du bas (téléphone) */
+  @media (max-width: 1023.98px) { body:has(> nav[aria-label="Onglets"]) { padding-bottom: calc(64px + env(safe-area-inset-bottom)); } }
+  h1, h2, h3 { font-family: var(--font-titre); font-weight: 400; letter-spacing: 0.005em; }
+  a, button, summary, label[for], [role="button"] { cursor: pointer; }
   button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
-  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 6px; }
-  ::selection { background: var(--color-accent-pale); }
+  :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; border-radius: 8px; }
+  ::selection { background: color-mix(in oklab, var(--color-accent) 35%, transparent); }
   summary { list-style: none; }
   summary::-webkit-details-marker { display: none; }
+  input[type="file"]::file-selector-button { cursor: pointer; }
   @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 }
 
 @layer components {
   /* mise en page */
   .page { @apply mx-auto max-w-md space-y-6 px-4 pt-5 pb-16 lg:max-w-6xl lg:space-y-8 lg:px-8 lg:pt-8; }
-  .card { @apply rounded-xl border border-trait bg-carte p-4 lg:p-5; }
-  .verre { @apply rounded-xl border border-trait bg-carte; }
-  /* « tableau d'affichage » : le panneau sombre qui porte l'information du moment */
-  .hero { @apply rounded-2xl bg-encre p-5 text-papier lg:p-8; }
+  .card { @apply rounded-2xl border border-ligne bg-surface p-4 lg:p-5; }
+  .verre { @apply rounded-2xl border border-ligne bg-surface; }
+  /* panneau du moment (quiz du jour, partie en cours) : surface relevée, liseré bleu */
+  .hero { @apply relative overflow-hidden rounded-2xl border border-accent/30 bg-surface-2 p-5 lg:p-8; }
+  .entree { animation: entree 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 
   /* typo */
-  .title { @apply font-titre text-3xl font-extrabold tracking-tight lg:text-5xl; }
-  .h2 { @apply font-titre text-lg font-bold tracking-tight lg:text-xl; }
-  .eyebrow { @apply text-[11px] font-semibold tracking-[0.14em] text-encre-3 uppercase; }
+  .title { @apply font-titre text-3xl leading-tight lg:text-5xl; }
+  .h2 { @apply font-titre text-lg leading-snug lg:text-xl; }
+  .eyebrow { @apply font-num text-[12px] font-semibold tracking-[0.12em] text-texte-3 uppercase; }
   .num { @apply font-num tabular-nums; }
-  .muted { @apply text-sm text-encre-3; }
-  .lien { @apply font-semibold text-accent underline decoration-1 underline-offset-[3px] hover:text-accent-fonce; }
-  .back { @apply inline-flex items-center gap-1.5 text-sm font-medium text-encre-2 hover:text-accent; }
+  .muted { @apply text-sm text-texte-3; }
+  .lien { @apply font-medium text-accent underline decoration-accent/40 underline-offset-[3px] transition-colors hover:text-accent-fort hover:decoration-accent-fort; }
+  .back { @apply inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-texte-2 transition-colors hover:text-texte; }
 
-  /* boutons : un seul accent, le reste en encre */
+  /* boutons : une paire (plein bleu / contour), + danger */
   .btn, .btn-primary, .btn-orange, .btn-white, .btn-ghost, .btn-danger {
-    @apply inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[15px] font-semibold transition-colors select-none disabled:opacity-40;
+    @apply inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-[15px] font-semibold
+      transition-[background-color,border-color,color,transform] duration-150 select-none active:translate-y-px disabled:opacity-40 disabled:active:translate-y-0;
   }
-  .btn-primary { @apply bg-accent text-white hover:bg-accent-fonce; }
-  .btn-orange { @apply bg-encre text-papier hover:bg-encre-2; } /* action forte secondaire (encre) */
-  .btn-white { @apply border border-trait bg-carte text-encre hover:border-encre; }
-  .btn-ghost { @apply border border-encre/20 bg-transparent text-encre hover:bg-encre/5; }
-  .btn-danger { @apply border border-ko/30 bg-ko-pale text-ko hover:border-ko; }
+  .btn-primary, .btn-orange { @apply bg-accent text-sur-accent hover:bg-accent-fort; }
+  .btn-white, .btn-ghost { @apply border border-ligne bg-surface-2 text-texte hover:border-texte-3; }
+  .btn-danger { @apply border border-ko/40 bg-ko/10 text-ko hover:border-ko; }
 
-  .input { @apply w-full rounded-lg border border-trait bg-carte px-3.5 py-2.5 text-[15px] outline-none placeholder:text-encre-3 focus:border-encre focus:ring-2 focus:ring-accent/25; }
-  .chip { @apply inline-flex items-center gap-1 rounded-full border border-trait bg-carte px-2.5 py-0.5 text-xs font-semibold text-encre-2; }
+  .input { @apply w-full rounded-xl border border-ligne bg-fond px-3.5 py-2.5 text-base text-texte outline-none placeholder:text-texte-3 transition-colors focus:border-accent focus:ring-2 focus:ring-accent/25; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full border border-ligne bg-surface-2 px-2.5 py-0.5 font-num text-xs font-semibold text-texte-2; }
 
-  /* lignes de tableau (classements, listes) */
-  .rang { @apply font-num tabular-nums w-7 shrink-0 text-center text-lg leading-none font-bold text-encre-3; }
-  .ligne { @apply flex items-center gap-3 border-b border-trait px-3 py-2.5 last:border-b-0; }
+  /* listes et classements */
+  .liste { @apply overflow-hidden rounded-2xl border border-ligne bg-surface; }
+  .ligne { @apply flex min-h-12 items-center gap-3 border-b border-ligne px-3 py-2 last:border-b-0; }
+  .rang { @apply w-7 shrink-0 text-center font-num text-lg leading-none font-bold tabular-nums text-texte-3; }
+  /* carte cliquable : se soulève de 2 px au survol */
+  .tuile { @apply block rounded-2xl border border-ligne bg-surface p-4 transition-[transform,border-color] duration-200 hover:-translate-y-0.5 hover:border-texte-3; }
 
-  /* variante nuit (Arène) */
-  .nuit { @apply bg-nuit text-papier; }
-  .carte-nuit { @apply rounded-xl border border-nuit-trait bg-nuit-2; }
+  /* compat (Arène et anciens écrans) */
+  .nuit { @apply bg-fond text-texte; }
+  .carte-nuit { @apply rounded-2xl border border-ligne bg-surface; }
 }
+
+@keyframes entree { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* Questions et réponses « façon LaTeX » : police Computer Modern de KaTeX, formules sans barre de défilement. */
 .tex { font-family: KaTeX_Main, "Latin Modern Roman", "CMU Serif", "Times New Roman", serif; letter-spacing: 0; overflow-wrap: anywhere; }
