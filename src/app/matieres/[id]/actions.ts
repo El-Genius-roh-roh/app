@@ -10,6 +10,7 @@ import { processDocument, STORAGE } from "@/lib/ingest";
 import { rebuildSchedule } from "@/lib/schedule";
 import { freezePastDays, generateUpcoming } from "@/lib/quiz/service";
 import { addDays, setDemoToday, todayParis } from "@/lib/clock";
+import { importChatAnswer, type ImportResult } from "@/lib/quiz/chat";
 
 async function manager(fd: FormData) {
   const user = await requireUser();
@@ -75,4 +76,21 @@ export async function jourSuivant(fd: FormData) {
   await freezePastDays(); // clôture les tentatives de la veille et fige ses résultats
   await generateUpcoming(); // quiz du jour et du lendemain
   revalidatePath(`/matieres/${id}`);
+}
+
+/* ---- génération par le chat (copier-coller) ---- */
+export type ChatState = { resultats?: ImportResult; erreur?: string } | null;
+
+export async function importerChat(_prev: ChatState, fd: FormData): Promise<ChatState> {
+  const id = await manager(fd);
+  if (!id) return { erreur: "Action réservée aux gestionnaires de la matière." };
+  const texte = String(fd.get("reponse") ?? "");
+  if (!texte.trim()) return { erreur: "Colle la réponse du chat." };
+  try {
+    const resultats = await importChatAnswer(id, texte);
+    revalidatePath(`/matieres/${id}`);
+    return { resultats };
+  } catch (e) {
+    return { erreur: (e as Error).message };
+  }
 }

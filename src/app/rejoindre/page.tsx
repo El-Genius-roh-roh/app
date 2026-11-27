@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 
@@ -9,11 +10,12 @@ async function aller(fd: FormData) {
 export default async function Page() {
   await requireUser();
   return (
-    <main className="mx-auto max-w-sm p-6 space-y-3">
-      <h1 className="text-xl font-bold">Rejoindre un groupe</h1>
-      <form action={aller} className="space-y-3">
-        <input name="code" required maxLength={6} placeholder="Code à 6 caractères" className="w-full rounded border p-2 uppercase tracking-widest" />
-        <button className="w-full rounded bg-indigo-600 p-2 text-white">Continuer</button>
+    <main className="page max-w-sm">
+      <Link href="/" className="back">← Accueil</Link>
+      <h1 className="title">Rejoindre un groupe</h1>
+      <form action={aller} className="card space-y-3">
+        <input name="code" required maxLength={6} placeholder="CODE" className="input text-center text-2xl font-extrabold uppercase tracking-[0.4em]" />
+        <button className="btn-primary">Continuer</button>
       </form>
     </main>
   );

@@ -1,7 +1,7 @@
 import path from "path";
 import { q } from "./db";
 import { extractPdf } from "./pdf";
-import { analyzePages, buildExamProfile } from "./ai";
+import { analyzePages } from "./ai";
 import { rebuildSchedule } from "./schedule";
 
 export const STORAGE = path.join(process.cwd(), "storage");
@@ -11,7 +11,7 @@ async function logCall(subjectId: string, etape: string, ms: number, statut: str
     [subjectId, etape, "mock", ms, statut]);
 }
 
-/** Traitement en tâche de fond : extraction → analyse → (programme | profil d'examen). */
+/** Traitement en tâche de fond : extraction → analyse → découpage en jours (cours). */
 export async function processDocument(docId: string) {
   const [doc] = await q<{ id: string; subject_id: string; categorie: "cours" | "annale"; fichier_path: string }>(
     "select id,subject_id,categorie,fichier_path from documents where id=$1", [docId]);
@@ -32,17 +32,8 @@ export async function processDocument(docId: string) {
     }
     await q("update documents set nb_pages=$2, statut='pret', erreur=null where id=$1", [doc.id, pages.length]);
 
-    if (doc.categorie === "cours") {
-      await rebuildSchedule(doc.subject_id);
-    } else {
-      const texts = await q<{ t: string }>(
-        `select string_agg(p.texte, E'\n' order by p.numero) as t from documents d join document_pages p on p.document_id=d.id
-          where d.subject_id=$1 and d.categorie='annale' and d.statut='pret' group by d.id`, [doc.subject_id]);
-      const t1 = Date.now();
-      const profil = await buildExamProfile(texts.map((r) => r.t));
-      await logCall(doc.subject_id, "profil_examen", Date.now() - t1, "ok");
-      await q("update subjects set profil_examen=$2 where id=$1", [doc.subject_id, JSON.stringify(profil)]);
-    }
+    // les annales servent d'exemples de style dans le prompt envoyé au chat
+    if (doc.categorie === "cours") await rebuildSchedule(doc.subject_id);
   } catch (e) {
     console.error("processDocument", e);
     await q("update documents set statut='erreur', erreur=$2 where id=$1", [docId, String((e as Error).message).slice(0, 300)]);

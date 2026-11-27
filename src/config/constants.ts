@@ -13,4 +13,9 @@ export const CONFIG = {
   CODE_INVITATION_LONGUEUR: 6,
   RATIO_QCM: 0.8,
   MAX_REGENERATIONS: 2,
+  // génération par copier-coller dans le chat
+  CHAT_JOURS_PAR_LOT: 3,
+  CHAT_SLIDES_REVISION: 6,
+  CHAT_SLIDE_MAX_CARACTERES: 1500,
+  CHAT_ANNALES_MAX_CARACTERES: 6000,
 } as const;

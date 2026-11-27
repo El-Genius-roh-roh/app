@@ -1,26 +1,33 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Thème vif : violet / rose / orange, cartes blanches arrondies. */
+@theme {
+  --font-sans: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100dvh;
+  color: #1e1b4b;
+  background:
+    radial-gradient(circle at 0% 0%, #f0abfc55 0, transparent 40%),
+    radial-gradient(circle at 100% 20%, #fdba7455 0, transparent 40%),
+    radial-gradient(circle at 50% 100%, #67e8f955 0, transparent 45%),
+    #faf5ff;
+}
+
+@layer components {
+  .page { @apply mx-auto max-w-md space-y-5 px-4 pt-5 pb-12; }
+  .card { @apply rounded-3xl bg-white p-4 shadow-[0_6px_24px_-8px_rgb(124_58_237/0.25)]; }
+  .hero { @apply rounded-3xl bg-gradient-to-br from-violet-600 via-fuchsia-500 to-orange-400 p-5 text-white shadow-lg shadow-fuchsia-300/50; }
+  .title { @apply text-2xl font-extrabold tracking-tight; }
+  .h2 { @apply text-lg font-extrabold; }
+  .back { @apply inline-flex items-center gap-1 rounded-full bg-white/80 px-3 py-1 text-sm font-semibold text-violet-700 shadow-sm; }
+  .btn, .btn-primary, .btn-orange, .btn-white, .btn-ghost { @apply inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 font-bold transition active:scale-[0.98] disabled:opacity-50; }
+  .btn-primary { @apply bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md shadow-fuchsia-300/60; }
+  .btn-orange { @apply bg-gradient-to-r from-orange-500 to-amber-400 text-white shadow-md shadow-orange-300/60; }
+  .btn-white { @apply bg-white text-violet-700 shadow-md; }
+  .btn-ghost { @apply border-2 border-violet-200 bg-white text-violet-700; }
+  .input { @apply w-full rounded-2xl border-2 border-violet-100 bg-white px-4 py-3 outline-none focus:border-fuchsia-400; }
+  .chip { @apply rounded-full px-3 py-1 text-xs font-bold; }
+  .muted { @apply text-sm text-slate-500; }
 }

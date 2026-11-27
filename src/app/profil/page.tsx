@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser, clearSession } from "@/lib/auth";
 import { q } from "@/lib/db";
@@ -17,13 +18,14 @@ export default async function Profil() {
   const u = await getUser();
   if (!u) redirect("/login");
   return (
-    <main className="mx-auto max-w-sm p-6 space-y-4">
-      <h1 className="text-xl font-bold">Mon profil</h1>
-      <form action={enregistrer} className="space-y-3">
-        <input name="pseudo" defaultValue={u.pseudo ?? ""} required minLength={2} placeholder="Pseudo (affiché dans les classements)" className="w-full rounded border p-2" />
-        <button className="w-full rounded bg-indigo-600 p-2 text-white">Enregistrer</button>
+    <main className="page max-w-sm">
+      <Link href="/" className="back">← Accueil</Link>
+      <h1 className="title">Mon profil</h1>
+      <form action={enregistrer} className="card space-y-3">
+        <input name="pseudo" defaultValue={u.pseudo ?? ""} required minLength={2} placeholder="Pseudo" className="input" />
+        <button className="btn-primary">Enregistrer</button>
       </form>
-      <form action={quitter}><button className="text-sm text-gray-500 underline">Se déconnecter</button></form>
+      <form action={quitter}><button className="muted underline">Se déconnecter</button></form>
     </main>
   );
 }

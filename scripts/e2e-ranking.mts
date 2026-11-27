@@ -2,7 +2,7 @@
 import pg from "pg";
 import { getSeasonRanking, getGroupRanking, getDayRanking, getSeasons } from "../src/lib/ranking";
 
-const BASE = "http://localhost:3000";
+const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
 await db.query("set search_path to revision_app");
@@ -94,9 +94,8 @@ const gOld = (await db.query("insert into game_days(subject_id,saison,jour_dans_
 const gNew = (await db.query("insert into game_days(subject_id,saison,jour_dans_saison,date,fige) values ($1,1,2,$2,true) returning id", [s2.id, plus(-1)])).rows[0].id;
 const ins = (g: string, u: string, p: number) => db.query("insert into daily_results(game_day_id,user_id,rang,erreurs,duree_ms,joueurs_battus,points_base,multiplicateur,points,provisoire) values ($1,$2,1,0,1000,0,10,1,$3,false)", [g, u, p]);
 await ins(gOld, users.Bob.id, 100); await ins(gNew, users.Alice.id, 30);
-const all = await getGroupRanking(GID, "debut"), r30 = await getGroupRanking(GID, "30j");
+const all = await getGroupRanking(GID);
 ok(all.map((l) => `${l.pseudo}:${l.points}`).join() === "Bob:153,Alice:77,Chloé:43,Dana:0", `depuis le début : Bob 153, Alice 77 (${all.map((l) => l.pseudo + ":" + l.points)})`);
-ok(r30.map((l) => `${l.pseudo}:${l.points}`).join() === "Alice:77,Bob:53,Chloé:43,Dana:0", `30 derniers jours exclut les 40 jours : Alice 77, Bob 53 (${r30.map((l) => l.pseudo + ":" + l.points)})`);
 
 console.log("Gel idempotent");
 const before = JSON.stringify(await pts(await dayId(D2)));
@@ -112,9 +111,9 @@ const d3 = await pts(await dayId(D3));
 ok(Object.values(d3).every((v: any) => v[1] === false), "jour 3 gelé à son tour");
 const html = (await (await fetch(`${BASE}/matieres/${SID}?saison=1`, { headers: { cookie: users.Alice.cookie } })).text()).replace(/<!-- -->/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
 ok(html.includes("Saisons terminées") && html.includes("53 pts") && html.includes("Classement de la saison 1"), "page matière : classement + podiums des saisons terminées");
-ok(html.includes("jour 3") && html.includes("Chloé") && html.includes("définitif"), "saison terminée : le classement du jour montre le dernier jour joué (jour 3)");
-const ghtml = await (await fetch(`${BASE}/groupes/${GID}?periode=30j`, { headers: { cookie: users.Alice.cookie } })).text();
-ok(ghtml.includes("Classement général") && ghtml.includes("Depuis le début"), "page groupe : classement général avec périodes");
+ok(html.includes("jour 3") && html.includes("Chloé"), "saison terminée : le classement du jour montre le dernier jour joué (jour 3)");
+const ghtml = await (await fetch(`${BASE}/groupes/${GID}`, { headers: { cookie: users.Alice.cookie } })).text();
+ok(ghtml.includes("Classement général") && !ghtml.includes("30 derniers jours"), "page groupe : classement général (depuis le début)");
 
 await db.query("delete from subjects where id=$1", [s2.id]);
 await db.query("delete from app_settings where key='demo_today'");

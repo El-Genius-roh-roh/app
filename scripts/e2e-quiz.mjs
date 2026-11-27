@@ -1,6 +1,6 @@
 // Test de bout en bout de la phase 3 (serveur de dev lancé sur :3000, base locale).
 import pg from "pg";
-const BASE = "http://localhost:3000";
+const BASE = process.env.E2E_BASE ?? "http://localhost:3000";
 const db = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await db.connect();
 await db.query("set search_path to revision_app");
@@ -96,7 +96,7 @@ ok(dr[0].pseudo === "Alice" && dr[0].joueurs_battus === 2 && dr[0].points === 20
 
 console.log("Pages");
 const page = await (await fetch(`${BASE}/quiz/${d1.id}`, { headers: { cookie: users.Alice.cookie } })).text();
-ok(page.includes("Correction") && page.includes("Revoir la slide"), "écran de correction avec lien vers la slide");
+ok(page.includes("Voir la slide"), "écran de correction avec lien vers la slide");
 
 console.log("Jour suivant : 7 nouvelles + 3 révision");
 const tomorrow = new Date(Date.parse(today) + 86400000).toISOString().slice(0, 10);

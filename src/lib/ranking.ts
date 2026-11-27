@@ -1,6 +1,6 @@
 import { q } from "./db";
 import { classementCumule, type CumulRanked } from "./scoring";
-import { addDays, todayParis } from "./clock";
+import { todayParis } from "./clock";
 
 export type CumulRow = { userId: string; pseudo: string; points: number; erreurs: number; dureeMs: number; jours: number };
 export type CumulLine = CumulRanked<CumulRow>;
@@ -22,19 +22,16 @@ export async function getSeasonRanking(subjectId: string, saison: number): Promi
   return classementCumule(rows);
 }
 
-export type Periode = "debut" | "30j";
-
-/** Classement général d'un groupe : somme de toutes les matières. */
-export async function getGroupRanking(groupId: string, periode: Periode): Promise<CumulLine[]> {
+/** Classement général d'un groupe : somme de toutes les matières, depuis le début. */
+export async function getGroupRanking(groupId: string): Promise<CumulLine[]> {
   const today = await todayParis();
-  const from = periode === "30j" ? addDays(today, -29) : "1900-01-01";
   const rows = await q<CumulRow>(
     `select ${CUMUL_SELECT}
        from group_members gm
        join profiles p on p.id=gm.user_id
        left join (select r.* from daily_results r join game_days g on g.id=r.game_day_id join subjects s on s.id=g.subject_id
-                   where s.group_id=$1 and g.date >= $2::date and g.date <= $3::date) r on r.user_id=p.id
-      where gm.group_id=$1 group by p.id, p.pseudo`, [groupId, from, today]);
+                   where s.group_id=$1 and g.date <= $2::date) r on r.user_id=p.id
+      where gm.group_id=$1 group by p.id, p.pseudo`, [groupId, today]);
   return classementCumule(rows);
 }
 
