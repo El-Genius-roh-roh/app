@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { llmConfigured, preparerEnArrierePlan } from "@/lib/quiz/ai";
+import { etatGenerationIA, llmConfigured, preparerEnArrierePlan } from "@/lib/quiz/ai";
 import IaPanel from "./IaPanel";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
@@ -30,6 +30,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
   const today = await todayParis(id);
   const enCours = docs.some((d) => d.statut === "traitement");
   if (!enCours) preparerEnArrierePlan(id); // l'IA prépare les prochains quiz sans bloquer la page
+  const etatIA = canManage ? etatGenerationIA(id) : null;
   const soeurs = await q<{ id: string; nom: string }>("select id,nom from subjects where group_id=$1 order by created_at", [s.group_id]);
   const suivante = soeurs.length > 1 ? soeurs[(soeurs.findIndex((m) => m.id === id) + 1) % soeurs.length] : null;
 
@@ -68,7 +69,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
 
   return (
     <main className="page">
-      <AutoRefresh every={enCours ? 3000 : 15000} />
+      <AutoRefresh every={enCours || etatIA?.enCours ? 3000 : 15000} />
       <Link href={`/groupes/${s.group_id}`} className="back">Groupe</Link>
       <header className="hero space-y-4">
         <h1 className="title">{s.nom}</h1>
@@ -80,7 +81,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
           <Classements subjectId={id} nom={s.nom} groupId={s.group_id} userId={u.id} today={today} saisonParam={saisonParam} />
         </div>
         <div className="space-y-5">
-          {canManage && llmConfigured() && <IaPanel subjectId={id} />}
+          {canManage && llmConfigured() && <IaPanel subjectId={id} etat={etatIA} secondes={etatIA?.enCours ? Math.round((Date.now() - etatIA.debut) / 1000) : 0} />}
           {canManage && (
             <div className="grid gap-3 sm:grid-cols-2">
               <Link href={`/matieres/${id}/chat`} className="btn-orange">Générer avec le chat</Link>

@@ -11,7 +11,7 @@ export default function AutoRefresh({ every = 15000 }: { every?: number }) {
   useEffect(() => {
     const occupe = () => {
       const el = document.activeElement;
-      return document.hidden || (el instanceof HTMLElement && el.matches("input, textarea, select, [contenteditable]"));
+      return document.hidden || (el instanceof HTMLElement && el.matches("input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=button]), textarea, select, [contenteditable]"));
     };
     const t = setInterval(() => { if (!occupe()) router.refresh(); }, every);
     const retour = () => { if (!document.hidden) router.refresh(); };

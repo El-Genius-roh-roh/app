@@ -36,7 +36,8 @@ async function unAppel(subjectId: string, prompt: string, budgetS?: number): Pro
   const t0 = Date.now();
   const txt = await chatLLM([{ role: "system", content: SYSTEME }, { role: "user", content: prompt }], { timeoutS: budgetS });
   const reste = budgetS === undefined ? undefined : Math.max(5, budgetS - (Date.now() - t0) / 1000);
-  return importChatAnswer(subjectId, txt, { verifier: verifierIA(reste) });
+  // un joueur attend (budget) : vérification rapide, sans réflexion, pour tenir dans le délai
+  return importChatAnswer(subjectId, txt, { verifier: verifierIA(reste, budgetS === undefined ? CONFIG.LLM_VERIF_REFLEXION : false) });
 }
 
 /** Génère (ou refait) les quiz des prochains jours d'une matière avec l'IA. Un appel par jour. */
@@ -71,7 +72,38 @@ export async function genererAvecIA(subjectId: string, o: PromptOptions = {}): P
 }
 
 // Une seule génération à la fois par matière (plusieurs pages ouvertes = un seul appel).
-const enCours = new Map<string, Promise<ImportResult>>();
+// Rangé sur globalThis : la page et l'action serveur partagent bien le même état.
+const g = globalThis as unknown as { __iaEnCours?: Map<string, Promise<ImportResult>>; __iaEtat?: Map<string, EtatIA> };
+const enCours = (g.__iaEnCours ??= new Map<string, Promise<ImportResult>>());
+
+/** Génération lancée depuis le bouton « Générer avec l'IA » : en cours, ou son dernier compte rendu. */
+export type EtatIA = { enCours: boolean; debut: number; fin?: number; resultats?: ImportResult; erreur?: string };
+const etats = (g.__iaEtat ??= new Map<string, EtatIA>());
+
+export function etatGenerationIA(subjectId: string): EtatIA | null {
+  return etats.get(subjectId) ?? null;
+}
+
+/**
+ * Lance la génération en ARRIÈRE-PLAN et rend la main tout de suite : écrire et vérifier 3 quiz prend
+ * 1 à 2 minutes, bien plus que ce que le proxy d'Onyxia laisse à une requête (sinon « unexpected response »).
+ * `siVide` explique pourquoi il n'y avait rien à générer.
+ */
+export function lancerGenerationIA(subjectId: string, o: PromptOptions, siVide: () => Promise<string>): void {
+  if (etats.get(subjectId)?.enCours) return;
+  const etat: EtatIA = { enCours: true, debut: Date.now() };
+  etats.set(subjectId, etat);
+  // si une préparation automatique tourne déjà pour cette matière, on attend qu'elle finisse
+  const avant = (enCours.get(subjectId) ?? Promise.resolve([] as ImportResult)).catch(() => [] as ImportResult);
+  void avant
+    .then(() => unique(subjectId, () => genererAvecIA(subjectId, o)))
+    .then(async (resultats) => {
+      if (resultats.length) etat.resultats = resultats;
+      else etat.erreur = await siVide();
+    })
+    .catch((e) => { etat.erreur = `IA : ${(e as Error).message}`; })
+    .finally(() => { etat.enCours = false; etat.fin = Date.now(); });
+}
 
 function unique(key: string, f: () => Promise<ImportResult>): Promise<ImportResult> {
   const p = enCours.get(key);

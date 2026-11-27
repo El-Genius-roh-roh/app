@@ -37,11 +37,11 @@ export type PromptOptions = {
 async function pendingDays(subjectId: string, o: PromptOptions = {}) {
   return q<{ id: string; subject_id: string; saison: number; jour_dans_saison: number; statut_generation: string; date: string }>(
     `select id, subject_id, saison, jour_dans_saison, statut_generation, to_char(date,'YYYY-MM-DD') as date
-       from game_days g where subject_id=$1 and date >= $2::date
+       from game_days g where subject_id=$1 and date >= $2::date - $8::int -- jours passés encore rattrapables (D29)
         and ($4::uuid is null or id=$4::uuid) and ($6::date is null or date <= $6::date) and not (id = any($7::uuid[]))
         and (statut_generation<>'ok' or ($5 and not exists (select 1 from attempts a where a.game_day_id=g.id)))
       order by date limit $3`,
-    [subjectId, await todayParis(subjectId), o.limit ?? CONFIG.CHAT_JOURS_PAR_LOT, o.dayId ?? null, !!o.regenerer, o.jusquA ?? null, o.exclure ?? []]);
+    [subjectId, await todayParis(subjectId), o.limit ?? CONFIG.CHAT_JOURS_PAR_LOT, o.dayId ?? null, !!o.regenerer, o.jusquA ?? null, o.exclure ?? [], CONFIG.RATTRAPAGE_JOURS]);
 }
 
 export async function buildChatPrompt(subjectId: string, o: PromptOptions = {}): Promise<{ prompt: string; dates: string[]; ids: string[] } | null> {
