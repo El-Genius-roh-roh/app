@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ARENA } from "@/config/constants";
+import { ARENA, COURSE } from "@/config/constants";
 import { rng } from "../rng";
 import {
-  advance, buildRounds, eloChanges, newState, pointsFor, startGame, submitAnswer, tierOf, viewFor,
+  advance, buildRounds, eloChanges, newState, pointsFor, ranking, startGame, submitAnswer, tierOf, viewFor,
   type PoolQuestion, type State,
 } from "./engine";
 
@@ -11,7 +11,7 @@ const pool: PoolQuestion[] = Array.from({ length: 12 }, (_, i) => ({
   choix: i % 4 === 3 ? ["Vrai", "Faux"] : ["A", "B", "C", "D"], correct_index: i % 4 === 3 ? 0 : 1, explication: `Expl ${i}`,
 }));
 
-function game(mode: "blitz" | "vf" | "mix" = "blitz", n = 3): State {
+function game(mode: "blitz" | "vf" | "mix" | "course" = "blitz", n = 3): State {
   const s = newState("ABCD", "g1", { id: "u1", name: "Alice" }, mode, n);
   s.players.push({ id: "u2", name: "Bob", bot: false, skill: 0, score: 0, streak: 0, left: false, answers: {} });
   startGame(s, buildRounds(pool, mode, n, rng(42)), 0);
@@ -127,5 +127,45 @@ describe("Elo et ligues", () => {
     expect(tierOf(900)).toBe("Bronze");
     expect(tierOf(1000)).toBe("Argent");
     expect(tierOf(1450)).toBe("Diamant");
+  });
+});
+
+describe("mode Course", () => {
+  // manche 0 : Alice bonne et la plus rapide (turbo), Bob faux ; manche 1 : Alice sans réponse, Bob bon
+  it("bonne réponse : avance (+ turbo pour la plus rapide), erreur : recule, pas de réponse : reste", () => {
+    const s = game("course", 5);
+    const key = s.rounds[0].key;
+    expect(submitAnswer(s, "u1", 0, key, 1000).ok).toBe(true);
+    expect(submitAnswer(s, "u2", 0, (key + 1) % 4, 2000).ok).toBe(true);
+    advance(s, 2001);
+    const [a, b] = s.players;
+    expect(a.pos).toBe(COURSE.BONNE + COURSE.TURBO);
+    expect(a.answers[0]).toMatchObject({ move: COURSE.BONNE + COURSE.TURBO, turbo: true });
+    expect(b.pos).toBe(0); // pas de recul sous la case départ
+    advance(s, 2001 + ARENA.REVEAL_S * 1000); // manche 1
+    expect(s.idx).toBe(1);
+    submitAnswer(s, "u2", 1, s.rounds[1].key, s.roundStart + 500);
+    advance(s, s.deadline + 1);
+    expect(a.pos).toBe(COURSE.BONNE + COURSE.TURBO); // temps écoulé : sur place
+    expect(b.pos).toBe(COURSE.BONNE + COURSE.TURBO);
+  });
+  it("une erreur fait reculer une voiture déjà partie", () => {
+    const s = game("course", 5);
+    s.players[0].pos = 4;
+    submitAnswer(s, "u1", 0, (s.rounds[0].key + 1) % 4, 1000);
+    submitAnswer(s, "u2", 0, (s.rounds[0].key + 1) % 4, 1000);
+    advance(s, 1001);
+    expect(s.players[0].pos).toBe(4 - COURSE.ERREUR);
+  });
+  it("s'arrête dès qu'une voiture passe la ligne, classement par position", () => {
+    const s = game("course", 5);
+    s.players[1].pos = COURSE.ARRIVEE - 1;
+    s.players[0].score = 99999;
+    submitAnswer(s, "u2", 0, s.rounds[0].key, 1000);
+    submitAnswer(s, "u1", 0, (s.rounds[0].key + 1) % 4, 1000);
+    advance(s, 1001 + ARENA.REVEAL_S * 1000);
+    expect(s.phase).toBe("final");
+    expect(s.players[1].pos).toBe(COURSE.ARRIVEE);
+    expect(ranking(s)[0].id).toBe("u2");
   });
 });

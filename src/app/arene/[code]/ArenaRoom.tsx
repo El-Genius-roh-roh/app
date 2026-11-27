@@ -6,11 +6,11 @@ import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
 
 type P = {
-  id: string; name: string; bot: boolean; left: boolean; host: boolean; score: number; streak: number; rank: number;
-  answered: boolean; round?: { ok: boolean; pts: number; bonus: number; missed: boolean; choice: number | null };
+  id: string; name: string; bot: boolean; left: boolean; host: boolean; score: number; streak: number; rank: number; pos: number;
+  answered: boolean; round?: { ok: boolean; pts: number; bonus: number; missed: boolean; choice: number | null; move: number; turbo: boolean };
 };
 type View = {
-  v: number; now: number; code: string; phase: "lobby" | "question" | "reveal" | "final"; modeTitre: string; host: string; me: string;
+  v: number; now: number; code: string; phase: "lobby" | "question" | "reveal" | "final"; mode: string; modeTitre: string; arrivee: number; host: string; me: string;
   idx: number; nrounds: number; deadline: number; phaseStart: number; revealMs: number; players: P[]; classee: boolean;
   round?: { kind: "qcm" | "vf"; enonce: string; choices: string[]; limitMs: number; key?: number; explication?: string };
   my?: { answered: boolean; choice: number | null };
@@ -26,6 +26,56 @@ const CASES = [
   { fond: "#0f6e78", ombre: "#0a4a51", forme: "M4 4h16v16H4z" },                                    // sarcelle, carré
 ];
 const JOUEURS = ["#0a4ac5", "#943501", "#036a34", "#a7001c", "#573f02", "#515962"];
+/** Couleur stable d'un joueur (la liste est triée par classement, l'ordre change d'une manche à l'autre). */
+const couleur = (id: string) => JOUEURS[[...id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % JOUEURS.length];
+
+/** Petite voiture vue de profil, tournée vers l'arrivée. */
+function Voiture({ fond, size = 40 }: { fond: string; size?: number }) {
+  return (
+    <svg width={size} height={size / 2} viewBox="0 0 40 20" aria-hidden className="shrink-0">
+      <path d="M9 8 13.5 2.5h12L31 8z" fill={fond} />
+      <rect x="1.5" y="7.5" width="37" height="8.5" rx="3.5" fill={fond} />
+      <path d="M15 7.5 17.2 4h3.8v3.5zM23 4h2.4l3 3.5H23z" fill="#fff" opacity=".8" />
+      <rect x="35" y="9.5" width="3" height="2" rx="1" fill="#f1b620" />
+      <circle cx="10.5" cy="16" r="3.3" fill="#181c21" /><circle cx="10.5" cy="16" r="1.3" fill="#b9c2cd" />
+      <circle cx="29.5" cy="16" r="3.3" fill="#181c21" /><circle cx="29.5" cy="16" r="1.3" fill="#b9c2cd" />
+    </svg>
+  );
+}
+
+/** Mode Course : une ligne par joueur ; la voiture avance sur une bonne réponse, recule sur une erreur. */
+function Piste({ players, me, arrivee, reveal }: { players: P[]; me: string; arrivee: number; reveal: boolean }) {
+  const lignes = [...players].sort((a, b) => a.id.localeCompare(b.id)); // ordre fixe : les voitures ne changent pas de ligne
+  return (
+    <section className="card space-y-2 p-3 lg:p-4" aria-label="Piste de la course">
+      {lignes.map((p) => {
+        const m = reveal ? p.round : undefined;
+        return (
+          <div key={p.id} className={`flex items-center gap-2 ${p.left ? "opacity-40" : ""}`}>
+            <span className={`w-16 shrink-0 truncate text-xs font-bold sm:w-24 sm:text-sm ${p.id === me ? "text-accent-fort" : ""}`}>{p.name}</span>
+            <div className="relative h-9 flex-1 rounded-[10px] bg-surface-2"
+              role="img" aria-label={`${p.name} : case ${p.pos} sur ${arrivee}${m ? (m.move > 0 ? `, avance de ${m.move}` : m.move < 0 ? `, recule de ${-m.move}` : ", reste sur place") : ""}`}>
+              <div aria-hidden className="absolute inset-y-1 right-3 left-1 flex">
+                {Array.from({ length: arrivee }, (_, i) => <span key={i} className="flex-1 border-r border-dashed border-ligne-forte/70 last:border-r-0" />)}
+              </div>
+              <span aria-hidden className="absolute inset-y-0 right-0 w-2.5 rounded-r-[10px] bg-[repeating-conic-gradient(var(--color-texte)_0_25%,var(--color-surface)_0_50%)] bg-[length:6px_6px]" />
+              <span className="absolute top-1/2 transition-[left] duration-700 ease-out" style={{ left: `calc(${p.pos / arrivee} * (100% - 44px))`, translate: "0 -50%" }}>
+                <Voiture fond={couleur(p.id)} />
+                {m && !p.left && (
+                  <span className={`pop absolute -top-3 left-6 rounded-full px-1.5 text-[11px] leading-4 font-extrabold whitespace-nowrap ${m.move > 0 ? "bg-ok text-sur-ok" : m.move < 0 ? "bg-ko text-sur-ko" : "bg-ligne-forte text-texte"}`}>
+                    {m.move > 0 ? `+${m.move}` : m.move < 0 ? `−${-m.move}` : "="}{m.turbo && " turbo"}
+                  </span>
+                )}
+              </span>
+            </div>
+            <span className="num w-10 shrink-0 text-right text-xs text-texte-3">{p.pos}/{arrivee}</span>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
 const Forme = ({ d, size = 22 }: { d: string; size?: number }) => <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden><path d={d} fill="currentColor" /></svg>;
 
 export default function ArenaRoom({ code }: { code: string }) {
@@ -124,6 +174,12 @@ export default function ArenaRoom({ code }: { code: string }) {
             </span>
           </p>
         </section>
+        {v.mode === "course" && (
+          <p className="card flex items-start gap-2.5 text-sm text-texte-2">
+            <Voiture fond="#2463df" size={34} />
+            <span>Bonne réponse : ta voiture avance de 2 cases, 3 si tu es le plus rapide. Erreur : elle recule d&apos;une case. Pas de réponse : elle reste sur place. Le premier à <span className="num">{v.arrivee}</span> cases gagne.</span>
+          </p>
+        )}
         <section className="space-y-3" aria-labelledby="t-joueurs">
           <h2 id="t-joueurs" className="h2">Joueurs <span className="num text-texte-3">{v.players.length}</span></h2>
           <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
@@ -171,7 +227,7 @@ export default function ArenaRoom({ code }: { code: string }) {
           {order.map((i) => (
             <div key={top[i].id} className="pop flex w-28 flex-col items-center gap-1.5">
               <span className="w-full truncate text-center text-sm font-bold">{top[i].name}</span>
-              <span className="num text-sm text-texte-2">{top[i].score} pts</span>
+              <span className="num text-sm text-texte-2">{v.mode === "course" ? `case ${top[i].pos}/${v.arrivee}` : `${top[i].score} pts`}</span>
               <div className={`flex w-full items-start justify-center rounded-t-[14px] pt-2 font-titre text-3xl font-extrabold ${MARCHES[i].h} ${MARCHES[i].c}`}>{i + 1}</div>
             </div>
           ))}
@@ -181,7 +237,8 @@ export default function ArenaRoom({ code }: { code: string }) {
         ) : !v.classee && (
           <p className="card flex items-start gap-2 text-sm text-texte-2"><Icon name="target" size={17} className="mt-0.5 shrink-0" />Partie d&apos;entraînement : elle ne compte pas au classement (il faut au moins 2 joueurs humains).</p>
         )}
-        <Ranking players={v.players} me={v.me} changes={v.final?.changes} />
+        {v.mode === "course" && <Piste players={v.players} me={v.me} arrivee={v.arrivee} reveal={false} />}
+        <Ranking players={v.players} me={v.me} changes={v.final?.changes} course={v.mode === "course"} arrivee={v.arrivee} />
         {v.final && v.final.recap.some((r) => !r.ok) && (
           <section className="space-y-3" aria-labelledby="t-revoir">
             <h2 id="t-revoir" className="h2 flex items-center gap-2"><Icon name="book" className="text-texte-3" />À revoir</h2>
@@ -211,6 +268,7 @@ export default function ArenaRoom({ code }: { code: string }) {
   const nAnswered = v.players.filter((p) => p.answered && !p.left).length;
   const nActive = v.players.filter((p) => !p.left).length;
   const urgent = question && left < 5000;
+  const course = v.mode === "course";
 
   return (
     <Shell>
@@ -227,6 +285,7 @@ export default function ArenaRoom({ code }: { code: string }) {
       <div className="h-2.5 overflow-hidden rounded-full bg-ligne">
         <div className={`h-2.5 rounded-full ${question ? (urgent ? "bg-ko" : "bg-accent") : "bg-ligne-forte"}`} style={{ width: `${(left / total) * 100}%`, transition: "width 100ms linear" }} />
       </div>
+      {course && <Piste players={v.players} me={v.me} arrivee={v.arrivee} reveal={!question} />}
       <h2 key={v.idx} className="entree card min-h-20 font-sans text-xl leading-snug font-bold tracking-normal whitespace-pre-line lg:p-6 lg:text-2xl"><Tex>{r.enonce}</Tex></h2>
 
       <div className={`grid gap-3 ${r.kind === "vf" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
@@ -263,10 +322,11 @@ export default function ArenaRoom({ code }: { code: string }) {
         <div className="space-y-3">
           <div className={`pop flex items-center justify-center gap-2 rounded-[18px] p-4 text-center text-lg font-extrabold ${mine?.ok ? "bg-ok text-sur-ok" : "bg-ko text-sur-ko"}`} role="status">
             <Icon name={mine?.ok ? "check" : mine?.missed ? "clock" : "x"} size={22} />
-            {mine?.ok ? <>Bravo ! <span className="num">+{mine.pts}</span>{mine.bonus ? <span className="inline-flex items-center gap-0.5 text-base font-bold opacity-90">(dont <Icon name="flame" size={15} /> +{mine.bonus})</span> : null}</> : mine?.missed ? "Temps écoulé" : "Raté !"}
+            {course && mine ? (mine.ok ? <>Bravo ! <span className="num">+{mine.move}</span> case{mine.move > 1 ? "s" : ""}{mine.turbo && <span className="text-base font-bold opacity-90">· turbo</span>}</> : mine.missed ? "Temps écoulé : tu restes sur place" : mine.move < 0 ? "Raté : tu recules d'une case" : "Raté : tu restes sur place")
+              : mine?.ok ? <>Bravo ! <span className="num">+{mine.pts}</span>{mine.bonus ? <span className="inline-flex items-center gap-0.5 text-base font-bold opacity-90">(dont <Icon name="flame" size={15} /> +{mine.bonus})</span> : null}</> : mine?.missed ? "Temps écoulé" : "Raté !"}
           </div>
           {r.explication && <p className="card flex items-start gap-2 text-sm text-texte-2"><Icon name="lightbulb" size={17} className="mt-0.5 shrink-0 text-or" /><span><Tex>{r.explication}</Tex></span></p>}
-          <Ranking players={v.players} me={v.me} />
+          {!course && <Ranking players={v.players} me={v.me} />}
         </div>
       )}
       {err && <p className="text-center text-sm font-semibold text-ko" role="alert">{err}</p>}
@@ -274,7 +334,7 @@ export default function ArenaRoom({ code }: { code: string }) {
   );
 }
 
-function Ranking({ players, me, changes }: { players: P[]; me: string; changes?: Record<string, number> }) {
+function Ranking({ players, me, changes, course, arrivee }: { players: P[]; me: string; changes?: Record<string, number>; course?: boolean; arrivee?: number }) {
   return (
     <ol className="liste">
       {players.map((p) => (
@@ -285,7 +345,7 @@ function Ranking({ players, me, changes }: { players: P[]; me: string; changes?:
           {changes && changes[p.id] !== undefined && (
             <span className={`num text-xs font-semibold ${changes[p.id] >= 0 ? "text-ok" : "text-ko"}`}>{changes[p.id] >= 0 ? "▲" : "▼"}{Math.abs(changes[p.id])}</span>
           )}
-          <span className="num w-14 text-right font-semibold">{p.score}</span>
+          <span className="num w-14 text-right font-semibold">{course ? `${p.pos}/${arrivee}` : p.score}</span>
         </li>
       ))}
     </ol>
