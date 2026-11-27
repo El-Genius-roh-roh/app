@@ -31,31 +31,31 @@ export default async function Classements({ subjectId, groupId, userId, today, s
   return (
     <>
       {seasons.length > 1 && (
-        <div className="flex flex-wrap gap-2">
+        <nav className="flex flex-wrap gap-2" aria-label="Saisons">
           {seasons.map((s) => (
-            <Link key={s.saison} href={`?saison=${s.saison}`} scroll={false}
-              className={`chip ${s.saison === saison ? "bg-violet-600 text-white" : "bg-white/60 backdrop-blur-md text-violet-700"}`}>Saison {s.saison}</Link>
+            <Link key={s.saison} href={`?saison=${s.saison}`} scroll={false} aria-current={s.saison === saison ? "page" : undefined}
+              className={`chip min-h-9 px-3 ${s.saison === saison ? "border-accent bg-accent text-sur-accent" : "hover:border-texte-3"}`}>Saison {s.saison}</Link>
           ))}
-        </div>
+        </nav>
       )}
 
       {day && (
-        <section className="card space-y-3">
-          <h2 className="h2">⚡ Classement du jour {day.date !== today && <span className="text-sm font-semibold text-slate-500">(jour {day.jour})</span>}</h2>
+        <section className="space-y-3">
+          <h2 className="eyebrow">Classement du jour {day.date !== today && <span className="normal-case tracking-normal">(jour {day.jour})</span>}</h2>
           <RankTable meId={userId} groupId={groupId} empty="Personne n'a encore joué."
             lines={day.lines.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, detail: `${CONFIG.QUESTIONS_PAR_JOUR - l.erreurs}/${CONFIG.QUESTIONS_PAR_JOUR} · ${fmtMs(l.dureeMs)}`,
               badge: <><Exploits {...exploitsDuJour(day.lines.map((x) => ({ ...x, dayId: day.dayId, date: day.date })), l.userId)} /><DeltaTrophees d={tr.deltas.get(day.dayId)?.get(l.userId) ?? 0} /></> }))} />
         </section>
       )}
 
-      <section className="card space-y-3">
-        <h2 className="h2">🏆 Classement de la saison{seasons.length > 1 ? ` ${saison}` : ""}</h2>
+      <section className="space-y-3">
+        <h2 className="eyebrow">Classement de la saison{seasons.length > 1 ? ` ${saison}` : ""}</h2>
         <RankTable meId={userId} groupId={groupId} lines={season.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
           badge: <><LigueBadge ligue={ligueDe(totalGroupe.get(l.userId) ?? 0).ligue} /><DeltaTrophees d={l.gain} /></> }))} />
       </section>
 
       <section className="card space-y-3">
-        <h2 className="h2">📈 Évolution des scores</h2>
+        <h2 className="h2">Évolution des scores</h2>
         <ScoreChart data={history} meId={userId} maxQuestions={CONFIG.QUESTIONS_PAR_JOUR} />
       </section>
 
@@ -63,10 +63,10 @@ export default async function Classements({ subjectId, groupId, userId, today, s
         <section className="card space-y-2">
           <h2 className="h2">Saisons terminées</h2>
           {podiums.map(({ s, top }) => (
-            <div key={s.saison} className="rounded-2xl bg-amber-50/70 backdrop-blur-md p-3">
-              <p className="text-sm font-extrabold text-orange-600">Saison {s.saison}</p>
+            <div key={s.saison} className="rounded-xl border border-or/30 bg-or/5 p-3">
+              <p className="eyebrow text-or">Saison {s.saison}</p>
               {top.length === 0 ? <p className="muted">Personne n&apos;a joué.</p> : top.map((l) => (
-                <p key={l.userId} className="flex items-center gap-1 font-semibold"><RankBadge rang={l.rang} /> {l.pseudo} <DeltaTrophees d={l.gain} /></p>
+                <p key={l.userId} className="flex min-h-9 items-center gap-2 font-medium"><RankBadge rang={l.rang} /> {l.pseudo} <DeltaTrophees d={l.gain} /></p>
               ))}
             </div>
           ))}

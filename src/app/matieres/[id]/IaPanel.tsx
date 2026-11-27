@@ -1,32 +1,36 @@
 "use client";
 import { useActionState } from "react";
 import { genererIA, type IaState } from "./actions";
+import Icon from "@/components/Icon";
 
 /** Bouton « Générer avec l'IA » : écrit les 3 prochains quiz, avec le compte rendu de chaque jour. */
 export default function IaPanel({ subjectId }: { subjectId: string }) {
   const [state, action, pending] = useActionState<IaState, FormData>(genererIA, null);
   return (
-    <form action={action} className="card space-y-3">
+    <form action={action} className="card space-y-3" aria-busy={pending}>
       <input type="hidden" name="subject" value={subjectId} />
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="h2 text-violet-700">🤖 Questions par l&apos;IA</h2>
-      </div>
-      <p className="muted">L&apos;IA écrit les quiz des 3 prochains jours à partir des slides, puis vérifie chaque réponse. Environ 20 s par quiz.</p>
-      <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-        <input type="checkbox" name="regenerer" value="1" className="h-4 w-4 accent-fuchsia-600" />
+      <h2 className="h2 flex items-center gap-2"><Icon name="sparkles" className="text-accent" />Questions par l&apos;IA</h2>
+      <p className="text-sm text-texte-2">L&apos;IA écrit les quiz des 3 prochains jours à partir des slides, puis vérifie chaque réponse. Environ 20 s par quiz.</p>
+      <label className="flex min-h-11 items-center gap-3 text-sm text-texte-2">
+        <input type="checkbox" name="regenerer" value="1" className="h-5 w-5 accent-[var(--color-accent)]" />
         Refaire aussi les quiz déjà prêts (si personne ne les a commencés)
       </label>
-      <button disabled={pending} className="btn-primary">{pending ? "⏳ L'IA écrit les questions…" : "✨ Générer avec l'IA"}</button>
-      {state?.erreur && <p className="rounded-2xl bg-rose-50/70 backdrop-blur-md p-3 text-sm font-bold text-rose-600">{state.erreur}</p>}
+      <button disabled={pending} className="btn-primary">
+        {pending ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-sur-accent/30 border-t-sur-accent" aria-hidden />L&apos;IA écrit les questions…</> : <><Icon name="sparkles" size={18} />Générer avec l&apos;IA</>}
+      </button>
+      {state?.erreur && <p className="rounded-xl border border-ko/30 bg-ko/10 p-3 text-sm text-ko" role="alert">{state.erreur}</p>}
       {state?.resultats && (
-        <ul className="space-y-2">
+        <ul className="space-y-2" role="status">
           {state.resultats.map((r, i) => (
-            <li key={r.date + i} className={`rounded-2xl p-3 text-sm ${r.erreur ? "bg-rose-50/70 backdrop-blur-md" : "bg-emerald-50/70 backdrop-blur-md"}`}>
-              <p className="font-bold">{r.erreur ? "❌" : "✅"} Quiz du {r.date}</p>
-              {r.erreur ? <p>{r.erreur}</p> : (
-                <p>{r.report!.chat} question(s) de l&apos;IA{r.report!.simulees ? ` + ${r.report!.simulees} simulée(s) pour compléter` : ""}
-                  {r.report!.rejets.length ? ` · ${r.report!.rejets.length} écartée(s)` : ""}</p>
-              )}
+            <li key={r.date + i} className={`flex gap-2.5 rounded-xl border p-3 text-sm ${r.erreur ? "border-ko/30 bg-ko/8" : "border-ok/30 bg-ok/8"}`}>
+              <Icon name={r.erreur ? "x" : "check"} size={18} className={r.erreur ? "text-ko" : "text-ok"} />
+              <div>
+                <p className="font-semibold">Quiz du {r.date}</p>
+                {r.erreur ? <p className="text-texte-2">{r.erreur}</p> : (
+                  <p className="text-texte-2">{r.report!.chat} question(s) de l&apos;IA{r.report!.simulees ? ` + ${r.report!.simulees} simulée(s) pour compléter` : ""}
+                    {r.report!.rejets.length ? ` · ${r.report!.rejets.length} écartée(s)` : ""}</p>
+                )}
+              </div>
             </li>
           ))}
         </ul>
