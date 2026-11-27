@@ -29,6 +29,7 @@ export default async function Groupe({ params, searchParams }: { params: Promise
         Code d&apos;invitation : <b className="tracking-widest">{g.code_invitation}</b>
         <div className="text-gray-600">Lien : /rejoindre/{g.code_invitation}</div>
       </section>
+      <Link href="/arene" className="block rounded-xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 p-3 text-center font-semibold text-white">⚔️ Défier le groupe dans l&apos;Arène</Link>
       <section className="space-y-2">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold">Classement général</h2>
