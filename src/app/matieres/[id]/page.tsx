@@ -63,18 +63,22 @@ export default async function Matiere({ params, searchParams }: { params: Promis
       {enCours && <AutoRefresh />}
       <Link href={`/groupes/${s.group_id}`} className="back">← Groupe</Link>
       <header className="hero space-y-4">
-        <h1 className="text-3xl font-extrabold">{s.nom}</h1>
+        <h1 className="text-3xl font-extrabold lg:text-4xl">{s.nom}</h1>
         <QuizCard subjectId={id} userId={u.id} today={today} />
       </header>
 
-      <Classements subjectId={id} userId={u.id} today={today} saisonParam={saisonParam} />
-
-      {canManage && (
-        <Link href={`/matieres/${id}/chat`} className="btn-orange">✨ Générer les questions avec le chat</Link>
-      )}
-
-      <DocBox categorie="cours" titre="Cours" icone="📘" couleur="text-sky-600" />
-      <DocBox categorie="annale" titre="Annales" icone="📝" couleur="text-orange-600" />
+      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+        <div className="space-y-5">
+          <Classements subjectId={id} userId={u.id} today={today} saisonParam={saisonParam} />
+        </div>
+        <div className="space-y-5">
+          {canManage && (
+            <Link href={`/matieres/${id}/chat`} className="btn-orange">✨ Générer les questions avec le chat</Link>
+          )}
+          <DocBox categorie="cours" titre="Cours" icone="📘" couleur="text-sky-600" />
+          <DocBox categorie="annale" titre="Annales" icone="📝" couleur="text-orange-600" />
+        </div>
+      </div>
 
       {canManage && process.env.DEMO_MODE === "1" && (
         <details className="rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/80 p-3 text-sm">

@@ -17,18 +17,18 @@ export default function ChatPanel({ subjectId, prompt, dates }: { subjectId: str
   }
 
   return (
-    <>
+    <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
       <section className="card space-y-3">
         <h2 className="h2 text-violet-700">1 · Le prompt</h2>
         <p className="muted">Quiz du {dates.join(", du ")}</p>
-        <textarea id="prompt" readOnly value={prompt} rows={6} className="input font-mono text-xs" />
+        <textarea id="prompt" readOnly value={prompt} rows={6} className="input font-mono text-xs lg:h-80" />
         <button type="button" onClick={copy} className="btn-primary">{copied ? "✓ Copié !" : "📋 Copier le prompt"}</button>
       </section>
 
       <form action={action} className="card space-y-3">
         <h2 className="h2 text-orange-600">2 · La réponse du chat</h2>
         <input type="hidden" name="subject" value={subjectId} />
-        <textarea name="reponse" rows={8} required placeholder='{"jours":[...]}' className="input font-mono text-xs" />
+        <textarea name="reponse" rows={8} required placeholder='{"jours":[...]}' className="input font-mono text-xs lg:h-80" />
         <button disabled={pending} className="btn-orange">{pending ? "Import…" : "Importer les questions"}</button>
         {state?.erreur && <p className="rounded-2xl bg-rose-50 p-3 text-sm font-bold text-rose-600">{state.erreur}</p>}
         {state?.resultats && (
@@ -48,6 +48,6 @@ export default function ChatPanel({ subjectId, prompt, dates }: { subjectId: str
           </ul>
         )}
       </form>
-    </>
+    </div>
   );
 }

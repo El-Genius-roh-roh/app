@@ -22,7 +22,7 @@ export default async function Arene() {
   })));
 
   return (
-    <main className="mx-auto max-w-md p-4 space-y-5">
+    <main className="mx-auto max-w-md p-4 space-y-5 lg:max-w-6xl lg:px-8 lg:pt-8">
       <Link href="/" className="text-sm text-indigo-600">← Accueil</Link>
       <header className="rounded-2xl bg-gradient-to-br from-indigo-600 to-fuchsia-600 p-5 text-white shadow">
         <h1 className="text-2xl font-extrabold">⚔️ Arène</h1>
@@ -35,7 +35,7 @@ export default async function Arene() {
         <section className="space-y-2">
           <h2 className="font-semibold">Parties ouvertes</h2>
           {rooms.map((r) => (
-            <Link key={r.code} href={`/arene/${r.code}`} className="flex items-center justify-between rounded-xl border-2 border-indigo-200 p-3 hover:bg-indigo-50">
+            <Link key={r.code} href={`/arene/${r.code}`} className="flex items-center justify-between rounded-xl border-2 border-indigo-200 p-3 hover:bg-indigo-50 lg:max-w-2xl">
               <span><b className="tracking-widest">{r.code}</b> · {r.mode} · {r.nrounds} manches</span>
               <span className="text-xs text-gray-500">{r.hote} · {r.joueurs} joueur(s)</span>
             </Link>
@@ -43,7 +43,7 @@ export default async function Arene() {
         </section>
       )}
 
-      <section className="space-y-2 rounded-xl border p-3">
+      <section className="space-y-2 rounded-xl border p-3 lg:max-w-md">
         <h2 className="font-semibold">Rejoindre avec un code</h2>
         <form action="/arene/rejoindre" className="flex gap-2">
           <input name="code" required maxLength={ARENA.CODE_LONGUEUR} placeholder="ABCD" className="w-full rounded border p-2 uppercase tracking-widest" />
@@ -51,8 +51,9 @@ export default async function Arene() {
         </form>
       </section>
 
+      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
       {data.map((g) => (
-        <section key={g.id} className="space-y-3 rounded-xl border p-3">
+        <section key={g.id} className="space-y-3 rounded-xl border p-3 lg:p-5">
           <h2 className="font-semibold">{g.nom}</h2>
           <ArenaCreate groupId={g.id} modes={Object.entries(MODES).map(([id, m]) => ({ id, ...m }))} dispo={g.dispo} />
           <h3 className="text-sm font-semibold">🏆 Classement de l&apos;Arène</h3>
@@ -74,6 +75,7 @@ export default async function Arene() {
           )}
         </section>
       ))}
+      </div>
     </main>
   );
 }

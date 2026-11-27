@@ -17,16 +17,16 @@ export default async function Accueil() {
       </header>
       <h2 className="h2">Mes groupes</h2>
       {groupes.length === 0 && <p className="muted">Crée un groupe ou rejoins celui de tes amis.</p>}
-      <ul className="space-y-3">
+      <ul className="space-y-3 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0">
         {groupes.map((g, i) => (
           <li key={g.id}>
-            <Link href={`/groupes/${g.id}`} className={`flex items-center justify-between rounded-3xl bg-gradient-to-r ${COULEURS[i % COULEURS.length]} p-5 text-lg font-extrabold text-white shadow-lg`}>
+            <Link href={`/groupes/${g.id}`} className={`flex items-center justify-between rounded-3xl bg-gradient-to-r ${COULEURS[i % COULEURS.length]} p-5 text-lg font-extrabold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl lg:min-h-32 lg:items-end lg:text-2xl`}>
               {g.nom}<span aria-hidden>→</span>
             </Link>
           </li>
         ))}
       </ul>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:flex lg:max-w-md">
         <Link href="/groupes/nouveau" className="btn-primary">＋ Créer</Link>
         <Link href="/rejoindre" className="btn-ghost">Rejoindre</Link>
       </div>

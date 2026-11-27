@@ -104,7 +104,7 @@ export default function ArenaRoom({ code }: { code: string }) {
           <p className="text-6xl font-black tracking-[0.3em]">{v.code}</p>
           <p className="mt-1 text-sm opacity-80">{v.modeTitre} · {v.nrounds} manches</p>
         </div>
-        <ul className="grid grid-cols-2 gap-2">
+        <ul className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {v.players.map((p, i) => (
             <li key={p.id} className="flex items-center gap-2 rounded-xl bg-white/15 p-2">
               <span className={`flex h-8 w-8 items-center justify-center rounded-full font-bold ${COLORS[i % COLORS.length]}`}>{p.name[0]}</span>
@@ -185,7 +185,7 @@ export default function ArenaRoom({ code }: { code: string }) {
       <div className="h-2 overflow-hidden rounded bg-white/20">
         <div className={`h-2 ${question ? "bg-emerald-300" : "bg-white/60"}`} style={{ width: `${(left / total) * 100}%`, transition: "width 100ms linear" }} />
       </div>
-      <h2 className="min-h-20 whitespace-pre-line rounded-2xl bg-white p-4 text-lg font-bold text-gray-900 shadow">{r.enonce}</h2>
+      <h2 className="min-h-20 whitespace-pre-line rounded-2xl bg-white p-4 text-lg font-bold text-gray-900 shadow lg:p-6 lg:text-2xl">{r.enonce}</h2>
 
       <div className={`grid gap-3 ${r.kind === "vf" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
         {r.choices.map((c, i) => {
@@ -244,7 +244,7 @@ function Ranking({ players, me, changes }: { players: P[]; me: string; changes?:
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-700 text-white">
-      <div className="mx-auto max-w-xl space-y-4 p-4">{children}</div>
+      <div className="mx-auto max-w-xl space-y-4 p-4 lg:max-w-3xl lg:space-y-6 lg:pt-10">{children}</div>
     </main>
   );
 }

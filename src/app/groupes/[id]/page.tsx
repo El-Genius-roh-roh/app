@@ -27,22 +27,19 @@ export default async function Groupe({ params }: { params: Promise<{ id: string 
         <p className="mt-2 text-sm font-semibold text-white/90">Code d&apos;invitation <span className="ml-1 rounded-xl bg-white/25 px-2 py-0.5 text-base tracking-widest">{g.code_invitation}</span></p>
       </header>
 
+      <div className="space-y-5 lg:grid lg:grid-cols-3 lg:items-start lg:gap-6 lg:space-y-0">
+      <div className="space-y-5 lg:col-span-2">
       <section className="space-y-3">
         <h2 className="h2">Matières</h2>
         {matieres.length === 0 && <p className="muted">Aucune matière pour l&apos;instant.</p>}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4">
           {matieres.map((m, i) => (
             <Link key={m.id} href={`/matieres/${m.id}`}
-              className={`flex min-h-24 items-end rounded-3xl bg-gradient-to-br ${COULEURS[i % COULEURS.length]} p-4 text-lg font-extrabold leading-tight text-white shadow-lg`}>
+              className={`flex min-h-24 items-end rounded-3xl bg-gradient-to-br ${COULEURS[i % COULEURS.length]} p-4 text-lg font-extrabold leading-tight text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl lg:min-h-32 lg:text-xl`}>
               {m.nom}
             </Link>
           ))}
         </div>
-      </section>
-
-      <section className="card space-y-3">
-        <h2 className="h2">🏆 Classement général</h2>
-        <RankTable meId={u.id} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, points: l.points }))} />
       </section>
 
       {role === "admin" && (
@@ -60,6 +57,13 @@ export default async function Groupe({ params }: { params: Promise<{ id: string 
           </form>
         </details>
       )}
+      </div>
+
+      <section className="card space-y-3 lg:sticky lg:top-6">
+        <h2 className="h2">🏆 Classement général</h2>
+        <RankTable meId={u.id} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, points: l.points }))} />
+      </section>
+      </div>
     </main>
   );
 }

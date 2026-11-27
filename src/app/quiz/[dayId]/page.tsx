@@ -27,7 +27,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
     const [res] = await q<{ points: number; rang: number }>("select points,rang from daily_results where game_day_id=$1 and user_id=$2", [dayId, u.id]);
     const score = items.length - a.erreurs;
     return (
-      <main className="page">
+      <main className="page lg:max-w-3xl">
         {back}
         <section className="hero text-center">
           <p className="text-5xl">{score === items.length ? "🏆" : score >= items.length * 0.7 ? "🎉" : "💪"}</p>
@@ -40,7 +40,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
   }
   if (gd.date !== today) {
     return (
-      <main className="page">
+      <main className="page lg:max-w-3xl">
         {back}
         <p className="card font-semibold">{gd.date > today ? `Ce quiz ouvrira le ${gd.date}.` : "Quiz non joué : pas de rattrapage."}</p>
         {gd.date < today && items.length > 0 && <Correction items={items} />}
@@ -49,7 +49,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
   }
   const initial = attempt ? await currentState(attempt as never) : null;
   return (
-    <main className="page">
+    <main className="page lg:max-w-3xl">
       {back}
       <QuizPlayer gameDayId={dayId} initial={initial} />
     </main>
