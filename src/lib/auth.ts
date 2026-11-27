@@ -1,0 +1,50 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import crypto from "crypto";
+import { q } from "./db";
+
+const SECRET = process.env.SESSION_SECRET ?? "dev-secret-change-me";
+const COOKIE = "session";
+
+const sign = (v: string) => crypto.createHmac("sha256", SECRET).update(v).digest("hex");
+
+export async function setSession(userId: string) {
+  (await cookies()).set(COOKIE, `${userId}.${sign(userId)}`, {
+    httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 60,
+  });
+}
+export async function clearSession() { (await cookies()).delete(COOKIE); }
+
+export type User = { id: string; email: string; pseudo: string | null };
+
+export async function getUser(): Promise<User | null> {
+  const raw = (await cookies()).get(COOKIE)?.value;
+  if (!raw) return null;
+  const [id, sig] = raw.split(".");
+  if (!id || !sig || sig !== sign(id)) return null;
+  const [u] = await q<User>("select id,email,pseudo from profiles where id=$1", [id]);
+  return u ?? null;
+}
+
+/** Exige un utilisateur connecté avec pseudo. */
+export async function requireUser(): Promise<User> {
+  const u = await getUser();
+  if (!u) redirect("/login");
+  if (!u.pseudo) redirect("/profil");
+  return u;
+}
+
+export async function createMagicLink(email: string): Promise<string> {
+  const token = crypto.randomBytes(24).toString("hex");
+  await q("insert into magic_links(token,email,expires_at) values ($1,$2, now() + interval '15 minutes')", [token, email.toLowerCase().trim()]);
+  return token;
+}
+
+export async function consumeMagicLink(token: string): Promise<string | null> {
+  const [l] = await q<{ email: string }>(
+    "update magic_links set used=true where token=$1 and not used and expires_at>now() returning email", [token]);
+  if (!l) return null;
+  const [p] = await q<{ id: string }>(
+    "insert into profiles(email) values ($1) on conflict (email) do update set email=excluded.email returning id", [l.email]);
+  return p.id;
+}
