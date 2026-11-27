@@ -6,10 +6,10 @@ import { memberRole } from "@/lib/groups";
 import { creerMatiere, renommerGroupe, supprimerGroupe } from "./actions";
 import ConfirmButton from "@/components/ConfirmButton";
 import NextButton from "@/components/NextButton";
-import { getGroupRanking, getGroupResults } from "@/lib/ranking";
+import { getGroupResults, getGroupTrophees } from "@/lib/ranking";
 import { ligueDe, vitrine } from "@/lib/trophees";
-import { todayParis } from "@/lib/clock";
-import { LigueBadge, LigueCard, Vitrine } from "@/components/Trophees";
+import { todayGroupe } from "@/lib/clock";
+import { LigueBadge, LigueCard, TropheesCompteur, Vitrine } from "@/components/Trophees";
 import RankTable from "@/components/RankTable";
 
 const COULEURS = ["from-sky-500 to-cyan-400", "from-orange-500 to-amber-400", "from-emerald-500 to-lime-400", "from-rose-500 to-pink-400", "from-violet-500 to-fuchsia-500"];
@@ -21,9 +21,9 @@ export default async function Groupe({ params }: { params: Promise<{ id: string 
   if (!role) notFound();
   const [g] = await q<{ nom: string; code_invitation: string }>("select nom,code_invitation from groups where id=$1", [id]);
   const matieres = await q<{ id: string; nom: string }>("select id,nom from subjects where group_id=$1 order by created_at", [id]);
-  const general = await getGroupRanking(id);
-  const maVitrine = vitrine(await getGroupResults(id), u.id, await todayParis());
-  const mesPoints = general.find((l) => l.userId === u.id)?.points ?? 0;
+  const tr = await getGroupTrophees(id);
+  const maVitrine = vitrine(await getGroupResults(id), u.id, await todayGroupe(id));
+  const mesTrophees = tr.lignes.find((l) => l.userId === u.id)?.trophees ?? 0;
   const today = new Date().toISOString().slice(0, 10);
 
   return (
@@ -67,11 +67,12 @@ export default async function Groupe({ params }: { params: Promise<{ id: string 
       </div>
 
       <div className="space-y-5">
-        <LigueCard info={ligueDe(mesPoints)} serie={maVitrine.serieActuelle} />
+        <LigueCard info={ligueDe(mesTrophees)} trophees={mesTrophees} serie={maVitrine.serieActuelle} />
         <Vitrine data={maVitrine} />
         <section className="card space-y-3">
           <h2 className="h2">🏆 Classement général</h2>
-          <RankTable meId={u.id} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, badge: <LigueBadge ligue={ligueDe(l.points).ligue} /> }))} />
+          <RankTable meId={u.id} lines={tr.lignes.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
+            badge: <><LigueBadge ligue={ligueDe(l.trophees).ligue} /><TropheesCompteur n={l.trophees} className="ml-1 rounded-full bg-white px-2 py-0.5 text-sm text-amber-700" /></> }))} />
         </section>
       </div>
       </div>

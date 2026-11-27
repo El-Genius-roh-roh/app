@@ -18,24 +18,33 @@ export const CONFIG = {
   CHAT_SLIDES_REVISION: 6,
   CHAT_SLIDE_MAX_CARACTERES: 1500,
   CHAT_ANNALES_MAX_CARACTERES: 6000,
+  // génération automatique par l'IA (API compatible OpenAI, ex. service IA d'Onyxia)
+  LLM_MODELE: "qwen3-6-35b-moe", // remplaçable par la variable d'environnement LLM_MODEL
+  LLM_TIMEOUT_S: 240,
+  LLM_MAX_TOKENS: 12000,
+  LLM_JOURS_PAR_APPEL: 1, // un quiz par appel : réponse rapide (~15 s) et moins d'erreurs
+  LLM_JOURS_A_L_AVANCE: 3, // quiz préparés en arrière-plan : aujourd'hui + 2 jours
 } as const;
 
-// Ligues et trophées (docs/04 §8). Les points restent la base du classement mais ne sont plus affichés tels quels :
-// on affiche la ligue (selon les points cumulés dans le groupe) et les trophées gagnés.
-export const LIGUES = [
-  { nom: "Bronze", emoji: "🥉", min: 0, fond: "from-orange-300 to-amber-500" },
-  { nom: "Argent", emoji: "🥈", min: 200, fond: "from-slate-300 to-slate-500" },
-  { nom: "Or", emoji: "🥇", min: 500, fond: "from-yellow-300 to-amber-500" },
-  { nom: "Platine", emoji: "💠", min: 1000, fond: "from-teal-300 to-cyan-600" },
-  { nom: "Diamant", emoji: "💎", min: 2000, fond: "from-sky-400 to-indigo-600" },
-  { nom: "Maître", emoji: "👑", min: 3500, fond: "from-fuchsia-500 to-violet-700" },
-] as const;
-
+// Trophées façon Clash Royale (docs/04 §8, D24) : on en gagne en battant des joueurs, on en perd en se faisant battre.
+// Les ligues se débloquent selon le nombre de trophées ; on ne retombe jamais sous le palier d'une ligue atteinte.
 export const TROPHEES = {
-  SERIES_JOURS: [3, 7, 30], // séries de jours consécutifs avec au moins un quiz joué dans le groupe
-  QUIZ_JOUES: [10, 50],
-  MIN_JOUEURS_DUEL: 2, // « 1er du jour » et « le plus rapide » exigent au moins 2 joueurs ce jour-là
+  PAR_JOUEUR_BATTU: 10, // +10 par joueur qui fait moins bien ce jour-là
+  PAR_JOUEUR_DEVANT: 10, // −10 par joueur qui fait mieux
+  ABSENCE: 10, // −10 pour un quiz du jour non joué (seulement dans une matière où l'on a déjà joué)
+  SERIES_JOURS: [3, 7, 30], // badges : jours consécutifs avec au moins un quiz joué
+  QUIZ_JOUES: [10, 50], // badges
+  MIN_JOUEURS_DUEL: 2, // badges « 1er du jour » et « le plus rapide » : au moins 2 joueurs ce jour-là
 } as const;
+
+export const LIGUES = [
+  { nom: "Bronze", min: 0, clair: "#f3b47c", fonce: "#8a4b22", fond: "from-orange-300 to-amber-700" },
+  { nom: "Argent", min: 100, clair: "#f1f4f9", fonce: "#6b7689", fond: "from-slate-300 to-slate-600" },
+  { nom: "Or", min: 250, clair: "#ffe58a", fonce: "#a86b00", fond: "from-yellow-300 to-amber-600" },
+  { nom: "Platine", min: 500, clair: "#b5f5ea", fonce: "#127a73", fond: "from-teal-300 to-cyan-700" },
+  { nom: "Diamant", min: 800, clair: "#b9e2ff", fonce: "#2b44b8", fond: "from-sky-400 to-indigo-700" },
+  { nom: "Maître", min: 1200, clair: "#f6b8ff", fonce: "#5b1385", fond: "from-fuchsia-500 to-violet-800" },
+] as const;
 
 // Mode « Arène » (duels en direct, hors classements quotidiens : docs/04 n'est pas modifié).
 export const ARENA = {

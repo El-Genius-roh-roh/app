@@ -2,7 +2,7 @@ import crypto from "crypto";
 import type { PoolClient } from "pg";
 import { ARENA } from "@/config/constants";
 import { pool, q } from "../db";
-import { todayParis } from "../clock";
+import { sqlToday } from "../clock";
 import { memberRole } from "../groups";
 import { secureRand } from "../rng";
 import {
@@ -19,11 +19,10 @@ const err = (status: number, error: string): Res => ({ status, body: { error } }
  * d'Arène révélerait les réponses avant l'unique tentative quotidienne (D2, D9).
  */
 export async function arenaPool(groupId: string): Promise<PoolQuestion[]> {
-  const today = await todayParis();
   return q<PoolQuestion>(
     `select qq.id, qq.type, qq.enonce, qq.choix, qq.correct_index, coalesce(qq.explication,'') as explication
        from questions qq join game_days g on g.id=qq.game_day_id join subjects s on s.id=qq.subject_id
-      where s.group_id=$1 and g.date < $2::date and qq.verifiee`, [groupId, today]);
+      where s.group_id=$1 and g.date < ${sqlToday("g.subject_id")} and qq.verifiee`, [groupId]);
 }
 
 function genCode(): string {

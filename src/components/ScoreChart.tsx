@@ -84,7 +84,7 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
   return (
     <div className="space-y-3">
       <div className="flex rounded-2xl bg-violet-50 p-1" role="tablist">
-        {([["cumul", "Points cumulés"], ["note", `Note du jour /${maxQuestions}`]] as const).map(([m, label]) => (
+        {([["cumul", "Trophées de la saison"], ["note", `Note du jour /${maxQuestions}`]] as const).map(([m, label]) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
             className={`flex-1 rounded-xl px-3 py-1.5 text-sm transition ${mode === m ? "bg-white text-violet-700 shadow" : "text-slate-500"}`}>
             {label}
@@ -102,7 +102,7 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
       </ul>
 
       <div ref={box} className="relative" onPointerLeave={() => setHover(null)}>
-        <svg width={w} height={H} role="img" aria-label={`Évolution des ${mode === "cumul" ? "points cumulés" : "notes du jour"} par joueur`}>
+        <svg width={w} height={H} role="img" aria-label={`Évolution des ${mode === "cumul" ? "trophées de la saison" : "notes du jour"} par joueur`}>
           {ticks.map((t) => (
             <g key={t}>
               <line x1={M.l} x2={w - M.r} y1={y(t)} y2={y(t)} stroke={GRID} strokeWidth="1" />
@@ -140,7 +140,7 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
               <p key={s.userId} className="flex items-center gap-1.5 text-slate-700">
                 <span className="inline-block h-2 w-2 rounded-full" style={{ background: s.color }} />
                 <span className="flex-1 truncate">{s.pseudo}</span>
-                <span className="font-bold tabular-nums">{v === null ? "absent" : mode === "cumul" ? `${v} pts` : `${v}/${maxQuestions}`}</span>
+                <span className="font-bold tabular-nums">{v === null ? "absent" : mode === "cumul" ? `${v} 🏆` : `${v}/${maxQuestions}`}</span>
               </p>
             ))}
           </div>

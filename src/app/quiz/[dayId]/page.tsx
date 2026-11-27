@@ -8,9 +8,9 @@ import { closeStaleAttempts, currentState, getCorrection } from "@/lib/quiz/serv
 import QuizPlayer from "@/components/QuizPlayer";
 import Correction from "@/components/Correction";
 import { fmtMs } from "@/components/RankTable";
-import { getDayRanking, getGroupRanking } from "@/lib/ranking";
+import { getDayRanking, getGroupTrophees } from "@/lib/ranking";
 import { exploitsDuJour, ligueDe } from "@/lib/trophees";
-import { LigueBadge } from "@/components/Trophees";
+import { LigueBlason, TropheeIcone, TropheesCompteur } from "@/components/Trophees";
 import NextButton from "@/components/NextButton";
 
 export default async function QuizPage({ params }: { params: Promise<{ dayId: string }> }) {
@@ -20,7 +20,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
     `select g.id, to_char(g.date,'YYYY-MM-DD') as date, g.jour_dans_saison as jour, g.subject_id, s.nom, s.group_id
        from game_days g join subjects s on s.id=g.subject_id where g.id=$1`, [dayId]);
   if (!gd || !(await memberRole(gd.group_id, u.id))) notFound();
-  const today = await todayParis();
+  const today = await todayParis(gd.subject_id);
   await closeStaleAttempts();
   const { attempt, items } = await getCorrection(dayId, u.id);
   const finished = attempt && attempt.statut !== "en_cours";
@@ -41,7 +41,10 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
     const score = items.length - a.erreurs;
     const jour = await getDayRanking(dayId);
     const ex = jour ? exploitsDuJour(jour.lines.map((l) => ({ ...l, dayId, date: jour.date })), u.id) : null;
-    const ligue = ligueDe((await getGroupRanking(gd.group_id)).find((l) => l.userId === u.id)?.points ?? 0);
+    const tr = await getGroupTrophees(gd.group_id);
+    const mesTrophees = tr.lignes.find((l) => l.userId === u.id)?.trophees ?? 0;
+    const delta = tr.deltas.get(dayId)?.get(u.id) ?? 0;
+    const ligue = ligueDe(mesTrophees);
     return (
       <main className="page lg:max-w-3xl">
         {back}
@@ -51,16 +54,25 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
           <p className="mt-2 font-semibold text-white/90">{fmtMs(a.duree_ms)}{res ? ` · ${res.rang}${res.rang === 1 ? "er" : "e"} du jour` : ""}</p>
           {ex && (ex.premier || ex.sansFaute || ex.plusRapide) && (
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {ex.premier && <span className="chip bg-white/25 text-sm text-white">🏆 1er du jour !</span>}
+              {ex.premier && <span className="chip bg-white/25 text-sm text-white">🥇 1er du jour !</span>}
               {ex.sansFaute && <span className="chip bg-white/25 text-sm text-white">🎯 Sans faute !</span>}
               {ex.plusRapide && <span className="chip bg-white/25 text-sm text-white">⚡ Le plus rapide !</span>}
             </div>
           )}
           {res && (
-            <div className="mx-auto mt-4 max-w-sm space-y-2 rounded-2xl bg-white/15 p-3">
-              <p className="flex items-center justify-center gap-2 text-sm font-bold">+{res.points} pts de ligue <LigueBadge ligue={ligue.ligue} /></p>
-              <div className="h-2 overflow-hidden rounded-full bg-white/30"><div className="h-2 rounded-full bg-white" style={{ width: `${Math.round(ligue.progression * 100)}%` }} /></div>
-              {ligue.suivante && <p className="text-xs font-semibold text-white/85">Encore {ligue.manque} pts pour {ligue.suivante.emoji} {ligue.suivante.nom}</p>}
+            <div className="mx-auto mt-4 max-w-sm space-y-2 rounded-2xl bg-white/15 p-4">
+              <div className="flex items-center justify-center gap-3">
+                <LigueBlason ligue={ligue.ligue} size={44} />
+                <div className="text-left">
+                  <p className={`text-2xl font-black tabular-nums ${delta >= 0 ? "text-white" : "text-rose-100"}`}>
+                    {delta > 0 ? "+" : delta < 0 ? "−" : "±"}{Math.abs(delta)} <TropheeIcone size={22} />
+                  </p>
+                  <p className="text-sm font-bold text-white/90">Ligue {ligue.ligue.nom} · <TropheesCompteur n={mesTrophees} /></p>
+                </div>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-black/20"><div className="h-2 rounded-full bg-white" style={{ width: `${Math.round(ligue.progression * 100)}%` }} /></div>
+              {ligue.suivante && <p className="text-xs font-semibold text-white/85">Encore {ligue.manque} trophées pour la ligue {ligue.suivante.nom}</p>}
+              {!jour?.fige && <p className="text-[11px] text-white/70">Provisoire : ça bouge encore si d&apos;autres joueurs font mieux aujourd&apos;hui.</p>}
             </div>
           )}
         </section>

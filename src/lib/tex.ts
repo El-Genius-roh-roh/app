@@ -7,7 +7,10 @@ import katex from "katex";
 const MATH = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?<!\\)\$((?:\\\$|[^$])+?)\$/g;
 
 function render(tex: string, display: boolean): string {
-  return katex.renderToString(tex.trim(), { displayMode: display, throwOnError: false, strict: false, output: "html" });
+  // toujours en mode « en ligne » : KaTeX peut alors couper les longues formules (après =, +, …) au lieu de déborder ;
+  // les $$…$$ sont simplement centrés sur leur propre ligne (classe tex-bloc).
+  void display;
+  return katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false, strict: false, output: "html" });
 }
 
 export type Part = { math: false; text: string } | { math: true; html: string; display: boolean };

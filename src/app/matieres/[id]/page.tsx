@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { llmConfigured, preparerEnArrierePlan } from "@/lib/quiz/ai";
+import IaPanel from "./IaPanel";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
@@ -24,8 +26,9 @@ export default async function Matiere({ params, searchParams }: { params: Promis
   const { subject: s, canManage } = ctx;
 
   const docs = await q<Doc>("select id,nom,categorie,ordre,statut,erreur from documents where subject_id=$1 order by categorie,ordre,created_at", [id]);
-  const today = await todayParis();
+  const today = await todayParis(id);
   const enCours = docs.some((d) => d.statut === "traitement");
+  if (!enCours) preparerEnArrierePlan(id); // l'IA prépare les prochains quiz sans bloquer la page
   const soeurs = await q<{ id: string; nom: string }>("select id,nom from subjects where group_id=$1 order by created_at", [s.group_id]);
   const suivante = soeurs.length > 1 ? soeurs[(soeurs.findIndex((m) => m.id === id) + 1) % soeurs.length] : null;
 
@@ -76,9 +79,10 @@ export default async function Matiere({ params, searchParams }: { params: Promis
           <Classements subjectId={id} groupId={s.group_id} userId={u.id} today={today} saisonParam={saisonParam} />
         </div>
         <div className="space-y-5">
+          {canManage && llmConfigured() && <IaPanel subjectId={id} />}
           {canManage && (
             <div className="grid gap-3 sm:grid-cols-2">
-              <Link href={`/matieres/${id}/chat`} className="btn-orange">✨ Générer avec le chat</Link>
+              <Link href={`/matieres/${id}/chat`} className="btn-orange">💬 Générer avec le chat</Link>
               <Link href={`/matieres/${id}/questions`} className="btn-white">✍️ Créer / modifier les questions</Link>
             </div>
           )}

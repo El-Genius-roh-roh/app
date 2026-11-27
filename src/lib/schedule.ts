@@ -10,7 +10,7 @@ export async function rebuildSchedule(subjectId: string) {
   const [s] = await q<{ date_debut: string; jours_par_saison: number; nb_saisons: number }>(
     "select to_char(date_debut,'YYYY-MM-DD') as date_debut, jours_par_saison, nb_saisons from subjects where id=$1", [subjectId]);
   if (!s) return;
-  const today = await todayParis();
+  const today = await todayParis(subjectId);
   const pages = await q<{ id: string; densite: number; chapitre: string | null }>(
     `select p.id, coalesce(p.densite,0) as densite, p.chapitre
        from document_pages p join documents d on d.id=p.document_id

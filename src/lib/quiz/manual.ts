@@ -22,7 +22,7 @@ export async function editableDays(subjectId: string): Promise<EditDay[]> {
     `select g.id, to_char(g.date,'YYYY-MM-DD') as date, g.saison, g.jour_dans_saison as jour, g.statut_generation as statut,
             (select count(*) from questions qq where qq.game_day_id=g.id)::int as nb,
             exists (select 1 from attempts a where a.game_day_id=g.id) as joue
-       from game_days g where g.subject_id=$1 and g.date >= $2::date order by g.date`, [subjectId, await todayParis()]);
+       from game_days g where g.subject_id=$1 and g.date >= $2::date order by g.date`, [subjectId, await todayParis(subjectId)]);
 }
 
 export async function dayQuestions(dayId: string): Promise<EditQuestion[]> {
@@ -37,7 +37,7 @@ async function verrou(subjectId: string, dayId: string): Promise<string | null> 
     `select to_char(date,'YYYY-MM-DD') as date, exists (select 1 from attempts a where a.game_day_id=g.id) as joue
        from game_days g where id=$1 and subject_id=$2`, [dayId, subjectId]);
   if (!d) return "Quiz introuvable.";
-  if (d.date < (await todayParis())) return "Ce quiz est passé : il ne peut plus être modifié.";
+  if (d.date < (await todayParis(subjectId))) return "Ce quiz est passé : il ne peut plus être modifié.";
   if (d.joue) return "Des joueurs ont déjà commencé ce quiz : il ne peut plus être modifié.";
   return null;
 }

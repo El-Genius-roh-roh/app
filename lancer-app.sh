@@ -28,6 +28,13 @@ if [ -z "$PGHOST" ]; then
   exit 1
 fi
 export DATABASE_URL="postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE"
+
+# IA qui écrit les questions : clé et adresse fournies par Onyxia (service IA de SSP Cloud).
+if [ -n "$OPENAI_API_KEY" ] && [ -n "$OPENAI_BASE_URL" ]; then
+  echo "== IA activée (${LLM_MODEL:-qwen3-6-35b-moe}) : les quiz sont écrits automatiquement =="
+else
+  echo "!! IA non configurée (OPENAI_API_KEY / OPENAI_BASE_URL absents) : questions simulées ou via le chat"
+fi
 echo "== Création des tables =="
 npx tsx db/migrate.ts
 

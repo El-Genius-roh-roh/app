@@ -47,3 +47,9 @@ body {
   .lien { @apply font-action text-violet-600 underline decoration-2 underline-offset-2 hover:text-fuchsia-600; }
   .muted { @apply text-sm text-slate-500; }
 }
+
+/* Questions et réponses « façon LaTeX » : police Computer Modern de KaTeX, formules sans barre de défilement. */
+.tex { font-family: KaTeX_Main, "Latin Modern Roman", "CMU Serif", "Times New Roman", serif; letter-spacing: 0; overflow-wrap: anywhere; }
+.tex .katex { font-size: 1.08em; }
+.tex .tex-bloc { display: block; margin: 0.35em 0; text-align: center; }
+.tex .katex-html { white-space: normal; }

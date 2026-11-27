@@ -15,7 +15,9 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q9 | Qui paie les appels à l'API IA (modèle économique) ? | Une seule clé API côté serveur, payée par le propriétaire de l'app ; pas de paiement dans le MVP |
 | Q10 | Nom de l'application ? | Nom provisoire configurable (`APP_NAME`), à définir |
 | Q11 | Un joueur peut-il signaler une question fausse ? | Non (décision D1 : pas de validation humaine). À reconsidérer après les tests réels |
-| Q12 | Seuils des ligues | Bronze 0, Argent 200, Or 500, Platine 1000, Diamant 2000, Maître 3500 points cumulés dans le groupe (`LIGUES` dans `src/config/constants.ts`) — à ajuster après quelques semaines de jeu |
+| Q12 | Seuils des ligues | Bronze 0, Argent 100, Or 250, Platine 500, Diamant 800, Maître 1 200 trophées dans le groupe (`LIGUES` dans `src/config/constants.ts`) — à ajuster après quelques semaines de jeu |
 | Q13 | « 1er du jour » et « le plus rapide » quand on est seul à jouer ? | Non attribués : il faut au moins 2 joueurs ce jour-là (`TROPHEES.MIN_JOUEURS_DUEL`) |
 | Q14 | Peut-on modifier la date de début, le nombre de jours ou de saisons d'une matière existante ? | Non : seul le nom est modifiable (D22). Supprimer et recréer la matière si besoin |
 | Q15 | Faut-il garder une trace de qui a modifié une question ? | Non : simple marqueur `manuelle`, pas d'historique |
+| Q16 | Un joueur qui rejoint un groupe en cours perd-il des trophées pour les jours manqués avant son arrivée ? | Non : la pénalité d'absence ne s'applique qu'après sa première partie dans la matière |
+| Q17 | Que faire si l'IA est indisponible ? | Le générateur simulé prend le relais pour que le quiz du jour existe toujours |

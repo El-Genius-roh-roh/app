@@ -101,26 +101,42 @@ Fanny n'a pas joué le jour 11 : 0 point, et elle n'est comptée comme battue pa
 
 Un seul joueur a joué : 0 battu, base 10, multiplicateur 1,00 → 10 points.
 
-## 8. Ligues et trophées (D16)
+## 8. Trophées, ligues et badges (D24, remplace l'affichage de D16)
 
-Les points ci-dessus restent la base de **tous les classements**, mais ne sont plus affichés tels quels.
+Les points des §1 à §6 restent calculés (et stockés), mais **l'application affiche des trophées** 🏆, comme dans Clash Royale.
 
-**Ligue** d'un joueur dans un groupe = selon ses points cumulés dans le groupe (§6) :
+### Trophées d'un quiz du jour
 
-| Ligue | Bronze 🥉 | Argent 🥈 | Or 🥇 | Platine 💠 | Diamant 💎 | Maître 👑 |
-|-------|-----------|-----------|-------|-----------|-----------|-----------|
-| À partir de | 0 | 200 | 500 | 1 000 | 2 000 | 3 500 |
+```
+trophées(j) = +10 × joueurs_battus(j) − 10 × joueurs_devant(j)
+```
 
-La page du groupe montre la ligue, la progression vers la suivante (« encore N pts ») et la série de jours en cours.
+`joueurs_devant(j)` = joueurs classés ce jour-là ayant (moins d'erreurs) ou (autant d'erreurs et moins de temps). Égalité parfaite : 0. Pas de multiplicateur.
 
-**Trophées** (calculés à partir des résultats quotidiens du groupe, toutes matières) :
+Quiz du jour **non joué** (jour passé) dans une matière où le joueur a déjà joué au moins une fois : **−10**.
 
-| Trophée | Condition | Cumulable |
-|---------|-----------|-----------|
-| 🏆 1er du jour | rang 1 d'un quiz du jour, avec au moins 2 joueurs ce jour-là | oui (×N) |
+Exemple, groupe de 5 : +40, +20, 0, −20, −40.
+
+### Total et paliers
+
+Les quiz de toutes les matières du groupe sont rejoués dans l'ordre chronologique. Le total ne descend **jamais sous 0**, ni **sous le seuil de la meilleure ligue déjà atteinte**.
+
+| Ligue | Bronze | Argent | Or | Platine | Diamant | Maître |
+|-------|--------|--------|----|---------|---------|--------|
+| À partir de (trophées) | 0 | 100 | 250 | 500 | 800 | 1 200 |
+
+### Classements affichés
+
+- **Général (groupe)** : total de trophées, avec la ligue.
+- **Saison d'une matière** : trophées gagnés ou perdus pendant la saison (somme des variations, sans palier).
+- **Jour** : variation du jour (+40, −20…).
+
+### Badges (anciens « trophées » de D16)
+
+| Badge | Condition | Cumulable |
+|-------|-----------|-----------|
+| 🥇 1er du jour | rang 1 d'un quiz du jour, avec au moins 2 joueurs ce jour-là | oui (×N) |
 | 🎯 Sans faute | 0 erreur à un quiz du jour | oui |
-| ⚡ Le plus rapide | temps le plus court du jour, avec au moins 2 joueurs (même s'il a fait des erreurs) | oui |
-| 🔥 Série de 3 / 7 / 30 jours | jours consécutifs avec au moins un quiz terminé dans le groupe | non (débloqué une fois) |
+| ⚡ Le plus rapide | temps le plus court du jour, avec au moins 2 joueurs | oui |
+| 🔥 Série de 3 / 7 / 30 jours | jours consécutifs avec au moins un quiz terminé dans le groupe | non |
 | 📚 10 / 50 quiz joués | nombre de quiz terminés dans le groupe | non |
-
-Série en cours : elle continue tant que le dernier jour joué est aujourd'hui ou hier.

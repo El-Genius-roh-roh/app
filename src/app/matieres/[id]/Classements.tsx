@@ -1,9 +1,10 @@
 import Link from "next/link";
 import RankTable, { fmtMs, RankBadge } from "@/components/RankTable";
-import { defaultSeason, getDayRanking, getGroupRanking, getSeasonHistory, getSeasonRanking, getSeasons, pickDay } from "@/lib/ranking";
+import { classementSaisonTrophees, defaultSeason, getDayRanking, getGroupTrophees, getSeasonHistory, getSeasonRanking, getSeasons, pickDay } from "@/lib/ranking";
+import { q } from "@/lib/db";
 import ScoreChart from "@/components/ScoreChart";
 import { exploitsDuJour, ligueDe } from "@/lib/trophees";
-import { Exploits, LigueBadge } from "@/components/Trophees";
+import { DeltaTrophees, Exploits, LigueBadge } from "@/components/Trophees";
 import { CONFIG } from "@/config/constants";
 
 export default async function Classements({ subjectId, groupId, userId, today, saisonParam }: { subjectId: string; groupId: string; userId: string; today: string; saisonParam?: string }) {
@@ -11,14 +12,21 @@ export default async function Classements({ subjectId, groupId, userId, today, s
   if (seasons.length === 0) return null;
   const wanted = Number(saisonParam);
   const saison = seasons.some((s) => s.saison === wanted) ? wanted : defaultSeason(seasons, today);
-  const season = await getSeasonRanking(subjectId, saison);
-  // la ligue d'un joueur dépend de ses points cumulés dans tout le groupe
-  const pointsGroupe = new Map((await getGroupRanking(groupId)).map((l) => [l.userId, l.points]));
+  // trophées façon Clash Royale : la ligue dépend du total dans le groupe, le classement de saison des trophées gagnés dans cette matière
+  const tr = await getGroupTrophees(groupId);
+  const totalGroupe = new Map(tr.lignes.map((l) => [l.userId, l.trophees]));
+  const joueurs = await getSeasonRanking(subjectId, saison);
+  const joursSaison = async (n: number) => (await q<{ id: string }>("select id from game_days where subject_id=$1 and saison=$2", [subjectId, n])).map((d) => d.id);
+  const season = classementSaisonTrophees(tr, await joursSaison(saison), joueurs);
   const dayId = await pickDay(subjectId, saison, today);
   const day = dayId ? await getDayRanking(dayId) : null;
-  const history = await getSeasonHistory(subjectId, saison);
+  const history = await getSeasonHistory(subjectId, saison, tr.deltas);
   const finies = seasons.filter((s) => s.termine);
-  const podiums = await Promise.all(finies.map(async (s) => ({ s, top: (await getSeasonRanking(subjectId, s.saison)).filter((l) => l.jours > 0).slice(0, 3) })));
+  const podiums = await Promise.all(finies.map(async (s) => {
+    const js = await getSeasonRanking(subjectId, s.saison);
+    const actifs = new Set(js.filter((l) => l.jours > 0).map((l) => l.userId));
+    return { s, top: classementSaisonTrophees(tr, await joursSaison(s.saison), js).filter((l) => actifs.has(l.userId)).slice(0, 3) };
+  }));
 
   return (
     <>
@@ -36,13 +44,14 @@ export default async function Classements({ subjectId, groupId, userId, today, s
           <h2 className="h2">⚡ Classement du jour {day.date !== today && <span className="text-sm font-semibold text-slate-500">(jour {day.jour})</span>}</h2>
           <RankTable meId={userId} empty="Personne n'a encore joué."
             lines={day.lines.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, detail: `${CONFIG.QUESTIONS_PAR_JOUR - l.erreurs}/${CONFIG.QUESTIONS_PAR_JOUR} · ${fmtMs(l.dureeMs)}`,
-              badge: <Exploits {...exploitsDuJour(day.lines.map((x) => ({ ...x, dayId: day.dayId, date: day.date })), l.userId)} /> }))} />
+              badge: <><Exploits {...exploitsDuJour(day.lines.map((x) => ({ ...x, dayId: day.dayId, date: day.date })), l.userId)} /><DeltaTrophees d={tr.deltas.get(day.dayId)?.get(l.userId) ?? 0} /></> }))} />
         </section>
       )}
 
       <section className="card space-y-3">
         <h2 className="h2">🏆 Classement de la saison{seasons.length > 1 ? ` ${saison}` : ""}</h2>
-        <RankTable meId={userId} lines={season.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, badge: <LigueBadge ligue={ligueDe(pointsGroupe.get(l.userId) ?? 0).ligue} /> }))} />
+        <RankTable meId={userId} lines={season.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
+          badge: <><LigueBadge ligue={ligueDe(totalGroupe.get(l.userId) ?? 0).ligue} /><DeltaTrophees d={l.gain} /></> }))} />
       </section>
 
       <section className="card space-y-3">
@@ -57,7 +66,7 @@ export default async function Classements({ subjectId, groupId, userId, today, s
             <div key={s.saison} className="rounded-2xl bg-amber-50 p-3">
               <p className="text-sm font-extrabold text-orange-600">Saison {s.saison}</p>
               {top.length === 0 ? <p className="muted">Personne n&apos;a joué.</p> : top.map((l) => (
-                <p key={l.userId} className="font-semibold"><RankBadge rang={l.rang} /> {l.pseudo}</p>
+                <p key={l.userId} className="flex items-center gap-1 font-semibold"><RankBadge rang={l.rang} /> {l.pseudo} <DeltaTrophees d={l.gain} /></p>
               ))}
             </div>
           ))}

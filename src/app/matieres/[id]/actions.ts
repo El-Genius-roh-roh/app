@@ -12,6 +12,7 @@ import { rebuildSchedule } from "@/lib/schedule";
 import { freezePastDays, generateUpcoming } from "@/lib/quiz/service";
 import { addDays, setDemoToday, todayParis } from "@/lib/clock";
 import { importChatAnswer, type ImportResult } from "@/lib/quiz/chat";
+import { genererAvecIA, llmConfigured } from "@/lib/quiz/ai";
 
 async function manager(fd: FormData) {
   const user = await requireUser();
@@ -73,10 +74,24 @@ export async function genererQuiz(fd: FormData) {
 export async function jourSuivant(fd: FormData) {
   const id = await manager(fd);
   if (!id || process.env.DEMO_MODE !== "1") return;
-  await setDemoToday(addDays(await todayParis(), 1));
+  await setDemoToday(addDays(await todayParis(id), 1), id); // seule CETTE matière avance d'un jour
   await freezePastDays(); // clôture les tentatives de la veille et fige ses résultats
-  await generateUpcoming(); // quiz du jour et du lendemain
+  await generateUpcoming(id); // quiz du jour de cette matière
   revalidatePath(`/matieres/${id}`);
+}
+
+/* ---- génération automatique par l'IA ---- */
+export type IaState = { resultats?: ImportResult; erreur?: string } | null;
+
+/** Écrit (ou réécrit, si personne n'a commencé) les quiz des prochains jours avec l'IA. */
+export async function genererIA(_prev: IaState, fd: FormData): Promise<IaState> {
+  const id = await manager(fd);
+  if (!id) return { erreur: "Action réservée aux gestionnaires de la matière." };
+  if (!llmConfigured()) return { erreur: "IA non configurée sur ce serveur (variables OPENAI_API_KEY et OPENAI_BASE_URL)." };
+  const resultats = await genererAvecIA(id, { regenerer: fd.get("regenerer") === "1", limit: 3 });
+  revalidatePath(`/matieres/${id}`);
+  if (!resultats.length) return { erreur: "Rien à générer : aucun quiz à venir sans questions (ou aucun cours importé)." };
+  return { resultats };
 }
 
 /* ---- génération par le chat (copier-coller) ---- */

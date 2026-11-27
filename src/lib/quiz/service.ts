@@ -1,6 +1,7 @@
 import { CONFIG } from "@/config/constants";
+import { genererJourAvecIA } from "./ai";
 import { pool, q } from "../db";
-import { todayParis } from "../clock";
+import { sqlToday, todayParis } from "../clock";
 import { memberRole } from "../groups";
 import { hashString, shuffled, secureRand } from "../rng";
 import { classementDuJour } from "../scoring";
@@ -207,20 +208,18 @@ export async function recomputeDay(gameDayId: string) {
 
 /** Clôture les tentatives abandonnées : > 15 min, ou d'un jour passé. */
 export async function closeStaleAttempts(): Promise<number> {
-  const today = await todayParis();
   const stale = await q<{ id: string }>(
     `select a.id from attempts a join game_days g on g.id=a.game_day_id
-      where a.statut='en_cours' and (a.started_at < now() - ($1 || ' minutes')::interval or g.date < $2::date)`,
-    [String(CONFIG.DUREE_MAX_TENTATIVE_MIN), today]);
+      where a.statut='en_cours' and (a.started_at < now() - ($1 || ' minutes')::interval or g.date < ${sqlToday("g.subject_id")})`,
+    [String(CONFIG.DUREE_MAX_TENTATIVE_MIN)]);
   for (const s of stale) await finishAttempt(s.id, "cloturee");
   return stale.length;
 }
 
 /** Gèle les jours passés (job de 00h00) : clôture les tentatives abandonnées, puis fige les résultats. Idempotent. */
 export async function freezePastDays(): Promise<number> {
-  const today = await todayParis();
   await closeStaleAttempts();
-  const days = await q<{ id: string }>("select id from game_days where date < $1::date and not fige", [today]);
+  const days = await q<{ id: string }>(`select g.id from game_days g where g.date < ${sqlToday("g.subject_id")} and not g.fige`);
   for (const d of days) {
     await q("update game_days set fige=true where id=$1", [d.id]);
     await recomputeDay(d.id); // provisoire = not fige → résultats définitifs
@@ -231,10 +230,11 @@ export async function freezePastDays(): Promise<number> {
 type StartResult = { status: number; body: any };
 
 export async function startAttempt(gameDayId: string, userId: string): Promise<StartResult> {
-  const [gd] = await q<{ id: string; date: string; group_id: string }>(
-    `select g.id, to_char(g.date,'YYYY-MM-DD') as date, s.group_id from game_days g join subjects s on s.id=g.subject_id where g.id=$1`, [gameDayId]);
+  const [gd] = await q<{ id: string; date: string; group_id: string; subject_id: string; statut_generation: string }>(
+    `select g.id, to_char(g.date,'YYYY-MM-DD') as date, s.group_id, g.subject_id, g.statut_generation
+       from game_days g join subjects s on s.id=g.subject_id where g.id=$1`, [gameDayId]);
   if (!gd || !(await memberRole(gd.group_id, userId))) return { status: 404, body: { error: "Quiz introuvable." } };
-  const today = await todayParis();
+  const today = await todayParis(gd.subject_id);
   if (gd.date > today) return { status: 403, body: { error: "Ce quiz n'est pas encore disponible." } };
   if (gd.date < today) return { status: 403, body: { error: "Ce quiz est terminé : plus de tentative possible." } };
 
@@ -243,6 +243,8 @@ export async function startAttempt(gameDayId: string, userId: string): Promise<S
   let a = await get();
   if (a && a.statut !== "en_cours") return { status: 409, body: { error: "Tu as déjà joué ce quiz (une seule tentative)." } };
   if (!a) {
+    // quiz encore vide : l'IA l'écrit maintenant (~15 s) ; sinon le générateur simulé prend le relais
+    if (gd.statut_generation !== "ok") await genererJourAvecIA(gd.subject_id, gameDayId);
     try { await ensureQuestions(gameDayId); } catch { return { status: 503, body: { error: "Le quiz du jour n'est pas disponible pour le moment." } }; }
     const ids = (await q<{ id: string }>("select id from questions where game_day_id=$1", [gameDayId])).map((r) => r.id);
     const rand = secureRand();
@@ -319,12 +321,15 @@ export async function getCorrection(gameDayId: string, userId: string | null) {
  * Les jours suivants sont laissés libres pour la génération par le chat.
  */
 export async function generateUpcoming(subjectId?: string) {
-  const today = await todayParis();
-  const days = await q<{ id: string }>(
-    `select id from game_days where date between $1::date and $2::date and statut_generation<>'ok' and ($3::uuid is null or subject_id=$3::uuid)
-       and exists (select 1 from documents d where d.subject_id=game_days.subject_id and d.categorie='cours' and d.statut='pret')`,
-    [today, today, subjectId ?? null]);
+  // « aujourd'hui » propre à chaque matière (mode démo : chaque matière avance indépendamment)
+  const days = await q<{ id: string; subject_id: string }>(
+    `select g.id, g.subject_id from game_days g where g.date = ${sqlToday("g.subject_id")} and g.statut_generation<>'ok' and ($1::uuid is null or g.subject_id=$1::uuid)
+       and exists (select 1 from documents d where d.subject_id=g.subject_id and d.categorie='cours' and d.statut='pret')`,
+    [subjectId ?? null]);
   let ok = 0, ko = 0;
-  for (const d of days) { try { await ensureQuestions(d.id); ok++; } catch (e) { ko++; console.error("génération", d.id, (e as Error).message); } }
+  for (const d of days) {
+    await genererJourAvecIA(d.subject_id, d.id); // IA d'abord (si configurée)
+    try { await ensureQuestions(d.id); ok++; } catch (e) { ko++; console.error("génération", d.id, (e as Error).message); }
+  }
   return { ok, echecs: ko };
 }

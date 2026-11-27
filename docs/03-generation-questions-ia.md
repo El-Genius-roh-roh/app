@@ -111,3 +111,11 @@ Validations techniques en plus : JSON valide, 4 choix distincts (QCM), `correct_
 - **Exemples du cours** : questions d'application (même méthode, nouvelles valeurs), jamais sur les données de l'exemple. Le générateur simulé ignore les slides d'exemple et les phrases surtout chiffrées.
 - **LaTeX** : formules entre `$…$` dans l'énoncé, les choix et l'explication. L'import répare les antislashs non doublés (`fixLatexEscapes`).
 - **Réponses complètes** : une réponse trop longue est écartée, jamais tronquée.
+
+## Génération automatique par l'IA d'Onyxia (D25)
+
+- Code : `src/lib/quiz/ai.ts` (orchestration), `src/lib/ai/llm.ts` (appel HTTP compatible OpenAI).
+- Même prompt que le copier-coller (`buildChatPrompt`), un quiz par appel, réflexion désactivée (`enable_thinking: false`).
+- **Vérification** : un second appel reçoit les questions **sans** les bonnes réponses et répond ; toute question dont la réponse diffère est écartée (puis remplacée par le générateur simulé si besoin).
+- Déclenchement : en arrière-plan à l'ouverture de la page d'une matière (3 prochains jours), avant le lancement d'un quiz encore vide, par le job `generate`, et par le bouton « Générer avec l'IA » (option : refaire les quiz pas encore commencés).
+- Variables : `OPENAI_API_KEY`, `OPENAI_BASE_URL` (fournies par Onyxia), `LLM_MODEL` (facultatif, défaut `qwen3-6-35b-moe`).
