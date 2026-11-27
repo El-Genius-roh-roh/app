@@ -3,10 +3,18 @@ import { redirect } from "next/navigation";
 import crypto from "crypto";
 import { q } from "./db";
 
-const SECRET = process.env.SESSION_SECRET ?? "dev-secret-change-me";
 const COOKIE = "session";
 
-const sign = (v: string) => crypto.createHmac("sha256", SECRET).update(v).digest("hex");
+/** En production, un secret par défaut permettrait à quiconque de forger un cookie de session : on refuse. */
+function secret(): string {
+  const s = process.env.SESSION_SECRET;
+  if (s) return s;
+  if (process.env.NODE_ENV === "production") throw new Error("SESSION_SECRET doit être défini en production.");
+  return "dev-secret-change-me";
+}
+
+const sign = (v: string) => crypto.createHmac("sha256", secret()).update(v).digest("hex");
+const sameSig = (a: string, b: string) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
 export async function setSession(userId: string) {
   (await cookies()).set(COOKIE, `${userId}.${sign(userId)}`, {
@@ -21,7 +29,7 @@ export async function getUser(): Promise<User | null> {
   const raw = (await cookies()).get(COOKIE)?.value;
   if (!raw) return null;
   const [id, sig] = raw.split(".");
-  if (!id || !sig || sig !== sign(id)) return null;
+  if (!id || !sig || !sameSig(sig, sign(id))) return null;
   const [u] = await q<User>("select id,email,pseudo,avatar_v from profiles where id=$1", [id]);
   return u ?? null;
 }

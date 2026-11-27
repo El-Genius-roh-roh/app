@@ -43,6 +43,17 @@ if [ -n "$1" ]; then
   ORIGIN="${1#*://}"; ORIGIN="${ORIGIN%%/*}"
   export NEXT_PUBLIC_BASE_PATH=""
   OUVRIR="https://$ORIGIN/"
+  # Adresse publique + mode démo : sans e-mail, n'importe qui pourrait se connecter au compte d'un autre.
+  # On réserve donc l'accès à ceux qui connaissent un code (conservé entre deux lancements).
+  if [ -z "$CODE_ACCES" ]; then
+    CODE_FILE="$HOME/.config/app-code-acces"
+    if [ ! -s "$CODE_FILE" ]; then
+      mkdir -p "$(dirname "$CODE_FILE")"
+      head -c 32 /dev/urandom | base64 | tr -dc 'A-HJ-NP-Z2-9' | head -c 6 > "$CODE_FILE"
+      chmod 600 "$CODE_FILE"
+    fi
+    export CODE_ACCES="$(cat "$CODE_FILE")"
+  fi
 else
   # Accès privé via le proxy de VS Code.
   ORIGIN="${VSCODE_PROXY_URI#*://}"; ORIGIN="${ORIGIN%%/*}"
@@ -68,6 +79,7 @@ mkdir -p .next && echo -n "$NEXT_PUBLIC_BASE_PATH" > .next/.base-path
 echo
 echo "=================================================================="
 echo " Ouvrez : $OUVRIR"
+if [ -n "$CODE_ACCES" ]; then echo " Code d'accès à donner à vos amis : $CODE_ACCES"; fi
 echo " (Ctrl+C pour arrêter l'application)"
 echo "=================================================================="
 npm run dev -- -H 0.0.0.0
