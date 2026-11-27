@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createMagicLink } from "@/lib/auth";
 import { APP_NAME } from "@/config/constants";
+import { url } from "@/lib/url";
 
 async function demander(fd: FormData) {
   "use server";
@@ -19,7 +20,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       {token ? (
         <div className="rounded border border-amber-300 bg-amber-50 p-3 text-sm space-y-2">
           <p>Mode démo : aucun e-mail n&apos;est envoyé. Cliquez sur le lien :</p>
-          <a className="block rounded bg-indigo-600 p-2 text-center text-white" href={`/auth/verify?token=${token}`}>Se connecter</a>
+          <a className="block rounded bg-indigo-600 p-2 text-center text-white" href={url(`/auth/verify?token=${token}`)}>Se connecter</a>
         </div>
       ) : (
         <form action={demander} className="space-y-3">

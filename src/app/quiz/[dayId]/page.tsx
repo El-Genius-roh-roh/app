@@ -8,6 +8,7 @@ import { ranges } from "@/lib/subjects";
 import { closeStaleAttempts, currentState, dayProgramme, getCorrection } from "@/lib/quiz/service";
 import QuizPlayer from "@/components/QuizPlayer";
 import Correction from "@/components/Correction";
+import { url } from "@/lib/url";
 
 const fmtTime = (ms: number) => `${Math.floor(ms / 60000)} min ${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")} s`;
 
@@ -36,7 +37,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
       <h2 className="font-semibold">Slides au programme</h2>
       {prog.length === 0 ? <p className="text-xs text-gray-600">Jour de révision : questions sur les jours précédents.</p> : prog.map((p) => (
         <p key={p.doc_id} className="text-xs"><span className="text-gray-700">{p.chapitres.join(" · ")}</span> —{" "}
-          <a className="text-indigo-700 underline" target="_blank" href={`/api/documents/${p.doc_id}/file#page=${p.numeros[0]}`}>{p.doc_nom} p.{ranges(p.numeros)}</a></p>
+          <a className="text-indigo-700 underline" target="_blank" href={url(`/api/documents/${p.doc_id}/file#page=${p.numeros[0]}`)}>{p.doc_nom} p.{ranges(p.numeros)}</a></p>
       ))}
     </section>
   );

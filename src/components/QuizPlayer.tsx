@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { url } from "@/lib/url";
 
 type Q = { id: string; type: "qcm" | "vrai_faux"; enonce: string; choices: string[] };
 type State = { attemptId: string; index: number; total: number; question: Q; elapsedMs: number };
@@ -30,7 +31,7 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
 
   async function start() {
     setBusy(true); setErr(null);
-    const r = await fetch(`/api/quiz/${gameDayId}/start`, { method: "POST" });
+    const r = await fetch(url(`/api/quiz/${gameDayId}/start`), { method: "POST" });
     const j = await r.json();
     setBusy(false);
     if (!r.ok) { setErr(j.error ?? "Erreur"); if (r.status === 409 || r.status === 403) router.refresh(); return; }
@@ -40,7 +41,7 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
   async function answer(choice: number) {
     if (!st || busy) return;
     setBusy(true); setErr(null);
-    const r = await fetch(`/api/quiz/${st.attemptId}/answer`, {
+    const r = await fetch(url(`/api/quiz/${st.attemptId}/answer`), {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ questionId: st.question.id, choice }),
     });

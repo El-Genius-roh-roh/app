@@ -8,6 +8,7 @@ import { todayParis } from "@/lib/clock";
 import AutoRefresh from "@/components/AutoRefresh";
 import QuizCard from "./QuizCard";
 import Classements from "./Classements";
+import { url } from "@/lib/url";
 
 type Doc = { id: string; nom: string; categorie: "cours" | "annale"; ordre: number; nb_pages: number | null; statut: "traitement" | "pret" | "erreur"; erreur: string | null };
 type DayRow = { id: string; saison: number; jour: number; date: string; doc_id: string | null; doc_nom: string | null; numeros: number[] | null; chapitres: string[] | null; notions: string[] | null; first_page: string | null };
@@ -74,7 +75,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
           {docs.map((d) => (
             <li key={d.id} className="rounded border p-2 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <a href={`/api/documents/${d.id}/file`} target="_blank" className="font-medium text-indigo-700 truncate">{d.nom}</a>
+                <a href={url(`/api/documents/${d.id}/file`)} target="_blank" className="font-medium text-indigo-700 truncate">{d.nom}</a>
                 <span className="shrink-0 text-xs">{STATUT[d.statut]}</span>
               </div>
               <div className="text-xs text-gray-500">{d.categorie === "cours" ? `Cours n°${d.ordre}` : "Annale"}{d.nb_pages ? ` · ${d.nb_pages} pages` : ""}{d.erreur ? ` · ${d.erreur}` : ""}</div>
@@ -126,7 +127,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
                     {vide ? <p className="text-xs text-gray-500">Jour de révision (10 questions de révision)</p> : d.map((r) => (
                       <div key={r.doc_id} className="text-xs">
                         <span className="text-gray-700">{r.chapitres?.join(" · ") || "—"}</span> —{" "}
-                        <a className="text-indigo-700 underline" target="_blank" href={`/api/documents/${r.doc_id}/file#page=${r.numeros![0]}`}>{r.doc_nom} p.{ranges(r.numeros!)}</a>
+                        <a className="text-indigo-700 underline" target="_blank" href={url(`/api/documents/${r.doc_id}/file#page=${r.numeros![0]}`)}>{r.doc_nom} p.{ranges(r.numeros!)}</a>
                       </div>
                     ))}
                   </li>

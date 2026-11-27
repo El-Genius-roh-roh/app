@@ -1,4 +1,5 @@
 import type { CorrectionItem } from "@/lib/quiz/service";
+import { url } from "@/lib/url";
 
 export default function Correction({ items }: { items: CorrectionItem[] }) {
   return (
@@ -13,7 +14,7 @@ export default function Correction({ items }: { items: CorrectionItem[] }) {
           {!it.correct && <p>Bonne réponse : <b className="text-green-700">{it.choix[it.correct_index]}</b></p>}
           <p className="mt-1 text-gray-700">{it.explication}</p>
           <a className="mt-1 inline-block text-xs text-indigo-700 underline" target="_blank"
-            href={`/api/documents/${it.source.document_id}/file#page=${it.source.pages[0]}`}>
+            href={url(`/api/documents/${it.source.document_id}/file#page=${it.source.pages[0]}`)}>
             Revoir la slide {it.source.pages.join(", ")}
           </a>
         </li>
