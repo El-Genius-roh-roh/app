@@ -52,18 +52,18 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
         <section className="hero entree">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="eyebrow text-accent">Résultat · jour {gd.jour}</p>
-              <p className="num mt-1 text-6xl leading-none font-bold">{score}<span className="text-3xl text-texte-3">/{items.length}</span></p>
-              <p className="num mt-2 text-texte-2">
-                <Icon name="clock" size={15} className="mr-1 inline align-[-2px]" />{fmtMs(a.duree_ms)}
-                {res && <> · <b className="text-or">{res.rang === 1 ? "1er" : `${res.rang}e`}</b> du jour</>}
+              <p className="eyebrow">Résultat · jour {gd.jour}</p>
+              <p className="num pop mt-2 text-7xl leading-none font-semibold">{score}<span className="text-3xl opacity-70">/{items.length}</span></p>
+              <p className="num mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <span className="inline-flex items-center gap-1"><Icon name="clock" size={15} />{fmtMs(a.duree_ms)}</span>
+                {res && <span className="rounded-full bg-or-vif px-2.5 py-0.5 font-semibold text-sur-or">{res.rang === 1 ? "1er" : `${res.rang}e`} du jour</span>}
               </p>
             </div>
             {res && (
-              <div className="flex items-center gap-3 rounded-xl border border-ligne bg-fond/60 p-3">
-                <LigueBlason ligue={ligue.ligue} size={40} />
+              <div className="flex items-center gap-3 rounded-[16px] bg-surface p-3 text-texte shadow-[0_4px_0_var(--color-accent-ombre)]">
+                <LigueBlason ligue={ligue.ligue} size={44} />
                 <div>
-                  <p className={`num text-2xl leading-none font-bold ${delta > 0 ? "text-ok" : delta < 0 ? "text-ko" : "text-texte-2"}`}>
+                  <p className={`num text-2xl leading-none font-semibold ${delta > 0 ? "text-ok" : delta < 0 ? "text-ko" : "text-texte-2"}`}>
                     {delta > 0 ? "+" : delta < 0 ? "−" : "±"}{Math.abs(delta)} <TropheeIcone size={18} />
                   </p>
                   <p className="mt-1 text-xs text-texte-2">Ligue {ligue.ligue.nom} · <TropheesCompteur n={mesTrophees} className="text-or" /></p>
@@ -72,17 +72,19 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
             )}
           </div>
           {ex && (ex.premier || ex.sansFaute || ex.plusRapide) && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {ex.premier && <span className="chip border-or/40 bg-or/10 text-or"><Icon name="trophy" size={13} />1er du jour</span>}
-              {ex.sansFaute && <span className="chip border-ok/40 bg-ok/10 text-ok"><Icon name="target" size={13} />Sans faute</span>}
-              {ex.plusRapide && <span className="chip border-accent/40 bg-accent/10 text-accent"><Icon name="clock" size={13} />Le plus rapide</span>}
+            <div className="mt-5 flex flex-wrap gap-2">
+              {ex.premier && <span className="chip border-transparent bg-surface text-or"><Icon name="trophy" size={13} />1er du jour</span>}
+              {ex.sansFaute && <span className="chip border-transparent bg-surface text-ok"><Icon name="target" size={13} />Sans faute</span>}
+              {ex.plusRapide && <span className="chip border-transparent bg-surface text-accent-fort"><Icon name="clock" size={13} />Le plus rapide</span>}
             </div>
           )}
           {res && (
-            <div className="mt-4 space-y-1.5">
-              <div className="h-1.5 overflow-hidden rounded-full bg-fond"><div className="h-1.5 rounded-full" style={{ width: `${Math.round(ligue.progression * 100)}%`, background: ligue.ligue.clair }} /></div>
-              {ligue.suivante && <p className="text-xs text-texte-3">Encore <span className="num text-texte-2">{ligue.manque}</span> trophées pour la ligue {ligue.suivante.nom}</p>}
-              {!jour?.fige && <p className="text-xs text-texte-3">Provisoire : ça bouge encore si d&apos;autres joueurs font mieux aujourd&apos;hui.</p>}
+            <div className="mt-5 space-y-1.5">
+              <div className="h-2.5 overflow-hidden rounded-full bg-accent-ombre/60" role="progressbar" aria-label={`Progression vers la ligue suivante`} aria-valuenow={Math.round(ligue.progression * 100)} aria-valuemin={0} aria-valuemax={100}>
+                <div className="h-2.5 rounded-full bg-or-vif" style={{ width: `${Math.round(ligue.progression * 100)}%` }} />
+              </div>
+              {ligue.suivante && <p className="text-xs opacity-90">Encore <span className="num font-semibold">{ligue.manque}</span> trophées pour la ligue {ligue.suivante.nom}</p>}
+              {!jour?.fige && <p className="text-xs opacity-80">Provisoire : ça bouge encore si d&apos;autres joueurs font mieux aujourd&apos;hui.</p>}
             </div>
           )}
         </section>

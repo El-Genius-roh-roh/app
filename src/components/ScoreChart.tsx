@@ -4,10 +4,8 @@ import type { SeasonHistory } from "@/lib/ranking";
 
 // Palette catégorielle validée (8 teintes, ordre fixe, distinguables par les daltoniens entre voisines).
 // La couleur suit le joueur (ordre alphabétique), jamais son rang.
-// Teintes claires pour fond nuit ; ni violet, ni le vert/rouge réservés à juste/faux.
-const SERIES = ["#5ab9fc", "#f5b931", "#4fd1c5", "#ff8a5c", "#f27aa8", "#b6c0cc", "#a3d977", "#c98a52"];
-const GRID = "#263044";
-const AXIS_TEXT = "#7a869c";
+// Teintes moyennes lisibles sur fond clair comme sombre (≥ 3:1 en trait) ; ni violet, ni le vert/rouge réservés à juste/faux.
+const SERIES = ["#3d7efc", "#aa7e05", "#1f9e93", "#dd5403", "#d6407a", "#7f8791", "#6f8f1c", "#b0703a"];
 const H = 240, M = { t: 12, r: 16, b: 26, l: 34 };
 
 type Mode = "cumul" | "note";
@@ -84,10 +82,10 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
 
   return (
     <div className="space-y-3">
-      <div className="flex rounded-xl border border-ligne bg-fond p-1" role="tablist">
+      <div className="flex rounded-[14px] bg-surface-2 p-1" role="tablist">
         {([["cumul", "Trophées de la saison"], ["note", `Note du jour /${maxQuestions}`]] as const).map(([m, label]) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
-            className={`min-h-10 flex-1 rounded-lg px-3 text-sm font-medium transition-colors ${mode === m ? "bg-surface-2 text-texte" : "text-texte-3 hover:text-texte-2"}`}>
+            className={`min-h-10 flex-1 rounded-[10px] px-3 text-sm font-bold transition-colors ${mode === m ? "bg-surface text-accent-fort shadow-[0_2px_0_var(--color-ligne)]" : "text-texte-3 hover:text-texte-2"}`}>
             {label}
           </button>
         ))}
@@ -106,19 +104,19 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
         <svg width={w} height={H} role="img" aria-label={`Évolution des ${mode === "cumul" ? "trophées de la saison" : "notes du jour"} par joueur`}>
           {ticks.map((t) => (
             <g key={t}>
-              <line x1={M.l} x2={w - M.r} y1={y(t)} y2={y(t)} stroke={GRID} strokeWidth="1" />
-              <text x={M.l - 6} y={y(t)} dy="0.32em" textAnchor="end" fontSize="11" fill={AXIS_TEXT}>{t}</text>
+              <line x1={M.l} x2={w - M.r} y1={y(t)} y2={y(t)} className="stroke-ligne" strokeWidth="1" />
+              <text x={M.l - 6} y={y(t)} dy="0.32em" textAnchor="end" fontSize="11" className="fill-texte-3">{t}</text>
             </g>
           ))}
           {data.jours.map((j, i) => (i % labelEvery === 0 || i === n - 1) && (
-            <text key={j.date} x={xr(i)} y={H - 8} textAnchor="middle" fontSize="11" fill={AXIS_TEXT}>J{j.jour}</text>
+            <text key={j.date} x={xr(i)} y={H - 8} textAnchor="middle" fontSize="11" className="fill-texte-3">J{j.jour}</text>
           ))}
-          {hover !== null && <line x1={xr(hover)} x2={xr(hover)} y1={M.t} y2={M.t + ih} stroke="#aab4c6" strokeWidth="1" strokeDasharray="3 3" />}
+          {hover !== null && <line x1={xr(hover)} x2={xr(hover)} y1={M.t} y2={M.t + ih} className="stroke-texte-3" strokeWidth="1" strokeDasharray="3 3" />}
           {series.map((s) => (
             <g key={s.userId}>
               <path d={path(s.values)} fill="none" stroke={s.color} strokeWidth={s.userId === meId ? 3 : 2} strokeLinejoin="round" strokeLinecap="round" />
               {s.values.map((v, i) => v !== null && (n <= 31 || i === hover) && (
-                <circle key={i} cx={xr(i)} cy={y(v)} r={i === hover ? 5 : 3.5} fill={s.color} stroke="#131824" strokeWidth="2" />
+                <circle key={i} cx={xr(i)} cy={y(v)} r={i === hover ? 5 : 3.5} fill={s.color} className="stroke-surface" strokeWidth="2" />
               ))}
             </g>
           ))}
@@ -126,7 +124,7 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
             const last = s.values.reduce<number>((a, v, i) => (v !== null ? i : a), -1);
             if (last < 0) return null;
             return (
-              <text key={s.userId} x={xr(last) + 8} y={y(s.values[last]!)} dy="0.32em" fontSize="12" fontWeight="600" fill="#aab4c6">
+              <text key={s.userId} x={xr(last) + 8} y={y(s.values[last]!)} dy="0.32em" fontSize="12" fontWeight="600" className="fill-texte-2">
                 {s.pseudo.length > 9 ? s.pseudo.slice(0, 8) + "…" : s.pseudo}
               </text>
             );

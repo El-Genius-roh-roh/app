@@ -23,82 +23,123 @@ export default async function Accueil() {
        left join attempts a on a.game_day_id=gd.id and a.user_id=$1
        left join daily_results r on r.game_day_id=gd.id and r.user_id=$1
       order by (a.statut is not null and a.statut <> 'en_cours'), g.created_at, s.created_at`, [u.id]);
-  const aJouer = jours.filter((j) => !j.statut || j.statut === "en_cours").length;
+  const fait = (j: Jour) => !!j.statut && j.statut !== "en_cours";
+  const restants = jours.filter((j) => !fait(j));
+  const prochain = restants[0];
+  const N = CONFIG.QUESTIONS_PAR_JOUR;
 
   return (
     <main className="page">
-      <header className="entree space-y-1">
+      <header className="entree">
         <p className="eyebrow">Salut {u.pseudo}</p>
-        <h1 className="title">
-          {jours.length === 0 ? "Prêt à réviser ?" : aJouer === 0 ? "Tout est joué aujourd'hui" : `${aJouer} quiz à jouer aujourd'hui`}
+        <h1 className="title mt-1">
+          {jours.length === 0 ? "Prêt à réviser ?" : restants.length === 0 ? "Tout est joué. Bravo !" : restants.length === 1 ? "Un quiz t'attend" : `${restants.length} quiz t'attendent`}
         </h1>
       </header>
 
-      <div className="space-y-6 lg:grid lg:grid-cols-[1.4fr_1fr] lg:items-start lg:gap-8 lg:space-y-0">
-        <section className="space-y-3" aria-labelledby="t-jour">
-          <h2 id="t-jour" className="eyebrow">Quiz du jour</h2>
-          {jours.length === 0 ? (
-            <p className="card muted">Aucun quiz prévu aujourd&apos;hui. Crée une matière dans un groupe pour commencer.</p>
-          ) : (
-            <ul className="liste">
-              {jours.map((j) => {
-                const fait = j.statut && j.statut !== "en_cours";
-                return (
-                  <li key={j.day_id}>
-                    <Link href={fait ? `/matieres/${j.subject_id}` : `/quiz/${j.day_id}`} className="ligne group min-h-16 transition-colors hover:bg-surface-2">
-                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${fait ? "bg-ok/12 text-ok" : "bg-accent text-sur-accent"}`}>
-                        <Icon name={fait ? "check" : "play"} size={18} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-semibold">{j.matiere}</span>
-                        <span className="block truncate text-sm text-texte-3">{j.groupe} · jour {j.jour}</span>
-                      </span>
-                      {fait ? (
-                        <span className="text-right">
-                          <span className="num block text-lg font-bold">{CONFIG.QUESTIONS_PAR_JOUR - (j.erreurs ?? 0)}/{CONFIG.QUESTIONS_PAR_JOUR}</span>
-                          {j.rang && <span className="num block text-xs text-or">{j.rang === 1 ? "1er" : `${j.rang}e`}</span>}
-                        </span>
-                      ) : (
-                        <span className="num text-sm font-semibold text-accent">{j.statut === "en_cours" ? "Reprendre" : "Jouer"}</span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
+      <div className="space-y-7 lg:grid lg:grid-cols-[1.4fr_1fr] lg:items-start lg:gap-10 lg:space-y-0">
+        <div className="space-y-7">
+          {/* le moment fort : le prochain quiz à jouer */}
+          {prochain && (
+            <section className="hero entree" aria-labelledby="t-prochain">
+              <div aria-hidden className="pointer-events-none absolute -top-10 -right-8 h-40 w-40 rounded-full bg-sur-accent/10" />
+              <div aria-hidden className="pointer-events-none absolute top-5 right-5 h-5 w-5 rounded-full bg-or-vif" />
+              <p className="font-num text-xs font-medium tracking-[0.08em] uppercase opacity-85">Quiz du jour · {prochain.groupe}</p>
+              <h2 id="t-prochain" className="mt-2 max-w-[85%] font-titre text-4xl leading-[1.02] font-extrabold break-words lg:text-5xl">{prochain.matiere}</h2>
+              <p className="mt-2 text-sm opacity-90"><span className="num">{N}</span> questions · jour <span className="num">{prochain.jour}</span> · un seul essai</p>
+              <Link href={`/quiz/${prochain.day_id}`}
+                className="btn-hero mt-6">
+                <Icon name="play" size={20} />{prochain.statut === "en_cours" ? "Reprendre le quiz" : "Jouer maintenant"}
+              </Link>
+            </section>
           )}
-        </section>
 
-        <section className="space-y-3" aria-labelledby="t-groupes">
-          <h2 id="t-groupes" className="eyebrow">Mes groupes</h2>
-          {groupes.length === 0 && <p className="card muted">Crée un groupe ou rejoins celui de tes amis avec son code.</p>}
-          <ul className="space-y-2">
-            {groupes.map((g) => (
-              <li key={g.id}>
-                <Link href={`/groupes/${g.id}`} className="tuile group flex items-center gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-texte-2"><Icon name="users" size={18} /></span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-semibold">{g.nom}</span>
-                    <span className="num block text-xs text-texte-3">{g.membres} membre{g.membres > 1 ? "s" : ""} · {g.matieres} matière{g.matieres > 1 ? "s" : ""}</span>
-                  </span>
-                  <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/groupes/nouveau" className="btn-primary"><Icon name="plus" size={18} />Créer un groupe</Link>
-            <Link href="/rejoindre" className="btn-white">Rejoindre</Link>
-          </div>
-          <Link href="/arene" className="tuile group flex items-center gap-3 border-accent/30">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/12 text-accent"><Icon name="swords" size={18} /></span>
+          <section className="space-y-3" aria-labelledby="t-jour">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="t-jour" className="h2">Aujourd&apos;hui</h2>
+              {jours.length > 0 && <span className="num text-sm text-texte-3">{jours.length - restants.length}/{jours.length} joués</span>}
+            </div>
+            {jours.length > 0 && (
+              <div className="flex gap-1.5" aria-hidden>
+                {jours.map((j) => <span key={j.day_id} className={`h-2 flex-1 rounded-full ${fait(j) ? "bg-ok" : "bg-ligne"}`} />)}
+              </div>
+            )}
+            {jours.length === 0 ? (
+              <div className="card space-y-1">
+                <p className="font-semibold">Aucun quiz prévu aujourd&apos;hui</p>
+                <p className="muted">Ajoute une matière dans un de tes groupes : son premier quiz arrive le lendemain.</p>
+              </div>
+            ) : jours.length > 1 && (
+              <ul className="liste">
+                {jours.filter((j) => j !== prochain).map((j) => {
+                  const ok = fait(j);
+                  return (
+                    <li key={j.day_id}>
+                      <Link href={ok ? `/matieres/${j.subject_id}` : `/quiz/${j.day_id}`} className="ligne group min-h-16 transition-colors hover:bg-surface-2">
+                        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] ${ok ? "bg-ok-doux text-ok" : "bg-accent-doux text-accent-fort"}`}>
+                          <Icon name={ok ? "check" : "play"} size={19} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-bold">{j.matiere}</span>
+                          <span className="block truncate text-sm text-texte-3">{j.groupe} · jour {j.jour}</span>
+                        </span>
+                        {ok ? (
+                          <span className="text-right">
+                            <span className="num block text-lg font-semibold">{N - (j.erreurs ?? 0)}<span className="text-texte-3">/{N}</span></span>
+                            {j.rang && <span className="num block text-xs font-medium text-or">{j.rang === 1 ? "1er" : `${j.rang}e`} du jour</span>}
+                          </span>
+                        ) : (
+                          <span className="text-sm font-bold text-accent-fort">{j.statut === "en_cours" ? "Reprendre" : "Jouer"}</span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        <aside className="space-y-7">
+          <Link href="/arene" className="tuile group flex items-center gap-3.5 border-energie/30 bg-energie-doux">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-energie text-white"><Icon name="swords" size={22} /></span>
             <span className="min-w-0 flex-1">
-              <span className="block font-titre">Arène</span>
-              <span className="block text-sm text-texte-3">Duels en direct sur les quiz passés</span>
+              <span className="block font-titre text-lg font-extrabold">Arène</span>
+              <span className="block text-sm text-texte-2">Défie tes amis en direct sur les quiz passés</span>
             </span>
-            <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
+            <Icon name="chevronRight" className="text-energie transition-transform group-hover:translate-x-0.5" />
           </Link>
-        </section>
+
+          <section className="space-y-3" aria-labelledby="t-groupes">
+            <h2 id="t-groupes" className="h2">Mes groupes</h2>
+            {groupes.length === 0 && (
+              <div className="card space-y-1">
+                <p className="font-semibold">Pas encore de groupe</p>
+                <p className="muted">Crée le tien, ou rejoins celui de tes amis avec leur code d&apos;invitation.</p>
+              </div>
+            )}
+            <ul className="space-y-2.5">
+              {groupes.map((g) => (
+                <li key={g.id}>
+                  <Link href={`/groupes/${g.id}`} className="tuile group flex items-center gap-3.5">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-surface-2 font-titre text-lg font-extrabold text-texte-2" aria-hidden>
+                      {g.nom.trim().charAt(0).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-bold">{g.nom}</span>
+                      <span className="num block text-xs text-texte-3">{g.membres} membre{g.membres > 1 ? "s" : ""} · {g.matieres} matière{g.matieres > 1 ? "s" : ""}</span>
+                    </span>
+                    <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Link href="/groupes/nouveau" className="btn-primary"><Icon name="plus" size={18} />Créer</Link>
+              <Link href="/rejoindre" className="btn-white">Rejoindre</Link>
+            </div>
+          </section>
+        </aside>
       </div>
     </main>
   );

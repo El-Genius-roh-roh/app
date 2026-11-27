@@ -74,19 +74,19 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
   if (!st) {
     return (
       <div className="hero entree space-y-5">
-        <div className="space-y-2">
-          <p className="eyebrow text-accent">Quiz du jour</p>
-          <p className="font-titre text-3xl leading-tight">10 questions, un seul essai</p>
-          <ul className="space-y-1.5 text-sm text-texte-2">
-            <li className="flex items-center gap-2"><Icon name="clock" size={16} className="text-texte-3" />Le chrono démarre à la première question.</li>
-            <li className="flex items-center gap-2"><Icon name="target" size={16} className="text-texte-3" />Classement : d&apos;abord les erreurs, puis le temps.</li>
-            <li className="flex items-center gap-2"><Icon name="arrowRight" size={16} className="text-texte-3" />Pas de retour en arrière.</li>
+        <div className="space-y-3">
+          <p className="eyebrow">Quiz du jour</p>
+          <p className="font-titre text-4xl leading-[1.02] font-extrabold">10 questions,<br />un seul essai</p>
+          <ul className="space-y-2 text-[15px]">
+            <li className="flex items-center gap-2.5"><Icon name="clock" size={18} className="opacity-80" />Le chrono démarre à la première question.</li>
+            <li className="flex items-center gap-2.5"><Icon name="target" size={18} className="opacity-80" />Classement : d&apos;abord les erreurs, puis le temps.</li>
+            <li className="flex items-center gap-2.5"><Icon name="arrowRight" size={18} className="opacity-80" />Pas de retour en arrière.</li>
           </ul>
         </div>
-        <button onClick={start} disabled={busy} className="btn-primary min-h-13 text-base">
-          {busy ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-sur-accent/30 border-t-sur-accent" aria-hidden />Préparation du quiz…</> : <><Icon name="play" size={18} />C&apos;est parti</>}
+        <button onClick={start} disabled={busy} className="btn-hero">
+          {busy ? <><span className="h-5 w-5 animate-spin rounded-full border-[3px] border-accent/25 border-t-accent" aria-hidden />Préparation du quiz…</> : <><Icon name="play" size={20} />C&apos;est parti</>}
         </button>
-        {err && <p className="text-sm text-ko" role="alert">{err}</p>}
+        {err && <p className="rounded-xl bg-surface px-3 py-2 text-sm font-semibold text-ko" role="alert">{err}</p>}
       </div>
     );
   }
@@ -95,25 +95,25 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <span className="num text-sm text-texte-2">Question <b className="text-lg text-texte">{st.index + 1}</b>/{st.total}</span>
-        <span className="num inline-flex items-center gap-1.5 rounded-full border border-ligne bg-surface px-3 py-1 text-lg font-bold" aria-label={`Temps écoulé ${fmt(now)}`}>
+        <span className="num inline-flex items-center gap-1.5 rounded-full border-2 border-ligne bg-surface px-3 py-1 text-lg font-semibold" aria-label={`Temps écoulé ${fmt(now)}`}>
           <Icon name="clock" size={16} className="text-accent" />{fmt(now)}
         </span>
       </div>
       {/* progression en segments, un par question */}
       <div className="flex gap-1" aria-hidden>
         {Array.from({ length: st.total }, (_, i) => (
-          <span key={i} className={`h-1.5 flex-1 rounded-full transition-colors ${i < st.index ? "bg-accent" : i === st.index ? "bg-accent/45" : "bg-surface-2"}`} />
+          <span key={i} className={`h-2.5 flex-1 rounded-full transition-colors ${i < st.index ? "bg-accent" : i === st.index ? "bg-accent/40" : "bg-ligne"}`} />
         ))}
       </div>
-      <h2 key={st.question.id} className="entree card text-xl leading-snug font-semibold break-words lg:text-2xl"><Tex>{st.question.enonce}</Tex></h2>
+      <h2 key={st.question.id} className="entree py-2 font-sans text-[22px] leading-snug font-bold tracking-normal break-words lg:text-3xl"><Tex>{st.question.enonce}</Tex></h2>
       <div className={vf ? "grid grid-cols-2 gap-3" : "grid gap-2.5"}>
         {st.question.choices.map((c, i) => {
           const sel = picked === i;
           return (
             <button key={st.question.id + i} disabled={busy} onClick={() => answer(i)}
-              className={`group flex min-h-14 w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-base transition-[border-color,background-color,transform] duration-150 active:translate-y-px disabled:cursor-wait
-                ${sel ? "border-accent bg-accent/15" : "border-ligne bg-surface hover:border-accent/60 hover:bg-surface-2"} ${vf ? "justify-center py-6 text-xl font-semibold" : ""}`}>
-              {!vf && <span className={`num flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-sm font-bold ${sel ? "border-accent bg-accent text-sur-accent" : "border-ligne text-texte-3 group-hover:border-accent/60 group-hover:text-accent"}`}>{LETTRES[i]}</span>}
+              className={`group flex min-h-15 w-full items-center gap-3 rounded-[16px] border-2 px-4 py-3 text-left text-base font-medium transition-[border-color,background-color,transform,box-shadow] duration-100 active:translate-y-[3px] active:shadow-none disabled:cursor-wait
+                ${sel ? "translate-y-[3px] border-accent bg-accent-doux shadow-none" : "border-ligne bg-surface shadow-[0_3px_0_var(--color-ligne)] hover:border-accent hover:shadow-[0_3px_0_var(--color-accent)]"} ${vf ? "justify-center py-7 text-xl font-bold" : ""}`}>
+              {!vf && <span className={`num flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border-2 text-sm font-semibold ${sel ? "border-accent bg-accent text-sur-accent" : "border-ligne text-texte-3 group-hover:border-accent group-hover:text-accent-fort"}`}>{LETTRES[i]}</span>}
               <Tex className="block min-w-0 break-words">{c}</Tex>
             </button>
           );

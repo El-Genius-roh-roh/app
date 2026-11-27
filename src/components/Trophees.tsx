@@ -92,7 +92,7 @@ export function LigueBlason({ ligue, size = 48, verrouille = false }: { ligue: L
           <stop offset="0" stopColor={ligue.clair} /><stop offset=".55" stopColor={ligue.clair} stopOpacity=".85" /><stop offset="1" stopColor={ligue.fonce} />
         </linearGradient>
         <linearGradient id={`${g}-i`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={ligue.fonce} /><stop offset="1" stopColor="#0a0d14" stopOpacity=".9" />
+          <stop offset="0" stopColor={ligue.fonce} /><stop offset="1" stopColor="#181c21" stopOpacity=".9" />
         </linearGradient>
         <linearGradient id={`${g}-c`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff3b0" /><stop offset="1" stopColor="#d99a00" />
@@ -113,7 +113,7 @@ export function LigueBlason({ ligue, size = 48, verrouille = false }: { ligue: L
 /** Pastille de ligue pour les classements : petit blason + nom. */
 export function LigueBadge({ ligue }: { ligue: Ligue }) {
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: ligue.clair }}>
+    <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: `light-dark(${ligue.fonce}, ${ligue.clair})` }}>
       <LigueBlason ligue={ligue} size={18} />{ligue.nom}
     </span>
   );
@@ -129,18 +129,18 @@ export function LigueCard({ info, trophees, serie }: { info: LigueInfo; trophees
         <LigueBlason ligue={ligue} size={72} />
         <div className="min-w-0">
           <p className="eyebrow">Ma ligue</p>
-          <p className="font-titre text-3xl" style={{ color: ligue.clair }}>{ligue.nom}</p>
+          <p className="font-titre text-3xl" style={{ color: `light-dark(${ligue.fonce}, ${ligue.clair})` }}>{ligue.nom}</p>
           <p className="mt-1 inline-flex items-center gap-1.5 font-num text-xl font-bold tabular-nums text-or">
             <TropheeIcone size={20} />{fmt(trophees)}
           </p>
         </div>
         {serie > 0 && (
-          <span className="ml-auto inline-flex items-center gap-1 self-start rounded-full bg-or/12 px-2.5 py-1 font-num text-sm font-bold text-or" title="Jours joués d'affilée">
+          <span className="ml-auto inline-flex items-center gap-1 self-start rounded-full bg-energie-doux px-2.5 py-1 font-num text-sm font-bold text-energie" title="Jours joués d'affilée">
             <Icon name="flame" size={15} />{serie}
           </span>
         )}
       </div>
-      <div className="relative mt-4 h-2 overflow-hidden rounded-full bg-fond" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progression * 100)} aria-label="Progression vers la ligue suivante">
+      <div className="relative mt-4 h-2 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progression * 100)} aria-label="Progression vers la ligue suivante">
         <div className="h-2 rounded-full transition-[width] duration-500" style={{ width: `${Math.round(progression * 100)}%`, background: ligue.clair }} />
       </div>
       <p className="relative mt-2 flex flex-wrap items-center gap-1 text-sm text-texte-2">
@@ -171,7 +171,7 @@ export function Vitrine({ data, titre = "Mes badges" }: { data: VitrineData; tit
           const ok = t.nombre > 0;
           return (
             <li key={t.id} title={t.description}
-              className={`relative flex flex-col items-center rounded-xl border p-2.5 text-center ${ok ? "border-or/40 bg-or/8" : "border-ligne bg-fond"}`}>
+              className={`relative flex flex-col items-center rounded-[12px] border-2 p-2.5 text-center ${ok ? "border-or/30 bg-or-doux" : "border-ligne bg-surface-2"}`}>
               <span className={`text-2xl ${ok ? "" : "opacity-25 grayscale"}`} aria-hidden>{t.emoji}</span>
               {ok && t.cumulable && <span className="absolute top-1 right-1 rounded-full bg-or px-1.5 font-num text-[11px] font-bold text-fond">×{t.nombre}</span>}
               <span className={`mt-1 text-[11px] leading-tight font-medium ${ok ? "text-texte" : "text-texte-3"}`}>{t.nom}</span>
