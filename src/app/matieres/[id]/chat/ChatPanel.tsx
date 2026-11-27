@@ -19,10 +19,10 @@ export default function ChatPanel({ subjectId, prompt, dates }: { subjectId: str
   return (
     <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
       <section className="card space-y-3">
-        <h2 className="h2 text-violet-700">1 · Le prompt</h2>
+        <h2 className="h2 text-accent-700">1 · Le prompt</h2>
         <p className="muted">Quiz du {dates.join(", du ")}</p>
         <textarea id="prompt" readOnly value={prompt} rows={6} className="input font-mono text-xs lg:h-80" />
-        <button type="button" onClick={copy} className="btn-primary">{copied ? "✓ Copié !" : "📋 Copier le prompt"}</button>
+        <button type="button" onClick={copy} className="btn-primary">{copied ? "✓ Copié !" : "Copier le prompt"}</button>
       </section>
 
       <form action={action} className="card space-y-3">
@@ -35,7 +35,7 @@ export default function ChatPanel({ subjectId, prompt, dates }: { subjectId: str
           <ul className="space-y-2">
             {state.resultats.map((r) => (
               <li key={r.date} className={`rounded-2xl p-3 text-sm ${r.erreur ? "bg-rose-50" : "bg-emerald-50"}`}>
-                <p className="font-bold">{r.erreur ? "❌" : "✅"} {r.date}</p>
+                <p className="font-bold"><span className={`mr-1.5 inline-block h-2 w-2 rounded-full ${r.erreur ? "bg-rose-500" : "bg-emerald-500"}`} />{r.date}</p>
                 {r.erreur ? <p>{r.erreur}</p> : (
                   <p>{r.report!.chat} question(s) du chat{r.report!.manuelles ? ` + ${r.report!.manuelles} manuelle(s) conservée(s)` : ""}{r.report!.simulees ? ` + ${r.report!.simulees} simulée(s) pour compléter` : ""}</p>
                 )}

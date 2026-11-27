@@ -8,6 +8,8 @@ export const CONFIG = {
   POINTS_PARTICIPATION: 10,
   POINTS_PAR_JOUEUR_BATTU: 10,
   BONUS_MULTIPLICATEUR_PAR_JOUR: 0.05,
+  RATTRAPAGE_JOURS: 3, // un quiz manqué peut être rattrapé pendant 3 jours (D29)
+  PENALITE_RETARD_PAR_JOUR: 0.1, // −10 % de gemmes par jour de retard
   DUREE_MAX_TENTATIVE_MIN: 15,
   FUSEAU: "Europe/Paris",
   CODE_INVITATION_LONGUEUR: 6,
@@ -25,6 +27,7 @@ export const CONFIG = {
   LLM_TIMEOUT_DEMARRAGE_S: 25, // quiz encore vide au clic sur « Commencer » : au-delà, génération simulée
   LLM_PREPARATION_INTERVALLE_MIN: 10, // préparation en arrière-plan : au plus une tentative par matière toutes les N min
   LLM_MAX_TOKENS: 12000,
+  LLM_VERIF_REFLEXION: true, // vérification des réponses avec « réflexion » (plus lente, nettement plus fiable)
   LLM_JOURS_PAR_APPEL: 1, // un quiz par appel : réponse rapide (~15 s) et moins d'erreurs
   LLM_JOURS_A_L_AVANCE: 3, // quiz préparés en arrière-plan : aujourd'hui + 2 jours
 } as const;
@@ -32,9 +35,8 @@ export const CONFIG = {
 // Trophées façon Clash Royale (docs/04 §8, D24) : on en gagne en battant des joueurs, on en perd en se faisant battre.
 // Les ligues se débloquent selon le nombre de trophées ; on ne retombe jamais sous le palier d'une ligue atteinte.
 export const TROPHEES = {
-  PAR_JOUEUR_BATTU: 10, // +10 par joueur qui fait moins bien ce jour-là
-  PAR_JOUEUR_DEVANT: 10, // −10 par joueur qui fait mieux
-  ABSENCE: 10, // −10 pour un quiz du jour non joué (seulement dans une matière où l'on a déjà joué)
+  // Fin de saison (D30) : trophées = jours de la saison × joueurs classés derrière soi (aux gemmes de la saison).
+  PAR_JOUR_PAR_JOUEUR_DERRIERE: 1,
   SERIES_JOURS: [3, 7, 30], // badges : jours consécutifs avec au moins un quiz joué
   QUIZ_JOUES: [10, 50], // badges
   MIN_JOUEURS_DUEL: 2, // badges « 1er du jour » et « le plus rapide » : au moins 2 joueurs ce jour-là
@@ -45,8 +47,8 @@ export const LIGUES = [
   { nom: "Argent", min: 100, clair: "#f1f4f9", fonce: "#6b7689", fond: "from-slate-300 to-slate-600" },
   { nom: "Or", min: 250, clair: "#ffe58a", fonce: "#a86b00", fond: "from-yellow-300 to-amber-600" },
   { nom: "Platine", min: 500, clair: "#b5f5ea", fonce: "#127a73", fond: "from-teal-300 to-cyan-700" },
-  { nom: "Diamant", min: 800, clair: "#b9e2ff", fonce: "#2b44b8", fond: "from-sky-400 to-indigo-700" },
-  { nom: "Maître", min: 1200, clair: "#f6b8ff", fonce: "#5b1385", fond: "from-fuchsia-500 to-violet-800" },
+  { nom: "Diamant", min: 800, clair: "#b9e2ff", fonce: "#2b44b8", fond: "from-sky-400 to-accent-700" },
+  { nom: "Maître", min: 1200, clair: "#f6b8ff", fonce: "#5b1385", fond: "from-accent-500 to-accent-800" },
 ] as const;
 
 // Mode « Arène » (duels en direct, hors classements quotidiens : docs/04 n'est pas modifié).

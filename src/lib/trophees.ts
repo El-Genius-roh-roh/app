@@ -1,4 +1,4 @@
-// TROPHÉES (façon Clash Royale), LIGUES ET BADGES (docs/04 §8) : fonctions pures, testées dans trophees.test.ts.
+// TROPHÉES (fin de saison), LIGUES ET BADGES (docs/04 §8) : fonctions pures, testées dans trophees.test.ts.
 import { LIGUES, TROPHEES } from "@/config/constants";
 
 export type Ligue = (typeof LIGUES)[number];
@@ -31,7 +31,6 @@ export type Resultat = { dayId: string; date: string; userId: string; rang: numb
 
 export type Trophee = {
   id: string;
-  emoji: string;
   nom: string;
   description: string;
   /** Nombre de fois gagné (trophées cumulables) ou 1/0 (trophées à débloquer une fois). */
@@ -86,78 +85,29 @@ export function vitrine(resultats: Resultat[], userId: string, today: string): V
   const s = series(miens.map((r) => r.date), today);
   const quizJoues = miens.length;
   const trophees: Trophee[] = [
-    { id: "premier", emoji: "🥇", nom: "1er du jour", description: "Finir 1er d'un quiz du jour (au moins 2 joueurs)", nombre: premier, cumulable: true },
-    { id: "sans-faute", emoji: "🎯", nom: "Sans faute", description: "Faire 10/10 à un quiz du jour", nombre: sansFaute, cumulable: true },
-    { id: "rapide", emoji: "⚡", nom: "Le plus rapide", description: "Finir un quiz plus vite que tous les autres", nombre: plusRapide, cumulable: true },
+    { id: "premier", nom: "1er du jour", description: "Finir 1er d'un quiz du jour (au moins 2 joueurs)", nombre: premier, cumulable: true },
+    { id: "sans-faute", nom: "Sans faute", description: "Faire 10/10 à un quiz du jour", nombre: sansFaute, cumulable: true },
+    { id: "rapide", nom: "Le plus rapide", description: "Finir un quiz plus vite que tous les autres", nombre: plusRapide, cumulable: true },
     ...TROPHEES.SERIES_JOURS.map((n) => ({
-      id: `serie-${n}`, emoji: "🔥", nom: `Série de ${n} jours`, description: `Jouer ${n} jours d'affilée`, nombre: +(s.max >= n), cumulable: false,
+      id: `serie-${n}`, nom: `Série de ${n} jours`, description: `Jouer ${n} jours d'affilée`, nombre: +(s.max >= n), cumulable: false,
     })),
     ...TROPHEES.QUIZ_JOUES.map((n) => ({
-      id: `quiz-${n}`, emoji: "📚", nom: `${n} quiz joués`, description: `Terminer ${n} quiz`, nombre: +(quizJoues >= n), cumulable: false,
+      id: `quiz-${n}`, nom: `${n} quiz joués`, description: `Terminer ${n} quiz`, nombre: +(quizJoues >= n), cumulable: false,
     })),
   ];
   return { trophees, serieActuelle: s.actuelle, serieMax: s.max, quizJoues };
 }
 
-/* ------------------------------------------------------------------ trophées */
-
-/** Un quiz du jour d'une matière : qui l'a joué, et s'il est terminé (jour passé). */
-export type JourJeu = {
-  dayId: string;
-  date: string;
-  subjectId: string;
-  passe: boolean;
-  resultats: { userId: string; erreurs: number; dureeMs: number }[];
-};
-
-const bat = (a: { erreurs: number; dureeMs: number }, b: { erreurs: number; dureeMs: number }) =>
-  a.erreurs < b.erreurs || (a.erreurs === b.erreurs && a.dureeMs < b.dureeMs);
-
-/** Trophées gagnés ou perdus ce jour-là par un joueur qui a joué : +10 par joueur battu, −10 par joueur devant. */
-export function deltaJoueur(resultats: JourJeu["resultats"], userId: string): number {
-  const moi = resultats.find((r) => r.userId === userId);
-  if (!moi) return 0;
-  const battus = resultats.filter((o) => bat(moi, o)).length;
-  const devant = resultats.filter((o) => bat(o, moi)).length;
-  return TROPHEES.PAR_JOUEUR_BATTU * battus - TROPHEES.PAR_JOUEUR_DEVANT * devant;
-}
-
-/** Palier sous lequel on ne redescend plus : le minimum de la meilleure ligue déjà atteinte. */
-const palier = (max: number) => ligueDe(max).ligue.min;
-
-export type Trophees = {
-  /** Total actuel de chaque joueur. */
-  total: Map<string, number>;
-  /** Variation de chaque jour (dayId → joueur → +/−), avant application du palier. null = pas concerné. */
-  deltas: Map<string, Map<string, number>>;
-};
+/* ------------------------------------------------------------------ trophées de fin de saison */
 
 /**
- * Rejoue tous les quiz du groupe dans l'ordre chronologique.
- * - joué : +10 par joueur battu, −10 par joueur devant (égalité parfaite : 0) ;
- * - pas joué un jour passé, dans une matière où l'on a déjà joué : −10 ;
- * - jamais sous 0, ni sous le palier de la meilleure ligue déjà atteinte.
+ * Trophées gagnés à la fin d'une saison d'une matière (D30), d'après le classement final aux gemmes :
+ * nombre de jours de la saison × nombre de joueurs classés derrière soi. Jamais négatif ;
+ * à égalité, les joueurs ne se comptent pas l'un l'autre.
  */
-export function calculerTrophees(jours: JourJeu[], membres: string[]): Trophees {
-  const ordre = [...jours].sort((a, b) => a.date.localeCompare(b.date) || a.subjectId.localeCompare(b.subjectId));
-  const total = new Map(membres.map((m) => [m, 0]));
-  const record = new Map(membres.map((m) => [m, 0]));
-  const dejaJoue = new Map(membres.map((m) => [m, new Set<string>()]));
-  const deltas = new Map<string, Map<string, number>>();
-  for (const j of ordre) {
-    const d = new Map<string, number>();
-    for (const m of membres) {
-      const joue = j.resultats.some((r) => r.userId === m);
-      let delta: number | null = null;
-      if (joue) { delta = deltaJoueur(j.resultats, m); dejaJoue.get(m)!.add(j.subjectId); }
-      else if (j.passe && dejaJoue.get(m)!.has(j.subjectId)) delta = -TROPHEES.ABSENCE;
-      if (delta === null) continue;
-      d.set(m, delta);
-      const t = Math.max(palier(record.get(m)!), total.get(m)! + delta);
-      total.set(m, t);
-      record.set(m, Math.max(record.get(m)!, t));
-    }
-    deltas.set(j.dayId, d);
-  }
-  return { total, deltas };
+export function tropheesFinSaison(classement: { userId: string; rang: number }[], nbJours: number): Map<string, number> {
+  return new Map(classement.map((r) => [
+    r.userId,
+    TROPHEES.PAR_JOUR_PAR_JOUEUR_DERRIERE * nbJours * classement.filter((o) => o.rang > r.rang).length,
+  ]));
 }

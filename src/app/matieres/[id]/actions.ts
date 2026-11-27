@@ -12,7 +12,7 @@ import { rebuildSchedule } from "@/lib/schedule";
 import { freezePastDays, generateUpcoming } from "@/lib/quiz/service";
 import { addDays, setDemoToday, todayParis } from "@/lib/clock";
 import { importChatAnswer, type ImportResult } from "@/lib/quiz/chat";
-import { genererAvecIA, llmConfigured } from "@/lib/quiz/ai";
+import { lancerGenerationIA, llmConfigured } from "@/lib/quiz/ai";
 
 async function manager(fd: FormData) {
   const user = await requireUser();
@@ -106,18 +106,20 @@ async function pourquoiRienAGenerer(id: string, regenerer: boolean): Promise<str
   return "Rien à générer pour le moment.";
 }
 
-export type IaState = { resultats?: ImportResult; erreur?: string } | null;
+export type IaState = { erreur?: string; lance?: boolean } | null;
 
-/** Écrit (ou réécrit, si personne n'a commencé) les quiz des prochains jours avec l'IA. */
+/**
+ * Lance l'écriture (ou la réécriture, si personne n'a commencé) des quiz des prochains jours par l'IA.
+ * Rend la main tout de suite : la page affiche l'avancement et se met à jour toute seule.
+ */
 export async function genererIA(_prev: IaState, fd: FormData): Promise<IaState> {
   const id = await manager(fd);
   if (!id) return { erreur: "Action réservée aux gestionnaires de la matière." };
   if (!llmConfigured()) return { erreur: "IA non configurée sur ce serveur (variables OPENAI_API_KEY et OPENAI_BASE_URL)." };
   const regenerer = fd.get("regenerer") === "1";
-  const resultats = await genererAvecIA(id, { regenerer, limit: 3 });
+  lancerGenerationIA(id, { regenerer, limit: 3 }, () => pourquoiRienAGenerer(id, regenerer));
   revalidatePath(`/matieres/${id}`);
-  if (!resultats.length) return { erreur: await pourquoiRienAGenerer(id, regenerer) };
-  return { resultats };
+  return { lance: true };
 }
 
 /* ---- génération par le chat (copier-coller) ---- */

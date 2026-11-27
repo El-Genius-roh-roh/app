@@ -1,6 +1,7 @@
 import { CONFIG } from "@/config/constants";
 
-export type Result = { userId: string; erreurs: number; dureeMs: number };
+/** `retard` : jours de retard (rattrapage, 0 à CONFIG.RATTRAPAGE_JOURS) — ne change pas le rang, seulement les gemmes. */
+export type Result = { userId: string; erreurs: number; dureeMs: number; retard?: number };
 export type Ranked = Result & { rang: number; battus: number; base: number; points: number };
 
 export function multiplicateur(jour: number): number {
@@ -15,7 +16,15 @@ export function arrondi(x: number): number {
 const bat = (a: Result, b: Result) =>
   a.erreurs < b.erreurs || (a.erreurs === b.erreurs && a.dureeMs < b.dureeMs);
 
-/** Classement du jour : erreurs puis temps ; rang « 1, 2, 2, 4 » ; points avec multiplicateur du jour `jour`. */
+/** Part des gemmes conservée après `retard` jours de retard : 1 ; 0,9 ; 0,8 ; 0,7 (jamais négative). */
+export function facteurRetard(retard = 0): number {
+  return Math.max(0, 1 - CONFIG.PENALITE_RETARD_PAR_JOUR * Math.max(0, retard));
+}
+
+/**
+ * Classement du jour : erreurs puis temps ; rang « 1, 2, 2, 4 ».
+ * Gemmes (champ `points`) : (participation + 10 par joueur derrière) × multiplicateur du jour × pénalité de retard.
+ */
 export function classementDuJour(results: Result[], jour: number): Ranked[] {
   const m = multiplicateur(jour);
   return [...results]
@@ -24,7 +33,7 @@ export function classementDuJour(results: Result[], jour: number): Ranked[] {
       const rang = 1 + results.filter((o) => bat(o, r)).length;
       const battus = results.filter((o) => bat(r, o)).length;
       const base = CONFIG.POINTS_PARTICIPATION + CONFIG.POINTS_PAR_JOUEUR_BATTU * battus;
-      return { ...r, rang, battus, base, points: arrondi(base * m) };
+      return { ...r, rang, battus, base, points: arrondi(base * m * facteurRetard(r.retard)) };
     });
 }
 

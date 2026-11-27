@@ -15,12 +15,12 @@ export default function QuestionItem({ n, q, subjectId, dayId, docs, locked }: {
   return (
     <li className="card space-y-2">
       <div className="flex items-start gap-2">
-        <span className="font-titre text-lg font-bold text-violet-500">{n}.</span>
+        <span className="font-titre text-lg font-bold text-accent-500">{n}.</span>
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap gap-1">
-            <span className="chip bg-violet-100 text-violet-700">{q.type === "qcm" ? "QCM" : "Vrai/Faux"}</span>
+            <span className="chip bg-accent-100 text-accent-700">{q.type === "qcm" ? "QCM" : "Vrai/Faux"}</span>
             <span className="chip bg-sky-100 text-sky-700">{q.kind === "new" ? "nouvelle" : "révision"}</span>
-            {q.manuelle && <span className="chip bg-amber-100 text-amber-700">✍️ manuelle</span>}
+            {q.manuelle && <span className="chip bg-amber-100 text-amber-700">manuelle</span>}
           </div>
           {!edit && (
             <>
@@ -41,12 +41,12 @@ export default function QuestionItem({ n, q, subjectId, dayId, docs, locked }: {
 
       {!locked && (
         <div className="flex gap-2">
-          <button type="button" onClick={() => setEdit((e) => !e)} className="btn-ghost py-2 text-sm">{edit ? "Annuler" : "✏️ Modifier"}</button>
+          <button type="button" onClick={() => setEdit((e) => !e)} className="btn-ghost py-2 text-sm">{edit ? "Annuler" : "Modifier"}</button>
           <form action={supprimerQuestion} className="w-full">
             <input type="hidden" name="subject" value={subjectId} />
             <input type="hidden" name="day" value={dayId} />
             <input type="hidden" name="question" value={q.id} />
-            <ConfirmButton message="Supprimer cette question ?" className="btn w-full border-2 border-rose-200 bg-white py-2 text-sm text-rose-600">🗑 Supprimer</ConfirmButton>
+            <ConfirmButton message="Supprimer cette question ?" className="btn w-full bg-rose-50 hover:bg-rose-100 py-2 text-sm text-rose-600">Supprimer</ConfirmButton>
           </form>
         </div>
       )}

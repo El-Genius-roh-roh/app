@@ -7,13 +7,23 @@ import { buildChatPrompt, extractJson, importChatAnswer, type ImportResult, type
 
 const SYSTEME = "Tu es un professeur rigoureux qui rédige des quiz de révision en français. Tu réponds uniquement avec du JSON valide, sans texte autour.";
 
+/** Ordre aléatoire de 0..n-1. */
+const melange = (n: number) => {
+  const a = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+};
+
 /**
  * Seconde passe : un correcteur qui n'a PAS le cours (ni la bonne réponse) répond aux questions, comme le ferait
  * quelqu'un qui connaît la matière ou cherche sur internet. Il signale aussi les questions hors sujet ou qui
  * dépendent du cours (exemple précis, notation maison, « selon le cours »…) : elles sont rejetées.
+ * Les choix sont présentés MÉLANGÉS : l'IA de génération met souvent la bonne réponse en premier,
+ * et un vérificateur qui répondrait « 0 » à tout semblerait sinon toujours d'accord.
  */
-export const verifierIA = (timeoutS?: number): Verifier => async (qs, ctx) => {
-  const liste = qs.map((x, i) => `${i + 1}. ${x.enonce}\n${x.choix.map((c, j) => `   ${j}) ${c}`).join("\n")}`).join("\n\n");
+export const verifierIA = (timeoutS?: number, reflexion: boolean = CONFIG.LLM_VERIF_REFLEXION): Verifier => async (qs, ctx) => {
+  const ordres = qs.map((x) => melange(x.choix.length));
+  const liste = qs.map((x, i) => `${i + 1}. ${x.enonce}\n${ordres[i].map((k, j) => `   ${j}) ${x.choix[k]}`).join("\n")}`).join("\n\n");
   const txt = await chatLLM([
     { role: "system", content: SYSTEME },
     { role: "user", content: `Matière : « ${ctx.matiere} »${ctx.sujet ? ` (${ctx.sujet})` : ""}.
@@ -26,9 +36,14 @@ Pour chaque question :
 ${liste}
 
 Réponds uniquement : {"reponses":[0,"hors_sujet",2,null,...]} (une valeur par question, dans l'ordre).` },
-  ], { maxTokens: 600, temperature: 0, timeoutS });
-  const r = (extractJson(txt) as { reponses?: unknown[] }).reponses ?? [];
-  return qs.map((_, i) => (typeof r[i] === "number" ? (r[i] as number) : r[i] === "hors_sujet" ? "hors_sujet" : null));
+  ], { maxTokens: reflexion ? 12000 : 600, temperature: 0, timeoutS, reflexion });
+  const r = (extractJson(txt.replace(/<think>[\s\S]*?<\/think>/g, "")) as { reponses?: unknown[] }).reponses ?? [];
+  // on remet chaque réponse dans l'ordre d'origine des choix
+  return qs.map((_, i) => {
+    const x = r[i];
+    if (x === "hors_sujet") return "hors_sujet";
+    return typeof x === "number" && ordres[i][x] !== undefined ? ordres[i][x] : null;
+  });
 };
 
 /** Génération + vérification. Avec `budgetS`, les deux appels réunis tiennent dans ce budget. */
@@ -36,7 +51,8 @@ async function unAppel(subjectId: string, prompt: string, budgetS?: number): Pro
   const t0 = Date.now();
   const txt = await chatLLM([{ role: "system", content: SYSTEME }, { role: "user", content: prompt }], { timeoutS: budgetS });
   const reste = budgetS === undefined ? undefined : Math.max(5, budgetS - (Date.now() - t0) / 1000);
-  return importChatAnswer(subjectId, txt, { verifier: verifierIA(reste) });
+  // un joueur attend (budget) : vérification rapide, sans réflexion, pour tenir dans le délai
+  return importChatAnswer(subjectId, txt, { verifier: verifierIA(reste, budgetS === undefined ? CONFIG.LLM_VERIF_REFLEXION : false) });
 }
 
 /** Génère (ou refait) les quiz des prochains jours d'une matière avec l'IA. Un appel par jour. */
@@ -71,7 +87,38 @@ export async function genererAvecIA(subjectId: string, o: PromptOptions = {}): P
 }
 
 // Une seule génération à la fois par matière (plusieurs pages ouvertes = un seul appel).
-const enCours = new Map<string, Promise<ImportResult>>();
+// Rangé sur globalThis : la page et l'action serveur partagent bien le même état.
+const g = globalThis as unknown as { __iaEnCours?: Map<string, Promise<ImportResult>>; __iaEtat?: Map<string, EtatIA> };
+const enCours = (g.__iaEnCours ??= new Map<string, Promise<ImportResult>>());
+
+/** Génération lancée depuis le bouton « Générer avec l'IA » : en cours, ou son dernier compte rendu. */
+export type EtatIA = { enCours: boolean; debut: number; fin?: number; resultats?: ImportResult; erreur?: string };
+const etats = (g.__iaEtat ??= new Map<string, EtatIA>());
+
+export function etatGenerationIA(subjectId: string): EtatIA | null {
+  return etats.get(subjectId) ?? null;
+}
+
+/**
+ * Lance la génération en ARRIÈRE-PLAN et rend la main tout de suite : écrire et vérifier 3 quiz prend
+ * 1 à 2 minutes, bien plus que ce que le proxy d'Onyxia laisse à une requête (sinon « unexpected response »).
+ * `siVide` explique pourquoi il n'y avait rien à générer.
+ */
+export function lancerGenerationIA(subjectId: string, o: PromptOptions, siVide: () => Promise<string>): void {
+  if (etats.get(subjectId)?.enCours) return;
+  const etat: EtatIA = { enCours: true, debut: Date.now() };
+  etats.set(subjectId, etat);
+  // si une préparation automatique tourne déjà pour cette matière, on attend qu'elle finisse
+  const avant = (enCours.get(subjectId) ?? Promise.resolve([] as ImportResult)).catch(() => [] as ImportResult);
+  void avant
+    .then(() => unique(subjectId, () => genererAvecIA(subjectId, o)))
+    .then(async (resultats) => {
+      if (resultats.length) etat.resultats = resultats;
+      else etat.erreur = await siVide();
+    })
+    .catch((e) => { etat.erreur = `IA : ${(e as Error).message}`; })
+    .finally(() => { etat.enCours = false; etat.fin = Date.now(); });
+}
 
 function unique(key: string, f: () => Promise<ImportResult>): Promise<ImportResult> {
   const p = enCours.get(key);

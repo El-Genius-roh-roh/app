@@ -29,7 +29,7 @@ export default function ArenaCreate({ groupId, modes, dispo }: { groupId: string
       <div className="grid grid-cols-3 gap-2">
         {modes.map((m) => (
           <button key={m.id} onClick={() => setMode(m.id)} title={m.desc}
-            className={`rounded-lg border-2 p-2 text-xs ${mode === m.id ? "border-indigo-600 bg-indigo-50 text-indigo-700" : "border-gray-200"}`}>
+            className={`rounded-lg border-2 p-2 text-xs ${mode === m.id ? "border-accent-600 bg-accent-50 text-accent-700" : "border-gray-200"}`}>
             {m.titre}
           </button>
         ))}
@@ -38,10 +38,10 @@ export default function ArenaCreate({ groupId, modes, dispo }: { groupId: string
       <div className="flex items-center gap-2 text-sm">
         Manches
         {[5, 8, 10, 15].map((n) => (
-          <button key={n} onClick={() => setRounds(n)} className={`rounded border px-2 py-1 ${rounds === n ? "bg-indigo-600 text-white" : ""}`}>{n}</button>
+          <button key={n} onClick={() => setRounds(n)} className={`rounded border px-2 py-1 ${rounds === n ? "bg-accent-600 text-white" : ""}`}>{n}</button>
         ))}
       </div>
-      <button onClick={create} disabled={busy} className="w-full rounded-lg bg-indigo-600 p-2 text-white disabled:opacity-50">
+      <button onClick={create} disabled={busy} className="w-full rounded-lg bg-accent-600 p-2 text-white disabled:opacity-50">
         {busy ? "Création…" : "Créer une partie"}
       </button>
       <p className="text-xs text-gray-400">{dispo} question(s) disponible(s) (quiz des jours passés).</p>

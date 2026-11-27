@@ -1,6 +1,6 @@
 import { url } from "@/lib/url";
 
-const FONDS = ["from-violet-500 to-fuchsia-500", "from-orange-500 to-amber-400", "from-sky-500 to-cyan-400", "from-emerald-500 to-lime-400", "from-rose-500 to-pink-400"];
+const FONDS = ["from-accent-400 to-accent-600", "from-orange-500 to-amber-400", "from-sky-500 to-cyan-400", "from-emerald-500 to-lime-400", "from-rose-500 to-pink-400"];
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 
 /** Photo de profil ronde, ou initiale sur un dégradé si le joueur n'a pas de photo. */

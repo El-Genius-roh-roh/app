@@ -11,10 +11,10 @@ export default async function Page() {
   await requireUser();
   return (
     <main className="page max-w-sm">
-      <Link href="/" className="back">← Accueil</Link>
+      <Link href="/" className="back">Accueil</Link>
       <h1 className="title">Rejoindre un groupe</h1>
       <form action={aller} className="card space-y-3">
-        <input name="code" required maxLength={6} placeholder="CODE" className="input text-center text-2xl font-extrabold uppercase tracking-[0.4em]" />
+        <input name="code" required maxLength={6} placeholder="CODE" className="input text-center text-2xl font-bold uppercase tracking-[0.4em]" />
         <button className="btn-primary">Continuer</button>
       </form>
     </main>

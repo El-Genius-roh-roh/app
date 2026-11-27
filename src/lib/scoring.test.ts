@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classementDuJour, multiplicateur } from "./scoring";
+import { classementDuJour, facteurRetard, multiplicateur } from "./scoring";
 
 describe("multiplicateur", () => {
   it("linéaire", () => {
@@ -77,5 +77,16 @@ describe("classement cumulé (saison / général)", () => {
   it("un joueur à 0 point reste classé en dernier", () => {
     const r = classementCumule([c("z", 0, 0, 0), c("a", 10, 9, 99)]);
     expect(r.map((x) => x.userId)).toEqual(["a", "z"]);
+  });
+});
+
+describe("rattrapage : −10 % de gemmes par jour de retard", () => {
+  it("facteur 1 ; 0,9 ; 0,8 ; 0,7", () => {
+    expect([0, 1, 2, 3].map(facteurRetard)).toEqual([1, 0.9, 0.8, 0.7]);
+  });
+  it("le retard ne change pas le rang, seulement les gemmes", () => {
+    const r = classementDuJour([{ userId: "A", erreurs: 0, dureeMs: 1, retard: 2 }, { userId: "B", erreurs: 1, dureeMs: 1 }], 1);
+    expect(r[0]).toMatchObject({ userId: "A", rang: 1, battus: 1, base: 20, points: 16 });
+    expect(r[1]).toMatchObject({ userId: "B", rang: 2, points: 10 });
   });
 });

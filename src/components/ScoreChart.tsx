@@ -5,7 +5,7 @@ import type { SeasonHistory } from "@/lib/ranking";
 // Palette catégorielle validée (8 teintes, ordre fixe, distinguables par les daltoniens entre voisines).
 // La couleur suit le joueur (ordre alphabétique), jamais son rang.
 const SERIES = ["#257de0", "#f47230", "#00b894", "#f2a600", "#ee7fac", "#008a17", "#6a4ce2", "#ec4647"];
-const GRID = "#ece9f5";
+const GRID = "#ececf1";
 const AXIS_TEXT = "#64748b";
 const H = 240, M = { t: 12, r: 16, b: 26, l: 34 };
 
@@ -47,8 +47,8 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
   }, [data, mode]);
 
   const n = data.jours.length;
-  if (n < 2 || data.joueurs.length === 0) {
-    return <p className="muted">Le graphique apparaîtra après deux jours de jeu.</p>;
+  if (n < 1 || data.joueurs.length === 0) {
+    return <p className="muted">Le graphique apparaîtra dès le premier quiz.</p>;
   }
 
   const yMax = mode === "note" ? maxQuestions : niceMax(Math.max(...series.flatMap((s) => s.values.map((v) => v ?? 0))));
@@ -58,7 +58,8 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
   const labelEvery = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(iw / 44))));
   const direct = series.length <= 4 && w >= 420;
   const right = direct ? 70 : 0;
-  const xr = (i: number) => M.l + (i * (iw - right)) / (n - 1);
+  // un seul jour : le point est au milieu ; sinon les jours sont répartis sur la largeur
+  const xr = (i: number) => (n === 1 ? M.l + (iw - right) / 2 : M.l + (i * (iw - right)) / (n - 1));
 
   const path = (vals: (number | null)[]) => {
     let d = "", pen = false;
@@ -73,7 +74,7 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
   const onMove = (e: React.PointerEvent<SVGRectElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
     const px = e.clientX - r.left;
-    setHover(Math.max(0, Math.min(n - 1, Math.round((px / r.width) * (n - 1)))));
+    setHover(n === 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round((px / r.width) * (n - 1)))));
   };
 
   const tipRows = hover === null ? [] : series
@@ -83,10 +84,10 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
 
   return (
     <div className="space-y-3">
-      <div className="flex rounded-2xl bg-violet-50 p-1" role="tablist">
-        {([["cumul", "Trophées de la saison"], ["note", `Note du jour /${maxQuestions}`]] as const).map(([m, label]) => (
+      <div className="segmented" role="tablist">
+        {([["cumul", "Gemmes de la saison"], ["note", `Note du jour /${maxQuestions}`]] as const).map(([m, label]) => (
           <button key={m} role="tab" aria-selected={mode === m} onClick={() => setMode(m)}
-            className={`flex-1 rounded-xl px-3 py-1.5 text-sm transition ${mode === m ? "bg-white text-violet-700 shadow" : "text-slate-500"}`}>
+            aria-current={mode === m ? "page" : undefined}>
             {label}
           </button>
         ))}
@@ -96,13 +97,13 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
         {series.map((s) => (
           <li key={s.userId} className="flex items-center gap-1.5">
             <svg width="16" height="8" aria-hidden><line x1="1" y1="4" x2="15" y2="4" stroke={s.color} strokeWidth="3" strokeLinecap="round" /></svg>
-            <span className={s.userId === meId ? "font-extrabold" : "font-semibold text-slate-700"}>{s.pseudo}{s.userId === meId ? " (moi)" : ""}</span>
+            <span className={s.userId === meId ? "font-bold" : "font-semibold text-slate-700"}>{s.pseudo}{s.userId === meId ? " (moi)" : ""}</span>
           </li>
         ))}
       </ul>
 
       <div ref={box} className="relative" onPointerLeave={() => setHover(null)}>
-        <svg width={w} height={H} role="img" aria-label={`Évolution des ${mode === "cumul" ? "trophées de la saison" : "notes du jour"} par joueur`}>
+        <svg width={w} height={H} role="img" aria-label={`Évolution des ${mode === "cumul" ? "gemmes de la saison" : "notes du jour"} par joueur`}>
           {ticks.map((t) => (
             <g key={t}>
               <line x1={M.l} x2={w - M.r} y1={y(t)} y2={y(t)} stroke={GRID} strokeWidth="1" />
@@ -112,7 +113,7 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
           {data.jours.map((j, i) => (i % labelEvery === 0 || i === n - 1) && (
             <text key={j.date} x={xr(i)} y={H - 8} textAnchor="middle" fontSize="11" fill={AXIS_TEXT}>J{j.jour}</text>
           ))}
-          {hover !== null && <line x1={xr(hover)} x2={xr(hover)} y1={M.t} y2={M.t + ih} stroke="#c4b5fd" strokeWidth="1" />}
+          {hover !== null && <line x1={xr(hover)} x2={xr(hover)} y1={M.t} y2={M.t + ih} stroke="#c7c7cc" strokeWidth="1" />}
           {series.map((s) => (
             <g key={s.userId}>
               <path d={path(s.values)} fill="none" stroke={s.color} strokeWidth={s.userId === meId ? 3 : 2} strokeLinejoin="round" strokeLinecap="round" />
@@ -134,13 +135,13 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
         </svg>
 
         {hover !== null && (
-          <div className="pointer-events-none absolute top-0 w-[170px] rounded-2xl bg-white/95 p-2.5 text-xs shadow-lg ring-1 ring-violet-100" style={{ left: tipLeft }}>
-            <p className="mb-1 font-extrabold text-slate-800">Jour {data.jours[hover].jour} · {data.jours[hover].date.slice(8)}/{data.jours[hover].date.slice(5, 7)}</p>
+          <div className="pointer-events-none absolute top-0 w-[170px] rounded-2xl bg-white/95 p-2.5 text-xs shadow-lg ring-1 ring-accent-100" style={{ left: tipLeft }}>
+            <p className="mb-1 font-bold text-slate-800">Jour {data.jours[hover].jour} · {data.jours[hover].date.slice(8)}/{data.jours[hover].date.slice(5, 7)}</p>
             {tipRows.map(({ s, v }) => (
               <p key={s.userId} className="flex items-center gap-1.5 text-slate-700">
                 <span className="inline-block h-2 w-2 rounded-full" style={{ background: s.color }} />
                 <span className="flex-1 truncate">{s.pseudo}</span>
-                <span className="font-bold tabular-nums">{v === null ? "absent" : mode === "cumul" ? `${v} 🏆` : `${v}/${maxQuestions}`}</span>
+                <span className="font-bold tabular-nums">{v === null ? "absent" : mode === "cumul" ? `${v} gemmes` : `${v}/${maxQuestions}`}</span>
               </p>
             ))}
           </div>
@@ -149,13 +150,13 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
       {caches > 0 && <p className="muted">{caches} autre{caches > 1 ? "s" : ""} joueur{caches > 1 ? "s" : ""} non affiché{caches > 1 ? "s" : ""} (8 meilleurs seulement).</p>}
 
       <details className="text-sm">
-        <summary className="text-violet-600">Voir le tableau</summary>
+        <summary className="text-accent-600">Voir le tableau</summary>
         <div className="mt-2 overflow-x-auto">
           <table className="w-full text-left text-xs tabular-nums">
             <thead><tr className="text-slate-500"><th className="py-1 pr-2">Joueur</th>{data.jours.map((j) => <th key={j.date} className="px-1">J{j.jour}</th>)}</tr></thead>
             <tbody>
               {series.map((s) => (
-                <tr key={s.userId} className="border-t border-violet-50">
+                <tr key={s.userId} className="border-t border-accent-50">
                   <td className="py-1 pr-2 font-semibold">{s.pseudo}</td>
                   {s.values.map((v, i) => <td key={i} className="px-1">{v ?? "–"}</td>)}
                 </tr>

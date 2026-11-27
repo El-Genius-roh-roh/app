@@ -43,20 +43,20 @@ export default async function Joueur({ params }: { params: Promise<{ id: string;
 
   const Stat = ({ v, l }: { v: string; l: string }) => (
     <div className="card p-3 text-center">
-      <p className="font-titre text-2xl font-bold text-violet-700 tabular-nums">{v}</p>
+      <p className="font-titre text-2xl font-bold text-accent-700 tabular-nums">{v}</p>
       <p className="text-xs font-semibold text-slate-500">{l}</p>
     </div>
   );
 
   return (
     <main className="page lg:max-w-4xl">
-      <Link href={`/groupes/${id}`} className="back">← {g.nom}</Link>
+      <Link href={`/groupes/${id}`} className="back">{g.nom}</Link>
       <header className="hero flex items-center gap-4">
         <Avatar id={uid} pseudo={p.pseudo} v={p.avatar_v} size={88} className="ring-4" />
         <div className="min-w-0">
           <h1 className="truncate text-3xl">{p.pseudo}{moi ? " (moi)" : ""}</h1>
           {ligne && <p className="mt-1 font-semibold text-white/90">{ligne.rang === 1 ? "1er" : `${ligne.rang}e`} du groupe sur {tr.lignes.length}</p>}
-          {moi && <Link href="/profil" className="mt-2 inline-block rounded-full bg-white/25 px-3 py-1 text-sm">📷 Modifier ma photo</Link>}
+          {moi && <Link href="/profil" className="mt-2 inline-block rounded-full bg-white/25 px-3 py-1 text-sm backdrop-blur">Modifier ma photo</Link>}
         </div>
       </header>
 
@@ -71,18 +71,18 @@ export default async function Joueur({ params }: { params: Promise<{ id: string;
           </div>
         </div>
         <div className="space-y-5">
-          <Vitrine data={v} titre={moi ? "🎖️ Mes badges" : `🎖️ Badges de ${p.pseudo}`} />
+          <Vitrine data={v} titre={moi ? "Mes badges" : `Badges de ${p.pseudo}`} />
           {matieres.length > 0 && (
             <section className="card space-y-2">
-              <h2 className="h2">📚 Par matière</h2>
+              <h2 className="h2">Par matière</h2>
               {matieres.map((m) => (
                 <Link key={m.id} href={`/matieres/${m.id}`}
-                  className="flex items-center gap-2 rounded-2xl bg-violet-50 px-3 py-2 transition hover:bg-violet-100">
+                  className="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2 transition hover:bg-white/70">
                   <span className="flex-1 truncate">{m.nom}</span>
                   <span className="font-sans text-xs font-semibold text-slate-600">
                     {m.joues ? `${m.joues} quiz · ${m.moyenne!.toFixed(1).replace(".", ",")}/${CONFIG.QUESTIONS_PAR_JOUR}` : "pas encore joué"}
                   </span>
-                  <span aria-hidden className="text-violet-400">›</span>
+                  <span aria-hidden className="text-accent-400">›</span>
                 </Link>
               ))}
             </section>

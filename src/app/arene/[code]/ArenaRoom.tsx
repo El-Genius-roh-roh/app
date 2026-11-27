@@ -16,7 +16,7 @@ type View = {
   final?: { changes: Record<string, number>; recap: { enonce: string; bonne: string; explication: string; ok: boolean; pts: number }[] };
 };
 
-const COLORS = ["bg-rose-500", "bg-sky-500", "bg-amber-500", "bg-emerald-500", "bg-violet-500", "bg-pink-500"];
+const COLORS = ["bg-rose-500", "bg-sky-500", "bg-amber-500", "bg-emerald-500", "bg-accent-500", "bg-pink-500"];
 const SHAPES = ["▲", "◆", "●", "■", "★", "⬟"];
 
 export default function ArenaRoom({ code }: { code: string }) {
@@ -102,21 +102,21 @@ export default function ArenaRoom({ code }: { code: string }) {
       <Shell>
         <div className="text-center">
           <p className="text-sm uppercase tracking-widest opacity-80">Code de la partie</p>
-          <p className="text-6xl font-black tracking-[0.3em]">{v.code}</p>
-          <p className="mt-1 text-sm opacity-80">{v.modeTitre} · {v.nrounds} manches · {v.classee ? "🏆 partie classée" : "🎯 entraînement (non classé)"}</p>
+          <p className="text-6xl font-bold tracking-[0.3em]">{v.code}</p>
+          <p className="mt-1 text-sm opacity-80">{v.modeTitre} · {v.nrounds} manches · {v.classee ? "partie classée" : "entraînement (non classé)"}</p>
         </div>
         <ul className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {v.players.map((p, i) => (
             <li key={p.id} className="flex items-center gap-2 rounded-xl bg-white/15 p-2">
               <span className={`flex h-8 w-8 items-center justify-center rounded-full font-bold ${COLORS[i % COLORS.length]}`}>{p.name[0]}</span>
-              <span className="truncate">{p.name}{p.host && " 👑"}</span>
+              <span className="truncate">{p.name}{p.host && " (hôte)"}</span>
             </li>
           ))}
         </ul>
         {meHost ? (
           <div className="space-y-2">
-            <button onClick={() => act("bot")} className="w-full rounded-xl bg-white/20 p-3">+ Ajouter un bot 🤖</button>
-            <button onClick={() => act("start")} className="w-full rounded-xl bg-emerald-400 p-4 text-lg font-black text-emerald-950 shadow-lg">
+            <button onClick={() => act("bot")} className="w-full rounded-xl bg-white/20 p-3">+ Ajouter un bot</button>
+            <button onClick={() => act("start")} className="w-full rounded-xl bg-emerald-400 p-4 text-lg font-bold text-emerald-950 shadow-lg">
               Lancer la partie ({v.players.length} joueur{v.players.length > 1 ? "s" : ""})
             </button>
             {humans < 2 && <p className="text-center text-xs opacity-80">Partage le code à tes amis pour une partie classée, ou ajoute des bots pour t&apos;entraîner (non classé).</p>}
@@ -135,11 +135,11 @@ export default function ArenaRoom({ code }: { code: string }) {
     const delta = v.final?.changes[v.me];
     return (
       <Shell>
-        <h1 className="text-center text-3xl font-black">🏁 Fin de la partie</h1>
+        <h1 className="text-center text-3xl font-bold">Fin de la partie</h1>
         <div className="flex items-end justify-center gap-2">
           {order.map((i) => (
             <div key={top[i].id} className="flex w-24 flex-col items-center">
-              <span className="text-3xl">{["🥇", "🥈", "🥉"][i]}</span>
+              <span className="text-2xl font-bold tabular-nums">{i + 1}</span>
               <span className="w-full truncate text-center text-sm font-semibold">{top[i].name}</span>
               <div className={`mt-1 w-full rounded-t-lg bg-white/25 text-center font-bold ${["h-28", "h-20", "h-14"][i]} pt-2`}>{top[i].score}</div>
             </div>
@@ -148,12 +148,12 @@ export default function ArenaRoom({ code }: { code: string }) {
         {delta !== undefined ? (
           <p className="text-center text-lg">Ta ligue : <b className={delta >= 0 ? "text-emerald-300" : "text-rose-300"}>{delta >= 0 ? "+" : ""}{delta} pts</b></p>
         ) : !v.classee && (
-          <p className="text-center text-sm opacity-80">🎯 Partie d&apos;entraînement : elle ne compte pas pour le classement (il faut au moins 2 joueurs humains).</p>
+          <p className="text-center text-sm opacity-80">Partie d&apos;entraînement : elle ne compte pas pour le classement (il faut au moins 2 joueurs humains).</p>
         )}
         <Ranking players={v.players} me={v.me} changes={v.final?.changes} />
         {v.final && v.final.recap.some((r) => !r.ok) && (
-          <section className="space-y-2 rounded-xl bg-white p-3 text-gray-900">
-            <h2 className="font-bold">📚 À revoir</h2>
+          <section className="space-y-2 rounded-xl bg-white/60 backdrop-blur-md p-3 text-gray-900">
+            <h2 className="font-bold">À revoir</h2>
             {v.final.recap.filter((r) => !r.ok).map((r, i) => (
               <div key={i} className="border-t pt-2 text-sm">
                 <p className="whitespace-pre-line font-medium"><Tex>{r.enonce}</Tex></p>
@@ -182,13 +182,13 @@ export default function ArenaRoom({ code }: { code: string }) {
     <Shell>
       <div className="flex items-center justify-between text-sm">
         <span className="rounded-full bg-white/20 px-3 py-1">Manche {v.idx + 1}/{v.nrounds}</span>
-        <span className="font-mono text-2xl font-black">{Math.ceil(left / 1000)}</span>
-        <span className="rounded-full bg-white/20 px-3 py-1">{me?.score ?? 0} pts{me && me.streak >= 2 ? ` · 🔥${me.streak}` : ""}</span>
+        <span className="font-mono text-2xl font-bold">{Math.ceil(left / 1000)}</span>
+        <span className="rounded-full bg-white/20 px-3 py-1">{me?.score ?? 0} pts{me && me.streak >= 2 ? ` · série ${me.streak}` : ""}</span>
       </div>
       <div className="h-2 overflow-hidden rounded bg-white/20">
         <div className={`h-2 ${question ? "bg-emerald-300" : "bg-white/60"}`} style={{ width: `${(left / total) * 100}%`, transition: "width 100ms linear" }} />
       </div>
-      <h2 className="min-h-20 whitespace-pre-line rounded-2xl bg-white p-4 text-lg font-bold text-gray-900 shadow lg:p-6 lg:text-2xl"><Tex>{r.enonce}</Tex></h2>
+      <h2 className="min-h-20 whitespace-pre-line rounded-2xl bg-white/60 backdrop-blur-md p-4 text-lg font-bold text-gray-900 shadow lg:p-6 lg:text-2xl"><Tex>{r.enonce}</Tex></h2>
 
       <div className={`grid gap-3 ${r.kind === "vf" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
         {r.choices.map((c, i) => {
@@ -214,10 +214,10 @@ export default function ArenaRoom({ code }: { code: string }) {
         </p>
       ) : (
         <div className="space-y-3">
-          <div className={`rounded-2xl p-3 text-center text-lg font-black ${mine?.ok ? "bg-emerald-400 text-emerald-950" : "bg-rose-500"}`}>
-            {mine?.ok ? `Bravo ! +${mine.pts}${mine.bonus ? ` (dont 🔥 +${mine.bonus})` : ""}` : mine?.missed ? "Temps écoulé…" : "Raté !"}
+          <div className={`rounded-2xl p-3 text-center text-lg font-bold ${mine?.ok ? "bg-emerald-400 text-emerald-950" : "bg-rose-500"}`}>
+            {mine?.ok ? `Bravo ! +${mine.pts}${mine.bonus ? ` (dont +${mine.bonus})` : ""}` : mine?.missed ? "Temps écoulé…" : "Raté !"}
           </div>
-          {r.explication && <p className="rounded-xl bg-white/15 p-3 text-sm">💡 <Tex>{r.explication}</Tex></p>}
+          {r.explication && <p className="rounded-xl bg-white/15 p-3 text-sm"><Tex>{r.explication}</Tex></p>}
           <Ranking players={v.players} me={v.me} />
         </div>
       )}
@@ -230,7 +230,7 @@ function Ranking({ players, me, changes }: { players: P[]; me: string; changes?:
   return (
     <ol className="space-y-1">
       {players.map((p) => (
-        <li key={p.id} className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${p.id === me ? "bg-white text-gray-900 font-bold" : "bg-white/10"} ${p.left ? "opacity-50" : ""}`}>
+        <li key={p.id} className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${p.id === me ? "bg-white/60 backdrop-blur-md text-gray-900 font-bold" : "bg-white/10"} ${p.left ? "opacity-50" : ""}`}>
           <span className="w-6">{p.rank}</span>
           <span className="flex-1 truncate">{p.name}{p.left && " (parti)"}</span>
           {p.round && <span className="text-xs">{p.round.ok ? `+${p.round.pts}` : "✗"}</span>}
@@ -246,7 +246,7 @@ function Ranking({ players, me, changes }: { players: P[]; me: string; changes?:
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-indigo-700 via-violet-700 to-fuchsia-700 text-white">
+    <main className="min-h-screen bg-gradient-to-br from-accent-700 via-accent-700 to-accent-700 text-white">
       <div className="mx-auto max-w-xl space-y-4 p-4 lg:max-w-3xl lg:space-y-6 lg:pt-10">{children}</div>
     </main>
   );
