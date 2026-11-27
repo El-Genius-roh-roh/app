@@ -10,7 +10,7 @@ type P = {
 };
 type View = {
   v: number; now: number; code: string; phase: "lobby" | "question" | "reveal" | "final"; modeTitre: string; host: string; me: string;
-  idx: number; nrounds: number; deadline: number; phaseStart: number; revealMs: number; players: P[];
+  idx: number; nrounds: number; deadline: number; phaseStart: number; revealMs: number; players: P[]; classee: boolean;
   round?: { kind: "qcm" | "vf"; enonce: string; choices: string[]; limitMs: number; key?: number; explication?: string };
   my?: { answered: boolean; choice: number | null };
   final?: { changes: Record<string, number>; recap: { enonce: string; bonne: string; explication: string; ok: boolean; pts: number }[] };
@@ -103,7 +103,7 @@ export default function ArenaRoom({ code }: { code: string }) {
         <div className="text-center">
           <p className="text-sm uppercase tracking-widest opacity-80">Code de la partie</p>
           <p className="text-6xl font-black tracking-[0.3em]">{v.code}</p>
-          <p className="mt-1 text-sm opacity-80">{v.modeTitre} · {v.nrounds} manches</p>
+          <p className="mt-1 text-sm opacity-80">{v.modeTitre} · {v.nrounds} manches · {v.classee ? "🏆 partie classée" : "🎯 entraînement (non classé)"}</p>
         </div>
         <ul className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {v.players.map((p, i) => (
@@ -119,7 +119,7 @@ export default function ArenaRoom({ code }: { code: string }) {
             <button onClick={() => act("start")} className="w-full rounded-xl bg-emerald-400 p-4 text-lg font-black text-emerald-950 shadow-lg">
               Lancer la partie ({v.players.length} joueur{v.players.length > 1 ? "s" : ""})
             </button>
-            {humans < 2 && <p className="text-center text-xs opacity-80">Partage le code à tes amis, ou ajoute des bots pour t&apos;entraîner.</p>}
+            {humans < 2 && <p className="text-center text-xs opacity-80">Partage le code à tes amis pour une partie classée, ou ajoute des bots pour t&apos;entraîner (non classé).</p>}
           </div>
         ) : <p className="animate-pulse text-center">En attente du lancement par l&apos;hôte…</p>}
         <button onClick={() => act("leave").then(() => (location.href = url("/arene")))} className="text-sm underline opacity-80">Quitter</button>
@@ -145,8 +145,10 @@ export default function ArenaRoom({ code }: { code: string }) {
             </div>
           ))}
         </div>
-        {delta !== undefined && (
+        {delta !== undefined ? (
           <p className="text-center text-lg">Ta ligue : <b className={delta >= 0 ? "text-emerald-300" : "text-rose-300"}>{delta >= 0 ? "+" : ""}{delta} pts</b></p>
+        ) : !v.classee && (
+          <p className="text-center text-sm opacity-80">🎯 Partie d&apos;entraînement : elle ne compte pas pour le classement (il faut au moins 2 joueurs humains).</p>
         )}
         <Ranking players={v.players} me={v.me} changes={v.final?.changes} />
         {v.final && v.final.recap.some((r) => !r.ok) && (

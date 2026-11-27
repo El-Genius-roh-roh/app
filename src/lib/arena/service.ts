@@ -60,18 +60,24 @@ async function withRoom(code: string, fn: (s: State, c: PoolClient) => Promise<R
   }
 }
 
-/** Fin de partie : Elo + statistiques des humains, une seule fois (idempotent grâce à `rated`). */
+/**
+ * Fin de partie : Elo + statistiques des humains, une seule fois (idempotent grâce à `rated`).
+ * Seules les parties entre au moins ARENA.MIN_HUMAINS_CLASSEE humains sont classées, et l'Elo se calcule
+ * entre humains uniquement : battre des bots en boucle ne fait pas monter au classement (entraînement).
+ */
 async function rate(s: State, c: PoolClient) {
   const humans = s.players.filter((p) => !p.bot);
+  s.rated = true;
+  s.v += 1;
+  if (humans.length < ARENA.MIN_HUMAINS_CLASSEE) { s.changes = {}; return; }
   const { rows } = await c.query<{ user_id: string; rating: string }>(
     "select user_id, rating from arena_ratings where group_id=$1 and user_id = any($2::uuid[])", [s.groupId, humans.map((h) => h.id)]);
   const cur = new Map(rows.map((r) => [r.user_id, Number(r.rating)]));
-  const table = s.players.map((p) => ({ id: p.id, score: p.score, rating: p.bot ? ARENA.RATING_INITIAL : cur.get(p.id) ?? ARENA.RATING_INITIAL }));
-  const d = eloChanges(table);
-  const top = ranking(s)[0];
+  const d = eloChanges(humans.map((p) => ({ id: p.id, score: p.score, rating: cur.get(p.id) ?? ARENA.RATING_INITIAL })));
+  const top = ranking(s).filter((p) => !p.bot)[0];
   for (const h of humans) {
     const bonnes = Object.values(h.answers).filter((a) => a.ok).length;
-    const gagne = s.players.length > 1 && top.id === h.id && h.score > 0 ? 1 : 0;
+    const gagne = top.id === h.id && h.score > 0 ? 1 : 0;
     await c.query(
       `insert into arena_ratings(group_id,user_id,rating,parties,victoires,bonnes,reponses) values ($1,$2,$3,1,$4,$5,$6)
        on conflict (group_id,user_id) do update set rating=greatest(100, arena_ratings.rating + $7), parties=arena_ratings.parties+1,
@@ -79,8 +85,6 @@ async function rate(s: State, c: PoolClient) {
       [s.groupId, h.id, ARENA.RATING_INITIAL + d[h.id], gagne, bonnes, s.rounds.length, d[h.id]]);
   }
   s.changes = Object.fromEntries(humans.map((h) => [h.id, d[h.id]]));
-  s.rated = true;
-  s.v += 1;
 }
 
 /* ---------------------------------------------------------------- actions */
@@ -94,6 +98,8 @@ export async function createRoom(userId: string, groupId: string, mode: string, 
   if (dispo < Math.min(n, ARENA.MIN_QUESTIONS)) {
     return err(409, `Pas assez de questions archivées (${dispo}). L'Arène utilise les quiz des jours passés : jouez d'abord quelques quiz du jour.`);
   }
+  // ménage : parties terminées ou abandonnées depuis longtemps (la table grossirait indéfiniment)
+  await q(`delete from arena_rooms where updated_at < now() - ($1 || ' hours')::interval`, [String(ARENA.PURGE_APRES_H)]);
   for (let i = 0; i < 5; i++) {
     const code = genCode();
     const s = newState(code, groupId, { id: userId, name: await pseudo(userId) }, mode as Mode, n);

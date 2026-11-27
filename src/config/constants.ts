@@ -63,6 +63,8 @@ export const ARENA = {
   NB_MANCHES_DEFAUT: 8,
   RATING_INITIAL: 1000,
   K: 32,
+  MIN_HUMAINS_CLASSEE: 2, // en dessous (seul contre des bots) : partie d'entraînement, non classée
+  PURGE_APRES_H: 24, // parties supprimées après N heures sans activité
   CODE_LONGUEUR: 4,
   BOTS: ["Gauss", "Fisher", "Bayes", "Turing", "Pearson", "Markov", "Laplace", "Student"],
 } as const;

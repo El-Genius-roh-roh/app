@@ -248,6 +248,7 @@ export function viewFor(s: State, userId: string, now: number) {
     v: s.v, now, code: s.code, phase: s.phase, mode: s.mode, modeTitre: MODES[s.mode].titre, host: s.host, me: userId,
     idx: s.idx, nrounds: s.rounds.length || s.nrounds, deadline: s.deadline, phaseStart: s.phaseStart, revealMs: ARENA.REVEAL_S * 1000,
     players,
+    classee: s.players.filter((p) => !p.bot).length >= ARENA.MIN_HUMAINS_CLASSEE,
     round: !lobby && r ? {
       kind: r.kind, enonce: r.enonce, choices: r.choices, limitMs: r.limitMs,
       key: reveal || s.phase === "reveal" ? r.key : undefined,
