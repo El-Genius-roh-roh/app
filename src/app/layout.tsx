@@ -3,20 +3,24 @@ import "katex/dist/katex.min.css";
 import "./globals.css";
 import { APP_NAME } from "@/config/constants";
 import { BASE } from "@/lib/url";
-import { Nunito, Fredoka, Lilita_One } from "next/font/google";
+import { Geist, Bricolage_Grotesque, Barlow_Condensed } from "next/font/google";
+import TopBar from "@/components/TopBar";
 
-// Trois polices : texte (Nunito), titres (Fredoka), éléments cliquables (Lilita One).
-const texte = Nunito({ subsets: ["latin"], variable: "--nf-texte", display: "swap" });
-const titre = Fredoka({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--nf-titre", display: "swap" });
-const action = Lilita_One({ subsets: ["latin"], weight: "400", variable: "--nf-action", display: "swap" });
+// Trois rôles : le texte (Geist), les titres (Bricolage Grotesque), les chiffres de tableau d'affichage (Barlow Condensed).
+const texte = Geist({ subsets: ["latin"], variable: "--nf-texte", display: "swap" });
+const titre = Bricolage_Grotesque({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--nf-titre", display: "swap" });
+const num = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--nf-num", display: "swap" });
 
 export const metadata: Metadata = { title: APP_NAME, description: "Révisions gamifiées entre amis", manifest: `${BASE}/manifest.webmanifest` };
-export const viewport: Viewport = { themeColor: "#a21caf", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#16151a", width: "device-width", initialScale: 1 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${texte.variable} ${titre.variable} ${action.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+    <html lang="fr" className={`${texte.variable} ${titre.variable} ${num.variable}`}>
+      <body className="font-sans antialiased">
+        <TopBar />
+        {children}
+      </body>
     </html>
   );
 }
