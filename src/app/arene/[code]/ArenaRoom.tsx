@@ -261,7 +261,7 @@ export default function ArenaRoom({ code }: { code: string }) {
         </p>
       ) : (
         <div className="space-y-3">
-          <div className={`pop flex items-center justify-center gap-2 rounded-[18px] p-4 text-center text-lg font-extrabold ${mine?.ok ? "bg-ok text-white" : "bg-ko text-white"}`} role="status">
+          <div className={`pop flex items-center justify-center gap-2 rounded-[18px] p-4 text-center text-lg font-extrabold ${mine?.ok ? "bg-ok text-sur-ok" : "bg-ko text-sur-ko"}`} role="status">
             <Icon name={mine?.ok ? "check" : mine?.missed ? "clock" : "x"} size={22} />
             {mine?.ok ? <>Bravo ! <span className="num">+{mine.pts}</span>{mine.bonus ? <span className="inline-flex items-center gap-0.5 text-base font-bold opacity-90">(dont <Icon name="flame" size={15} /> +{mine.bonus})</span> : null}</> : mine?.missed ? "Temps écoulé" : "Raté !"}
           </div>

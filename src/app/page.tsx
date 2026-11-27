@@ -102,7 +102,7 @@ export default async function Accueil() {
 
         <aside className="space-y-7">
           <Link href="/arene" className="tuile group flex items-center gap-3.5 border-energie/30 bg-energie-doux">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-energie text-white"><Icon name="swords" size={22} /></span>
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-energie text-sur-energie"><Icon name="swords" size={22} /></span>
             <span className="min-w-0 flex-1">
               <span className="block font-titre text-lg font-extrabold">Arène</span>
               <span className="block text-sm text-texte-2">Défie tes amis en direct sur les quiz passés</span>

@@ -48,7 +48,7 @@ export default function ArenaCreate({ groupId, modes, dispo }: { groupId: string
         </div>
       </fieldset>
       <button onClick={create} disabled={busy} className="btn-orange">
-        {busy ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" aria-hidden />Création…</> : <><Icon name="plus" size={18} />Créer une partie</>}
+        {busy ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-sur-energie/30 border-t-sur-energie" aria-hidden />Création…</> : <><Icon name="plus" size={18} />Créer une partie</>}
       </button>
       <p className="text-xs text-texte-3">
         {dispo === 0 ? "Pas encore de question disponible : l'Arène pioche dans les quiz des jours passés." : <><span className="num">{dispo}</span> question{dispo > 1 ? "s" : ""} disponible{dispo > 1 ? "s" : ""} (quiz des jours passés).</>}

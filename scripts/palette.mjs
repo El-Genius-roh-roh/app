@@ -38,14 +38,14 @@ const THEMES = {
     texte: E.neutre[950], "texte-2": E.neutre[700], "texte-3": E.neutre[600],
     accent: E.bleu[600], "accent-fort": E.bleu[700], "accent-ombre": E.bleu[800], "accent-doux": E.bleu[50], "sur-accent": "#ffffff",
     energie: E.braise[600], "energie-doux": E.braise[50], or: E.or[700], "or-vif": E.or[400], "or-doux": E.or[50],
-    ok: E.vert[700], "ok-doux": E.vert[50], ko: E.rouge[600], "ko-doux": E.rouge[50],
+    ok: E.vert[700], "ok-doux": E.vert[50], ko: E.rouge[600], "ko-doux": E.rouge[50], "sur-energie": "#ffffff", "sur-ok": "#ffffff", "sur-ko": "#ffffff",
   },
   sombre: {
     fond: E.neutre[950], surface: E.neutre[900], "surface-2": E.neutre[800], ligne: E.neutre[800], "ligne-forte": E.neutre[700],
     texte: E.neutre[50], "texte-2": E.neutre[300], "texte-3": E.neutre[400],
     accent: E.bleu[400], "accent-fort": E.bleu[300], "accent-ombre": E.bleu[700], "accent-doux": E.bleu[950], "sur-accent": E.neutre[950],
     energie: E.braise[400], "energie-doux": E.braise[950], or: E.or[400], "or-vif": E.or[400], "or-doux": E.or[950],
-    ok: E.vert[400], "ok-doux": E.vert[950], ko: E.rouge[400], "ko-doux": E.rouge[950],
+    ok: E.vert[400], "ok-doux": E.vert[950], ko: E.rouge[400], "ko-doux": E.rouge[950], "sur-energie": E.neutre[950], "sur-ok": E.neutre[950], "sur-ko": E.neutre[950],
   },
 };
 
@@ -56,7 +56,7 @@ const PAIRES = [
   ["texte", "fond", 4.5], ["texte", "surface", 4.5], ["texte-2", "surface", 4.5], ["texte-3", "surface", 4.5], ["texte-3", "fond", 4.5], ["texte-2", "surface-2", 4.5],
   ["sur-accent", "accent", 4.5], ["accent-fort", "surface", 4.5], ["accent", "surface", 3], ["accent-fort", "accent-doux", 4.5],
   ["ok", "surface", 4.5], ["ok", "ok-doux", 4.5], ["ko", "surface", 4.5], ["ko", "ko-doux", 4.5],
-  ["or", "surface", 4.5], ["or", "or-doux", 4.5], ["energie", "surface", 3], ["energie", "energie-doux", 3], ["ligne-forte", "surface", 1.4],
+  ["or", "surface", 4.5], ["or", "or-doux", 4.5], ["energie", "surface", 3], ["sur-energie", "energie", 4.5], ["sur-ok", "ok", 4.5], ["sur-ko", "ko", 4.5], ["energie", "energie-doux", 3], ["ligne-forte", "surface", 1.4],
 ];
 
 if (process.argv.includes("--css")) {

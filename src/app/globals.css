@@ -34,6 +34,9 @@
   --color-or-vif: #f1b620;
   --color-or-doux: #fff6e5;
   --color-sur-or: #261900;
+  --color-sur-energie: #ffffff;
+  --color-sur-ok: #ffffff;
+  --color-sur-ko: #ffffff;
   --color-ok: #036a34;
   --color-ok-doux: #e5ffea;
   --color-ko: #c71f2d;
@@ -66,6 +69,9 @@
     --color-energie-doux: #340e01;
     --color-or: #f1b620;
     --color-or-doux: #261900;
+    --color-sur-energie: #181c21;
+    --color-sur-ok: #181c21;
+    --color-sur-ko: #181c21;
     --color-ok: #64de8c;
     --color-ok-doux: #01230d;
     --color-ko: #ff6a68;
@@ -98,7 +104,7 @@
   /* le moment fort de l'écran (quiz du jour, partie en cours) : bloc bleu plein */
   .hero { @apply relative overflow-hidden rounded-[22px] bg-accent p-5 text-sur-accent shadow-[0_5px_0_var(--color-accent-ombre)] lg:p-8; }
   /* variante Arène : braise */
-  .hero-energie { @apply bg-energie text-white shadow-[0_5px_0_color-mix(in_oklab,var(--color-energie)_55%,black)]; }
+  .hero-energie { @apply bg-energie text-sur-energie shadow-[0_5px_0_color-mix(in_oklab,var(--color-energie)_55%,black)]; }
   .hero .eyebrow { @apply text-current opacity-85; }
   /* bouton blanc posé sur le bloc bleu */
   .btn-hero { @apply relative inline-flex min-h-14 w-full items-center justify-center gap-2 rounded-[16px] bg-surface px-6 text-lg font-extrabold text-accent-fort shadow-[0_4px_0_var(--color-accent-ombre)]
@@ -121,7 +127,7 @@
       active:translate-y-[3px] active:shadow-none disabled:opacity-45 disabled:active:translate-y-0;
   }
   .btn-primary { @apply bg-accent text-sur-accent shadow-[0_4px_0_var(--color-accent-ombre)] hover:brightness-110; }
-  .btn-orange { @apply bg-energie text-white shadow-[0_4px_0_color-mix(in_oklab,var(--color-energie)_60%,black)] hover:brightness-110; }
+  .btn-orange { @apply bg-energie text-sur-energie shadow-[0_4px_0_color-mix(in_oklab,var(--color-energie)_60%,black)] hover:brightness-110; }
   .btn-white, .btn-ghost { @apply border-2 border-ligne bg-surface text-texte shadow-[0_3px_0_var(--color-ligne)] hover:border-ligne-forte; }
   .btn-danger { @apply border-2 border-ko/35 bg-ko-doux text-ko shadow-[0_3px_0_color-mix(in_oklab,var(--color-ko)_35%,transparent)] hover:border-ko; }
 

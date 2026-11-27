@@ -26,7 +26,7 @@ export default async function Arene() {
   return (
     <main className="page">
       <section className="hero hero-energie entree">
-        <div aria-hidden className="pointer-events-none absolute -top-12 -right-10 h-44 w-44 rounded-full bg-white/10" />
+        <div aria-hidden className="pointer-events-none absolute -top-12 -right-10 h-44 w-44 rounded-full bg-sur-energie/10" />
         <p className="eyebrow">Multijoueur en direct</p>
         <h1 className="mt-1 flex items-center gap-3 font-titre text-4xl font-extrabold lg:text-5xl"><Icon name="swords" size={34} />Arène</h1>
         <p className="mt-2 max-w-xl text-[15px] opacity-95">Des duels sur les quiz des jours passés. Le plus juste et le plus rapide gagne des points de cote.</p>

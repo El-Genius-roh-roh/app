@@ -62,8 +62,8 @@ export default async function Groupe({ params }: { params: Promise<{ id: string 
                         </span>
                       </span>
                       {m.jour && (fait
-                        ? <span className="chip border-ok/30 bg-ok/10 text-ok"><Icon name="check" size={13} />Fait</span>
-                        : <span className="chip border-accent/40 bg-accent/10 text-accent"><Icon name="play" size={12} />À jouer</span>)}
+                        ? <span className="chip border-ok/30 bg-ok-doux text-ok"><Icon name="check" size={13} />Fait</span>
+                        : <span className="chip border-accent/30 bg-accent-doux text-accent-fort"><Icon name="play" size={12} />À jouer</span>)}
                     </Link>
                   </li>
                 );
