@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { sqlToday } from "@/lib/clock";
-import { CONFIG, FLASHCARDS } from "@/config/constants";
+import { CONFIG, FLASHCARDS, SOLO } from "@/config/constants";
 import { facteurRetard } from "@/lib/scoring";
 import Icon from "@/components/Icon";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -140,12 +140,12 @@ export default async function Accueil() {
             </section>
           )}
 
-          {/* sans chrono ni classement : on apprend à son rythme sur les quiz déjà passés */}
+          {/* sans chrono : on apprend à son rythme ; chaque session compte pour le score de la semaine (D37) */}
           {matieres.length > 0 && (
             <section className="space-y-3" aria-labelledby="t-solo">
               <div className="space-y-0.5">
                 <h2 id="t-solo" className="h2">Flashcards et jeux solo</h2>
-                <p className="text-sm text-texte-3">Sans chrono ni classement, sur les questions des quiz déjà passés.</p>
+                <p className="text-sm text-texte-3">Sans chrono, sur les questions des quiz déjà passés. Chaque session terminée rapporte +{SOLO.GEMMES_PAR_SESSION} gemmes pour ta semaine ({SOLO.MAX_PAR_JOUR} max. par jour).</p>
               </div>
               <ul className="grid gap-2.5 sm:grid-cols-2">
                 {matieres.map((m) => {

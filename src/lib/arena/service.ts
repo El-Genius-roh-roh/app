@@ -2,7 +2,7 @@ import crypto from "crypto";
 import type { PoolClient } from "pg";
 import { ARENA } from "@/config/constants";
 import { pool, q } from "../db";
-import { sqlToday } from "../clock";
+import { sqlToday, todayGroupe } from "../clock";
 import { memberRole } from "../groups";
 import { secureRand } from "../rng";
 import {
@@ -69,7 +69,16 @@ async function rate(s: State, c: PoolClient) {
   const humans = s.players.filter((p) => !p.bot);
   s.rated = true;
   s.v += 1;
-  if (humans.length < ARENA.MIN_HUMAINS_CLASSEE) { s.changes = {}; return; }
+  if (humans.length < ARENA.MIN_HUMAINS_CLASSEE) {
+    s.changes = {};
+    // entraînement contre des bots : non classé, mais compte comme activité solo (gemmes solo de la semaine, D37)
+    const joue = humans.filter((h) => Object.values(h.answers).some((a) => a.choice !== null));
+    if (joue.length) {
+      const date = await todayGroupe(s.groupId);
+      for (const h of joue) await c.query("insert into solo_sessions(user_id,group_id,type,date) values ($1,$2,'arene',$3::date)", [h.id, s.groupId, date]);
+    }
+    return;
+  }
   const { rows } = await c.query<{ user_id: string; rating: string }>(
     "select user_id, rating from arena_ratings where group_id=$1 and user_id = any($2::uuid[])", [s.groupId, humans.map((h) => h.id)]);
   const cur = new Map(rows.map((r) => [r.user_id, Number(r.rating)]));

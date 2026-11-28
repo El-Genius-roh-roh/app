@@ -25,4 +25,8 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q18 | Le retard d'un rattrapage change-t-il le rang du jour ? | Non : il ne réduit que les gemmes (−10 % par jour) |
 | Q19 | Qui compte dans le classement de fin de saison (trophées) ? | Seulement les joueurs qui ont joué au moins un quiz de la saison : un membre inactif ne rapporte pas de trophées aux autres |
 | Q20 | Quand les trophées d'une saison sont-ils acquis ? | Dès le lendemain du dernier jour de la saison (pas d'attente de la fin du rattrapage) |
-
+| Q21 | « +20 » : seulement pour le 1er de la semaine ? | Oui, le 1er (ex æquo compris) ; `TROPHEES.SEMAINE_GAINS` est une liste par rang, pour récompenser un podium plus tard. Personne ne gagne une semaine où personne n’a marqué |
+| Q22 | Quiz manqués comptés à partir de quand (D36) ? | Depuis l’arrivée du joueur dans le groupe (`group_members.joined_at`), pour les matières qu’il suit, une fois le rattrapage impossible. Remplace Q16 : on perd aussi des trophées sans avoir encore joué la matière |
+| Q23 | Plafond des gemmes solo (D37) ? | 5 par session, 15 par jour et par groupe (`SOLO`). Plafond appliqué au calcul : toutes les sessions sont gardées |
+| Q24 | Quelles activités solo comptent ? | Flashcards, Memory, Arène contre des bots (au moins une réponse). Pas le jeu de plateau (multijoueur, souvent avec des bots) |
+| Q19 | (obsolète depuis D36) | Les trophées ne dépendent plus des saisons ; Q19 et Q20 ne s’appliquent plus |

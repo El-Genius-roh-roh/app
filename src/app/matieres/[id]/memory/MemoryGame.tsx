@@ -5,6 +5,7 @@ import { MEMORY } from "@/config/constants";
 import { distribuer, meilleur, vontEnsemble, type Carte, type Paire, type Score } from "@/lib/memory";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
+import RecompenseSolo from "@/components/RecompenseSolo";
 
 const LIBELLE = { notion: "Question", definition: "Réponse" } as const;
 const fmt = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
@@ -98,6 +99,7 @@ export default function MemoryGame({ subjectId, source, initial, n }: { subjectI
           <p className="font-titre text-3xl font-extrabold lg:text-4xl">{n} paires en <span className="num">{coups}</span> coups</p>
           <div className="flex flex-wrap gap-2 text-sm">
             <span className="chip border-transparent bg-surface text-texte"><Icon name="clock" size={14} /><span className="num">{fmt(ecoule)}</span></span>
+            <RecompenseSolo type="memory" subjectId={subjectId} />
             {nouveauRecord
               ? <span className="chip border-transparent bg-or-vif text-sur-or"><Icon name="trophy" size={14} />Nouveau record</span>
               : record && <span className="chip border-transparent bg-surface text-texte">Record : <span className="num">{record.coups}</span> coups · <span className="num">{fmt(record.ms)}</span></span>}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ligueDe, series, vitrine, exploitsDuJour, tropheesFinSaison, type Resultat } from "./trophees";
+import { ligueDe, series, vitrine, exploitsDuJour, lundiDe, semaineReglee, finDuMois, gainsSemaine, bilans, etatTrophees, type Resultat } from "./trophees";
 
 describe("ligues", () => {
   it("Bronze au départ, avec la progression vers Argent", () => {
@@ -61,21 +61,87 @@ describe("vitrine", () => {
   });
 });
 
-describe("trophées de fin de saison", () => {
-  const cl = (...rangs: [string, number][]) => rangs.map(([userId, rang]) => ({ userId, rang }));
-  it("saison de 30 jours, groupe de 5 : 120, 90, 60, 30, 0", () => {
-    const t = tropheesFinSaison(cl(["A", 1], ["B", 2], ["C", 3], ["D", 4], ["E", 5]), 30);
-    expect(["A", "B", "C", "D", "E"].map((u) => t.get(u))).toEqual([120, 90, 60, 30, 0]);
+describe("semaines", () => {
+  it("du lundi au dimanche", () => {
+    expect(lundiDe("2026-11-28")).toBe("2026-11-23"); // samedi
+    expect(lundiDe("2026-11-02")).toBe("2026-11-02"); // lundi
+    expect(lundiDe("2026-11-01")).toBe("2026-10-26"); // dimanche
   });
-  it("dépend de la durée de la saison : 10 jours, groupe de 3 → 20, 10, 0", () => {
-    const t = tropheesFinSaison(cl(["A", 1], ["B", 2], ["C", 3]), 10);
-    expect([t.get("A"), t.get("B"), t.get("C")]).toEqual([20, 10, 0]);
+  it("réglée quand le dernier quiz n'est plus rattrapable (dimanche + 3 jours)", () => {
+    expect(semaineReglee("2026-11-16", "2026-11-25")).toBe(false);
+    expect(semaineReglee("2026-11-16", "2026-11-26")).toBe(true);
   });
-  it("égalité : les ex æquo ne se comptent pas", () => {
-    const t = tropheesFinSaison(cl(["A", 1], ["B", 1], ["C", 3]), 5);
-    expect([t.get("A"), t.get("B"), t.get("C")]).toEqual([5, 5, 0]);
+  it("fin du mois", () => {
+    expect(finDuMois("2026-11-28")).toBe("2026-11-30");
+    expect(finDuMois("2028-02-03")).toBe("2028-02-29");
   });
-  it("joueur seul : 0 trophée", () => {
-    expect(tropheesFinSaison(cl(["A", 1]), 30).get("A")).toBe(0);
+});
+
+describe("trophées de la semaine (D36, docs/04 §8)", () => {
+  const s = (semaine: string, userId: string, gemmes: number, solo = 0, manques = 0) => ({ semaine, userId, gemmes, solo, manques });
+  const total = (b: ReturnType<typeof bilans>[number], u: string) => b.joueurs.find((j) => j.userId === u)!.total;
+
+  it("exemple du doc : le 1er gagne 20, chaque quiz manqué coûte 10, jamais sous 0", () => {
+    // semaine 1 : A 120 gemmes ; B 80 + 15 solo ; C ne joue pas et manque 2 quiz
+    // semaine 2 : A 70 ; B 60 + 15 solo = 75 ; C 75 → B et C ex æquo, +20 chacun
+    const b = bilans([s("2026-11-02", "A", 120), s("2026-11-02", "B", 80, 15), s("2026-11-02", "C", 0, 0, 2),
+      s("2026-11-09", "A", 70), s("2026-11-09", "B", 60, 15), s("2026-11-09", "C", 75)], ["A", "B", "C"], "2026-11-28");
+    expect(b[0].joueurs.map((j) => [j.rang, j.gain, j.perte, j.total])).toEqual([[1, 20, 0, 20], [2, 0, 0, 0], [null, 0, 20, 0]]);
+    expect(b[1].joueurs.map((j) => [j.rang, j.gain, j.total])).toEqual([[3, 0, 20], [1, 20, 20], [1, 20, 20]]);
+  });
+
+  it("personne n'a marqué : aucun gain", () => {
+    expect([...gainsSemaine([{ userId: "A", score: 0 }, { userId: "B", score: 0 }]).values()]).toEqual([{ rang: null, gain: 0 }, { rang: null, gain: 0 }]);
+  });
+
+  it("le solo seul peut gagner une semaine où personne d'autre n'a joué", () => {
+    const [w] = bilans([s("2026-11-02", "A", 0, 15)], ["A", "B"], "2026-11-28");
+    expect(w.joueurs[0]).toMatchObject({ rang: 1, gain: 20, total: 20 });
+  });
+
+  it("le solo n'efface pas la pénalité des quiz manqués", () => {
+    const [w] = bilans([s("2026-11-02", "A", 0, 15, 1), s("2026-11-02", "B", 40)], ["A", "B"], "2026-11-28");
+    expect(w.joueurs[0]).toMatchObject({ gain: 0, perte: 10, total: 0 });
+  });
+
+  it("le plancher à 0 s'applique semaine après semaine", () => {
+    const b = bilans([s("2026-11-02", "A", 0, 0, 3), s("2026-11-09", "A", 50)], ["A"], "2026-11-28");
+    expect(b.map((w) => total(w, "A"))).toEqual([0, 20]);
+  });
+
+  it("joueur absent d'une semaine (arrivé plus tard) : rien ne change", () => {
+    const b = bilans([s("2026-11-02", "A", 30), s("2026-11-09", "B", 30)], ["A", "B"], "2026-11-28");
+    expect(b.map((w) => [total(w, "A"), total(w, "B")])).toEqual([[20, 0], [20, 20]]);
+  });
+
+  it("la semaine en cours reste provisoire", () => {
+    const b = bilans([s("2026-11-16", "A", 30), s("2026-11-23", "A", 30)], ["A"], "2026-11-28");
+    expect(b.map((w) => w.reglee)).toEqual([true, false]);
+    expect(etatTrophees(b, "A", "2026-11-28")).toEqual({ fige: 0, courant: 20, projection: 40 });
+  });
+});
+
+describe("ligue du mois (D36)", () => {
+  const gagne = (semaine: string) => ({ semaine, userId: "A", gemmes: 50, solo: 0, manques: 0 });
+  // 5 semaines gagnées jusqu'en octobre (100 trophées : Argent), puis 2 quiz manqués début novembre (80)
+  const scores = ["2026-09-21", "2026-09-28", "2026-10-05", "2026-10-12", "2026-10-19"].map(gagne)
+    .concat({ semaine: "2026-11-02", userId: "A", gemmes: 0, solo: 0, manques: 2 });
+
+  it("la ligue de novembre est fixée par le total de fin octobre", () => {
+    const e = etatTrophees(bilans(scores, ["A"], "2026-11-20"), "A", "2026-11-20");
+    expect(e).toEqual({ fige: 100, courant: 80, projection: 80 });
+    expect(ligueDe(e.fige).ligue.nom).toBe("Argent");
+  });
+
+  it("descente au mois suivant", () => {
+    const e = etatTrophees(bilans(scores, ["A"], "2026-12-10"), "A", "2026-12-10");
+    expect(e.fige).toBe(80);
+    expect(ligueDe(e.fige).ligue.nom).toBe("Bronze");
+  });
+
+  it("une semaine compte pour le mois de son dimanche", () => {
+    // semaine du 26 octobre au 1er novembre : comptée en novembre, donc pas dans la ligue de novembre
+    const e = etatTrophees(bilans([gagne("2026-10-26")], ["A"], "2026-11-20"), "A", "2026-11-20");
+    expect(e).toEqual({ fige: 0, courant: 20, projection: 20 });
   });
 });

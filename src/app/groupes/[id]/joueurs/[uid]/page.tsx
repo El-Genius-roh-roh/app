@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { memberRole } from "@/lib/groups";
 import { getGroupResults, getGroupTrophees } from "@/lib/ranking";
-import { ligueDe, vitrine } from "@/lib/trophees";
+import { vitrine } from "@/lib/trophees";
 import { todayGroupe } from "@/lib/clock";
 import { CONFIG } from "@/config/constants";
 import { LigueCard, Vitrine } from "@/components/Trophees";
@@ -23,7 +23,7 @@ export default async function Joueur({ params }: { params: Promise<{ id: string;
 
   const tr = await getGroupTrophees(id);
   const ligne = tr.lignes.find((l) => l.userId === uid);
-  const trophees = ligne?.trophees ?? 0;
+
   const resultats = await getGroupResults(id);
   const v = vitrine(resultats, uid, await todayGroupe(id));
   const miens = resultats.filter((r) => r.userId === uid);
@@ -68,7 +68,7 @@ export default async function Joueur({ params }: { params: Promise<{ id: string;
 
       <div className="space-y-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8 lg:space-y-0">
         <div className="space-y-6">
-          <LigueCard info={ligueDe(trophees)} trophees={trophees} serie={v.serieActuelle} />
+          <LigueCard etat={ligne ?? { fige: 0, courant: 0, projection: 0 }} today={tr.today} serie={v.serieActuelle} />
           <div className="grid grid-cols-2 gap-3">
             <Stat icon="play" v={String(v.quizJoues)} l="quiz joués" />
             <Stat icon="target" v={moyenne === null ? "–" : `${moyenne.toFixed(1).replace(".", ",")}/${CONFIG.QUESTIONS_PAR_JOUR}`} l="note moyenne" />

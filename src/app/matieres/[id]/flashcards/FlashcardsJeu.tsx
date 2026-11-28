@@ -5,6 +5,7 @@ import { FLASHCARDS } from "@/config/constants";
 import { acquises, classer, nouvelleSession, paquet, repondre, type Boites, type Flashcard, type Session } from "@/lib/flashcards";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
+import RecompenseSolo from "@/components/RecompenseSolo";
 
 /** Flashcards d'une matière : file de cartes, boîtes de Leitner gardées dans le navigateur (aucun classement). */
 export default function FlashcardsJeu({ subjectId, source }: { subjectId: string; source: Flashcard[] }) {
@@ -74,6 +75,7 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
           <p className="font-titre text-3xl font-extrabold lg:text-4xl"><span className="num">{premierCoup}</span> sur <span className="num">{total}</span> du premier coup</p>
           <div className="flex flex-wrap gap-2 text-sm">
             <span className="chip border-transparent bg-surface text-texte"><Icon name="check" size={14} className="text-ok" /><span className="num">{acq}/{source.length}</span> cartes acquises</span>
+            <RecompenseSolo type="flashcards" subjectId={subjectId} />
             {ratees.length > 0 && <span className="chip border-transparent bg-surface text-texte"><Icon name="rotate" size={14} /><span className="num">{ratees.length}</span> revue{ratees.length > 1 ? "s" : ""} plusieurs fois</span>}
           </div>
           <p className="text-[15px] opacity-90">Une carte est acquise quand tu l&apos;as sue trois fois de suite. Les autres repassent en priorité à la prochaine session.</p>

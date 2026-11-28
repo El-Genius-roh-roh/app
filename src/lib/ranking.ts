@@ -1,8 +1,8 @@
 import { q } from "./db";
-import { CONFIG } from "@/config/constants";
+import { CONFIG, SOLO } from "@/config/constants";
 import { classementCumule, type CumulRanked } from "./scoring";
-import { sqlToday, todayParis } from "./clock";
-import { tropheesFinSaison } from "./trophees";
+import { sqlToday, todayGroupe, todayParis } from "./clock";
+import { bilans, etatTrophees, type BilanSemaine, type EtatTrophees, type ScoreSemaine } from "./trophees";
 
 export type CumulRow = { userId: string; pseudo: string; points: number; erreurs: number; dureeMs: number; jours: number };
 export type CumulLine = CumulRanked<CumulRow>;
@@ -115,15 +115,14 @@ export async function getSeasonHistory(subjectId: string, saison: number): Promi
 
 /* ------------------------------------------------------------------ trophées de fin de saison (D30) */
 
-export type TropheeLine = { userId: string; pseudo: string; trophees: number; rang: number };
-export type SaisonTrophees = {
-  subjectId: string; matiere: string; saison: number; nbJours: number; debut: string; fin: string;
-  /** Saison finie : trophées acquis. Sinon : trophées que chacun gagnerait si la saison s'arrêtait aujourd'hui. */
-  terminee: boolean;
+/** `trophees` = semaines réglées ; `fige` fixe la ligue du mois ; `projection` inclut les semaines provisoires. */
+export type TropheeLine = { userId: string; pseudo: string; trophees: number; rang: number } & EtatTrophees;
+export type SaisonClassement = {
+  subjectId: string; matiere: string; saison: number; nbJours: number; debut: string; fin: string; terminee: boolean;
   /** Classement aux gemmes, parmi les joueurs qui ont joué au moins un quiz de la saison. */
-  classement: (CumulLine & { trophees: number })[];
+  classement: CumulLine[];
 };
-export type TropheesGroupe = { lignes: TropheeLine[]; saisons: SaisonTrophees[] };
+export type TropheesGroupe = { today: string; lignes: TropheeLine[]; semaines: BilanSemaine[] };
 
 /** Rang « 1, 2, 2, 4 » selon une valeur décroissante. */
 function rangs<T extends { userId: string; pseudo: string }>(rows: (T & { v: number })[]) {
@@ -132,24 +131,52 @@ function rangs<T extends { userId: string; pseudo: string }>(rows: (T & { v: num
     .map((r) => ({ ...r, rang: 1 + rows.filter((o) => o.v > r.v).length }));
 }
 
-/** Saison d'une matière : classement aux gemmes et trophées de fin de saison (acquis ou en jeu). */
-export async function getSaisonTrophees(subjectId: string, matiere: string, s: SeasonInfo): Promise<SaisonTrophees> {
+/** Saison d'une matière : classement aux gemmes (les trophées se gagnent à la semaine, D36). */
+export async function getSaisonClassement(subjectId: string, matiere: string, s: SeasonInfo): Promise<SaisonClassement> {
   const [{ n }] = await q<{ n: number }>("select count(*)::int as n from game_days where subject_id=$1 and saison=$2", [subjectId, s.saison]);
-  const joueurs = classementCumule((await getSeasonRanking(subjectId, s.saison)).filter((l) => l.jours > 0));
-  const t = tropheesFinSaison(joueurs, n);
-  return { subjectId, matiere, saison: s.saison, nbJours: n, debut: s.debut, fin: s.fin, terminee: s.termine,
-    classement: joueurs.map((l) => ({ ...l, trophees: t.get(l.userId) ?? 0 })) };
+  const classement = classementCumule((await getSeasonRanking(subjectId, s.saison)).filter((l) => l.jours > 0));
+  return { subjectId, matiere, saison: s.saison, nbJours: n, debut: s.debut, fin: s.fin, terminee: s.termine, classement };
 }
 
-/** Trophées de tous les membres d'un groupe : somme des trophées des saisons terminées, toutes matières. */
+/**
+ * Scores de chaque semaine (lundi → dimanche) dans un groupe, pour chaque membre (D36, D37) :
+ * - gemmes des quiz du jour, comptées dans la semaine du quiz (un rattrapage compte pour sa semaine d'origine) ;
+ * - gemmes solo : SOLO.GEMMES_PAR_SESSION par session, plafonnées à SOLO.MAX_PAR_JOUR par jour ;
+ * - quiz manqués : quiz du jour d'une matière suivie, depuis l'arrivée dans le groupe, plus rattrapable et jamais terminé.
+ */
+export async function getScoresSemaines(groupId: string): Promise<ScoreSemaine[]> {
+  const semaine = (col: string) => `to_char(date_trunc('week', ${col})::date,'YYYY-MM-DD')`;
+  const rows = await q<{ semaine: string; userId: string; gemmes: number; solo: number; manques: number }>(
+    `with gemmes as (
+       select r.user_id, ${semaine("g.date")} as semaine, sum(r.points)::int as n
+         from daily_results r join game_days g on g.id=r.game_day_id join subjects s on s.id=g.subject_id
+        where s.group_id=$1 and g.date <= ${sqlToday("g.subject_id")} group by 1, 2),
+     solo as (
+       select user_id, ${semaine("d")} as semaine, sum(least(n * $2::int, $3::int))::int as n
+         from (select user_id, date as d, count(*)::int as n from solo_sessions where group_id=$1 group by 1, 2) x group by 1, 2),
+     manques as (
+       select gm.user_id, ${semaine("g.date")} as semaine, count(*)::int as n
+         from game_days g join subjects s on s.id=g.subject_id
+         join subject_players sp on sp.subject_id=s.id and sp.actif
+         join group_members gm on gm.group_id=s.group_id and gm.user_id=sp.user_id and gm.joined_at::date <= g.date
+        where s.group_id=$1 and g.date < ${sqlToday("g.subject_id")} - $4::int
+          and not exists (select 1 from daily_results r where r.game_day_id=g.id and r.user_id=gm.user_id)
+        group by 1, 2)
+     select k.semaine, k.user_id as "userId", coalesce(gemmes.n,0) as gemmes, coalesce(solo.n,0) as solo, coalesce(manques.n,0) as manques
+       from (select user_id, semaine from gemmes union select user_id, semaine from solo union select user_id, semaine from manques) k
+       left join gemmes using (user_id, semaine) left join solo using (user_id, semaine) left join manques using (user_id, semaine)`,
+    [groupId, SOLO.GEMMES_PAR_SESSION, SOLO.MAX_PAR_JOUR, CONFIG.RATTRAPAGE_JOURS]);
+  return rows;
+}
+
+/** Trophées de tous les membres d'un groupe : bilans des semaines, ligue fixée au dernier bilan de fin de mois (D36). */
 export async function getGroupTrophees(groupId: string): Promise<TropheesGroupe> {
   const membres = await q<{ userId: string; pseudo: string }>(
     `select p.id as "userId", coalesce(p.pseudo,'?') as pseudo from group_members gm join profiles p on p.id=gm.user_id where gm.group_id=$1`, [groupId]);
-  const matieres = await q<{ id: string; nom: string }>("select id, nom from subjects where group_id=$1 order by created_at", [groupId]);
-  const saisons: SaisonTrophees[] = [];
-  for (const m of matieres) for (const s of await getSeasons(m.id)) if (s.debut <= (await todayParis(m.id))) saisons.push(await getSaisonTrophees(m.id, m.nom, s));
-  const total = new Map<string, number>();
-  for (const s of saisons) if (s.terminee) for (const l of s.classement) total.set(l.userId, (total.get(l.userId) ?? 0) + l.trophees);
-  const lignes = rangs(membres.map((m) => ({ ...m, v: total.get(m.userId) ?? 0 }))).map(({ v, ...m }) => ({ ...m, trophees: v }));
-  return { lignes, saisons };
+  const today = await todayGroupe(groupId);
+  const semaines = bilans(await getScoresSemaines(groupId), membres.map((m) => m.userId), today);
+  const etats = new Map(membres.map((m) => [m.userId, etatTrophees(semaines, m.userId, today)]));
+  const lignes = rangs(membres.map((m) => ({ ...m, v: etats.get(m.userId)!.courant })))
+    .map(({ v, ...m }) => ({ ...m, trophees: v, ...etats.get(m.userId)! }));
+  return { today, lignes, semaines };
 }
