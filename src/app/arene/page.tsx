@@ -9,6 +9,7 @@ import PlateauCreate from "./PlateauCreate";
 import { openRooms as plateauxOuverts, themesDuGroupe } from "@/lib/plateau/service";
 import Icon from "@/components/Icon";
 import Details from "@/components/Details";
+import PremiumRequis from "@/components/PremiumRequis";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ const TIER_COLOR: Record<string, string> = {
 
 export default async function Arene() {
   const u = await requireUser();
+  if (!u.premium) return <PremiumRequis titre="L'Arène" texte="Les duels en direct, les parties contre des bots et le jeu de plateau sont réservés aux comptes premium." />;
   const groupes = await q<{ id: string; nom: string }>(
     "select g.id,g.nom from groups g join group_members m on m.group_id=g.id where m.user_id=$1 order by g.created_at", [u.id]);
   const rooms = [
@@ -30,6 +32,7 @@ export default async function Arene() {
     themes: (await themesDuGroupe(g.id)).themes.map((t) => t.nom),
   })));
 
+
   return (
     <main className="page">
       <section className="hero hero-energie entree">
@@ -40,7 +43,7 @@ export default async function Arene() {
         <form action="/arene/rejoindre" className="mt-5 flex max-w-sm gap-2">
           <label htmlFor="code-arene" className="sr-only">Code de la partie</label>
           <input id="code-arene" name="code" required maxLength={ARENA.CODE_LONGUEUR} placeholder="CODE" autoComplete="off"
-            className="num min-h-12 w-full rounded-[14px] border-2 border-transparent bg-surface px-3.5 text-lg tracking-[0.3em] text-texte uppercase outline-none placeholder:text-texte-3 focus:border-sur-or" />
+            className="code min-h-12 w-full rounded-[14px] border-2 border-transparent bg-surface px-3.5 text-lg tracking-[0.3em] text-texte uppercase outline-none placeholder:text-texte-3 focus:border-sur-or" />
           <button className="inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-[14px] bg-surface px-4 font-extrabold text-energie shadow-[0_4px_0_color-mix(in_oklab,var(--color-energie)_55%,black)] active:translate-y-[3px] active:shadow-none">
             Rejoindre<Icon name="arrowRight" size={17} />
           </button>
@@ -64,7 +67,7 @@ export default async function Arene() {
             {rooms.map((r) => (
               <li key={r.code}>
                 <Link href={r.href} className="tuile group flex items-center gap-3.5">
-                  <span className="num rounded-[10px] bg-energie-doux px-2.5 py-1.5 text-lg font-semibold tracking-[0.2em] text-energie">{r.code}</span>
+                  <span className="code rounded-[10px] bg-energie-doux px-2.5 py-1.5 text-lg font-semibold tracking-[0.2em] text-energie">{r.code}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-bold">{r.titre}</span>
                     <span className="block truncate text-sm text-texte-3">{r.hote} · {r.joueurs} joueur{Number(r.joueurs) > 1 ? "s" : ""}</span>
@@ -77,6 +80,12 @@ export default async function Arene() {
         </section>
       )}
 
+      {groupes.length > 0 && (
+        <div className="space-y-1">
+          <h2 className="h2">Arène libre</h2>
+          <p className="muted">Des parties quand tu veux, contre tes amis ou contre des bots, sur les quiz des jours passés.</p>
+        </div>
+      )}
       <div className="space-y-7 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8 lg:space-y-0">
         {data.map((g) => (
           <section key={g.id} className="space-y-4" aria-labelledby={`t-g-${g.id}`}>

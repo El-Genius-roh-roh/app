@@ -142,7 +142,7 @@ Exemple (groupe A, B, C) :
 ### Gemmes solo (D37)
 
 Chaque session solo **terminée** rapporte **5 gemmes solo** (`SOLO.GEMMES_PAR_SESSION`), plafonnées à **15 par jour** et par groupe (`SOLO.MAX_PAR_JOUR`) :
-- une session de **flashcards** ou un **Memory** terminé dans une matière (au moins 3 cartes / 4 paires disponibles) ;
+- une session de **flashcards** (premium, D42), un **Memory** ou une partie de **Relier** (outil de révision) terminée dans une matière (au moins 3 cartes / 4 paires disponibles) ;
 - une partie d'**Arène contre des bots** (non classée, au moins une réponse donnée), enregistrée par le serveur.
 
 Elles comptent uniquement dans le score de la semaine : ni dans les classements des quiz du jour, ni dans ceux des saisons, et elles **n'annulent pas** la pénalité d'un quiz manqué. Le jeu de plateau n'en rapporte pas.

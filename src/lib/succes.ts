@@ -7,30 +7,38 @@ import { series, type Vitrine } from "./trophees";
 export type Defi = { id: string; titre: string; detail: string; fait: boolean; href: string; mode: "solo" | "multi" | "quiz" };
 
 export type EntreeDefis = {
-  /** Quiz du jour de mes matières : faits / prévus aujourd'hui. */
+  /** Défis du jour de mes matières (D41) : faits / prévus aujourd'hui. */
   quiz: { faits: number; total: number; href: string };
   /** Sessions solo terminées aujourd'hui, par type. */
-  solo: { flashcards: number; memory: number; arene: number };
+  solo: { flashcards: number; memory: number; arene: number; relier?: number };
   /** Parties multijoueur terminées aujourd'hui (Arène entre humains, jeu de plateau). */
   multi: number;
-  /** Matière conseillée pour les flashcards et le Memory (celle qui a le plus de cartes), null s'il n'y en a pas. */
+  /** Matière conseillée pour les outils de révision (de vraies notions d'abord, puis le plus de cartes), null s'il n'y en a pas. */
   matiere: string | null;
+  /** Compte premium (D42) : flashcards et Arène. */
+  premium: boolean;
 };
 
-/** Défis du jour : le quiz (s'il y en a), une session de flashcards, un Memory, une partie d'Arène (seul ou à plusieurs). */
+/**
+ * Défis du jour : le défi du jour (s'il y en a), deux outils de révision dans la matière conseillée, et pour un compte
+ * premium une partie d'Arène. Un compte gratuit n'a que des défis qu'il peut faire : Memory et Relier au lieu des
+ * flashcards, pas d'Arène (D42).
+ */
 export function defisDuJour(e: EntreeDefis): Defi[] {
   const d: Defi[] = [];
   if (e.quiz.total > 0) d.push({
-    id: "quiz", mode: "quiz", titre: e.quiz.total > 1 ? "Joue tes quiz du jour" : "Joue ton quiz du jour",
+    id: "quiz", mode: "quiz", titre: e.quiz.total > 1 ? "Joue tes défis du jour" : "Joue ton défi du jour",
     detail: `${e.quiz.faits}/${e.quiz.total} joué${e.quiz.faits > 1 ? "s" : ""}`, fait: e.quiz.faits >= e.quiz.total, href: e.quiz.href,
   });
   if (e.matiere) {
-    d.push({ id: "flashcards", mode: "solo", titre: "Termine une session de flashcards", detail: "+5 gemmes pour ta semaine",
+    if (e.premium) d.push({ id: "flashcards", mode: "solo", titre: "Termine une session de flashcards", detail: "+5 gemmes pour ta semaine",
       fait: e.solo.flashcards > 0, href: `/matieres/${e.matiere}/flashcards` });
     d.push({ id: "memory", mode: "solo", titre: "Termine un Memory", detail: "+5 gemmes pour ta semaine",
       fait: e.solo.memory > 0, href: `/matieres/${e.matiere}/memory` });
+    if (!e.premium) d.push({ id: "relier", mode: "solo", titre: "Termine une partie de Relier", detail: "+5 gemmes pour ta semaine",
+      fait: (e.solo.relier ?? 0) > 0, href: `/matieres/${e.matiere}/relier` });
   }
-  d.push({ id: "arene", mode: "multi", titre: "Joue une partie d'Arène", detail: "Contre tes amis ou contre des bots",
+  if (e.premium) d.push({ id: "arene", mode: "multi", titre: "Joue une partie d'Arène", detail: "Contre tes amis ou contre des bots",
     fait: e.multi + e.solo.arene > 0, href: "/arene" });
   return d;
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import PremiumRequis from "@/components/PremiumRequis";
 import { q } from "@/lib/db";
 import { getSubjectFor } from "@/lib/subjects";
 import { sqlToday } from "@/lib/clock";
@@ -16,6 +17,7 @@ export default async function Flashcards({ params }: { params: Promise<{ id: str
   const u = await requireUser();
   const ctx = await getSubjectFor(id, u.id);
   if (!ctx) notFound();
+  if (!u.premium) return <PremiumRequis titre="Flashcards" texte="Les flashcards sont réservées aux comptes premium. Pour réviser gratuitement, il y a le Memory et Relier." retour={{ href: `/matieres/${id}`, label: ctx.subject.nom }} />;
 
   // comme l'Arène et le Memory : questions vérifiées des jours passés, pour ne rien dévoiler du quiz du jour
   const pool = await q<FlashSource>(

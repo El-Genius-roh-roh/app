@@ -35,3 +35,10 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q27 | Une nouvelle extraction écrase-t-elle les corrections ? | Non : elle ne remplace que les notions « ia » / « auto » du document ; les notions écrites ou corrigées à la main restent |
 | Q28 | Les notions dévoilent-elles le quiz du jour ? | Non : ce sont les définitions du cours, que les joueurs ont déjà (D13 : on sait à l’avance sur quelles diapos porte un jour). Seules les questions restent limitées aux jours passés |
 | Q29 | Memory : notions et questions mélangées ? | Non, une source par partie (notions s’il y en a au moins 4 paires, sinon les QCM) pour que les paires restent du même genre ; les flashcards, elles, mélangent les deux |
+| Q30 | Mini-jeu du jour : faut-il retirer les modes illimités de l’Arène ? | Non pour l’instant : l’Arène libre (tous les modes, jeu de plateau) reste sous le mini-jeu du jour (« garde l’accès à l’arène »). À retirer si l’équipe veut que le mini-jeu soit le seul jeu du jour |
+| Q31 | Mini-jeu du jour : une seule partie par jour ? | Non, on peut rejouer ; les gemmes solo restent plafonnées (15 par jour et par groupe, D37). Le défi du jour est coché dès la première partie |
+| Q30 | (obsolète depuis D41) | Le mini-jeu du jour de l’Arène est retiré : c’est le quiz du jour qui change de format |
+| Q31 | (obsolète depuis D41) | Idem |
+| Q32 | Défi du jour : pourquoi pas de Memory comme format ? | Le Memory se joue à l’aveugle sur des positions de cartes : impossible à vérifier côté serveur et à classer équitablement. Il reste un outil de révision (gratuit) |
+| Q33 | Relier : réponse en double dans la réserve ? | Une seule case par texte ; une réponse est juste si son texte est celui de la bonne réponse (deux questions peuvent avoir la même) |
+| Q34 | Comment devient-on premium sans paiement ? | En démo (`DEMO_MODE=1`), depuis son profil (activer / retirer). Hors démo, en base : `update revision_app.profiles set premium=true where …`. Les comptes existants sont gratuits après la migration 013 |

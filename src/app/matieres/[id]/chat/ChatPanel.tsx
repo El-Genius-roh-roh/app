@@ -27,7 +27,7 @@ export default function ChatPanel({ subjectId, prompt, dates }: { subjectId: str
         <h2 id="t-prompt" className="h2 flex items-center gap-2.5"><Etape n={1} />Copie le prompt</h2>
         <p className="muted">Quiz du {dates.join(", du ")}</p>
         <label htmlFor="prompt" className="sr-only">Prompt à copier</label>
-        <textarea id="prompt" readOnly value={prompt} rows={6} className="input font-num text-xs lg:h-80" />
+        <textarea id="prompt" readOnly value={prompt} rows={6} className="input font-code text-xs lg:h-80" />
         <button type="button" onClick={copy} className="btn-primary" aria-live="polite">
           {copied ? <><Icon name="check" size={18} />Copié</> : <><Icon name="copy" size={18} />Copier le prompt</>}
         </button>
@@ -38,7 +38,7 @@ export default function ChatPanel({ subjectId, prompt, dates }: { subjectId: str
         <p className="muted">Colle le prompt dans Claude, puis colle ici sa réponse complète (JSON).</p>
         <input type="hidden" name="subject" value={subjectId} />
         <label htmlFor="reponse" className="sr-only">Réponse du chat</label>
-        <textarea id="reponse" name="reponse" rows={8} required placeholder='{"jours":[...]}' className="input font-num text-xs lg:h-80" />
+        <textarea id="reponse" name="reponse" rows={8} required placeholder='{"jours":[...]}' className="input font-code text-xs lg:h-80" />
         <button disabled={pending} className="btn-primary">
           {pending ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-sur-accent/30 border-t-sur-accent" aria-hidden />Import…</> : <><Icon name="upload" size={18} />Importer les questions</>}
         </button>

@@ -80,9 +80,9 @@ export function GainTrophees({ n, provisoire = false }: { n: number; provisoire?
   );
 }
 
-/* ------------------------------------------------------------------ blasons de ligue */
+/* ------------------------------------------------------------------ trophées de ligue */
 
-/** Emblème au centre du blason, de plus en plus riche selon la ligue. */
+/** Ornement gravé sur la coupe, de plus en plus riche selon la ligue (utilisé à partir de l'Or). */
 function Embleme({ index, fill, stroke }: { index: number; fill: string; stroke: string }) {
   const p = { fill, stroke, strokeWidth: 2.5, strokeLinejoin: "round" as const };
   const chevron = (dy: number) => <path d={`M31 ${48 + dy}l19 11 19-11v10l-19 11-19-11z`} {...p} />;
@@ -115,17 +115,21 @@ function Embleme({ index, fill, stroke }: { index: number; fill: string; stroke:
   }
 }
 
-/** Blason d'une ligue (SVG) : bouclier métallique aux couleurs de la ligue, couronne pour la ligue Maître. */
+/**
+ * Trophée d'une ligue (SVG) : une coupe dans le métal de la ligue (bronze, argent, or…). Plus la ligue est haute,
+ * plus la coupe est ornée : une étoile gravée dès l'Or, des lauriers en Platine, une gemme en Diamant, une couronne en Maître.
+ */
 export function LigueBlason({ ligue, size = 48, verrouille = false, tilt = false }: { ligue: Ligue; size?: number; verrouille?: boolean; tilt?: boolean }) {
   const i = indexDe(ligue);
   const g = `lg-${i}`;
   const maitre = i === LIGUES.length - 1;
+  const anse = "M24 18H12v8c0 13 9 22 20 23M76 18h12v8c0 13-9 22-20 23";
   const svg = (
-    <svg width={size} height={size * 1.2} viewBox="0 -18 100 134" aria-label={`Ligue ${ligue.nom}`} role="img"
+    <svg width={size} height={size * 1.36} viewBox="0 -16 100 136" aria-label={`Ligue ${ligue.nom}`} role="img"
       className={`inline-block shrink-0 drop-shadow-sm ${verrouille ? "opacity-35 grayscale" : ""}`}>
       <defs>
-        <linearGradient id={`${g}-m`} x1="0" y1="0" x2=".3" y2="1">
-          <stop offset="0" stopColor={ligue.clair} /><stop offset=".55" stopColor={ligue.clair} stopOpacity=".85" /><stop offset="1" stopColor={ligue.fonce} />
+        <linearGradient id={`${g}-m`} x1="0" y1="0" x2=".6" y2="1">
+          <stop offset="0" stopColor={ligue.clair} /><stop offset=".5" stopColor={ligue.clair} stopOpacity=".9" /><stop offset="1" stopColor={ligue.fonce} />
         </linearGradient>
         <linearGradient id={`${g}-i`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={ligue.fonce} /><stop offset="1" stopColor="#181c21" stopOpacity=".9" />
@@ -134,20 +138,24 @@ export function LigueBlason({ ligue, size = 48, verrouille = false, tilt = false
           <stop offset="0" stopColor="#fff3b0" /><stop offset="1" stopColor="#d99a00" />
         </linearGradient>
       </defs>
-      {maitre && (
-        <path d="M26 6l6-20 10 12 8-16 8 16 10-12 6 20z" fill={`url(#${g}-c)`} stroke="#8a5a00" strokeWidth="2.5" strokeLinejoin="round" />
-      )}
-      <path d="M50 3l43 13v40c0 28-19 46-43 57C26 102 7 84 7 56V16z" fill={`url(#${g}-m)`} stroke={ligue.fonce} strokeWidth="3" />
-      <path d="M50 14l33 10v32c0 21-14 35-33 44-19-9-33-23-33-44V24z" fill={`url(#${g}-i)`} />
-      <Embleme index={i} fill={`url(#${g}-m)`} stroke={ligue.fonce} />
-      {maitre && <circle cx="50" cy="84" r="5" fill={`url(#${g}-c)`} stroke="#8a5a00" strokeWidth="2" />}
-      <path d="M50 14l33 10v14c-14-4-46 4-66 14V24z" fill="#fff" opacity=".18" />
+      {maitre && <path d="M30 3l5-17 9 10 6-13 6 13 9-10 5 17z" fill={`url(#${g}-c)`} stroke="#8a5a00" strokeWidth="2.5" strokeLinejoin="round" />}
+      {/* anses, puis coupe, pied et socle */}
+      <path d={anse} fill="none" stroke={ligue.fonce} strokeWidth="7" strokeLinecap="round" />
+      <path d={anse} fill="none" stroke={ligue.clair} strokeWidth="3" strokeLinecap="round" />
+      <path d="M22 8h56v22c0 22-12 36-28 36S22 52 22 30z" fill={`url(#${g}-m)`} stroke={ligue.fonce} strokeWidth="3" strokeLinejoin="round" />
+      <rect x="17" y="3" width="66" height="9" rx="4.5" fill={`url(#${g}-m)`} stroke={ligue.fonce} strokeWidth="3" />
+      <path d="M44 65h12l3 15H41z" fill={`url(#${g}-m)`} stroke={ligue.fonce} strokeWidth="3" strokeLinejoin="round" />
+      <rect x="30" y="80" width="40" height="10" rx="3" fill={`url(#${g}-m)`} stroke={ligue.fonce} strokeWidth="3" />
+      <rect x="22" y="90" width="56" height="16" rx="4" fill={`url(#${g}-i)`} stroke={ligue.fonce} strokeWidth="3" />
+      <rect x="38" y="95" width="24" height="6" rx="2" fill={ligue.clair} opacity=".8" />
+      {i >= 2 && <g transform="translate(20 1) scale(.6)"><Embleme index={i} fill={`url(#${g}-i)`} stroke={ligue.fonce} /></g>}
+      <path d="M28 13h8v17c0 10 3 18 8 24-10-2-16-12-16-24z" fill="#fff" opacity=".35" />
     </svg>
   );
   return tilt ? <TiltCard className="inline-block rounded-2xl">{svg}</TiltCard> : svg;
 }
 
-/** Pastille de ligue pour les classements : petit blason + nom. */
+/** Pastille de ligue pour les classements : petit trophée + nom. */
 export function LigueBadge({ ligue }: { ligue: Ligue }) {
   return (
     <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: `light-dark(${ligue.fonce}, ${ligue.clair})` }}>
@@ -197,7 +205,7 @@ export function LigueCard({ etat, today, serie }: { etat: EtatTrophees; today: s
         {suivante ? <>Encore <b className="num text-texte">{fmt(manque)}</b> <TropheeIcone size={14} /> pour la ligue <b className="text-texte">{suivante.nom}</b></> : "Ligue maximale atteinte !"}
       </p>
       <p className="relative mt-1 flex flex-wrap items-center gap-1 text-sm text-texte-2">
-        <Icon name="calendar" size={15} className="text-texte-3" />Fin du mois (<span className="num">{fin.slice(8)}/{fin.slice(5, 7)}</span>) : {verdict}
+        <Icon name="calendar" size={15} className="text-texte-3" /><span>Fin du mois (<span className="num">{fin.slice(8)}/{fin.slice(5, 7)}</span>) : {verdict}</span>
       </p>
       <div className="relative mt-3 flex items-end gap-1.5" aria-label={`Ligue ${index + 1} sur ${LIGUES.length}`}>
         {LIGUES.map((l, i) => (

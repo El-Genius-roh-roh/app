@@ -1,5 +1,7 @@
 // Constantes centralisées (docs/04-regles-scoring.md). Jamais codées en dur ailleurs.
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "APP_NAME";
+/** Cookie du thème choisi avec le bouton du haut (« clair » ou « sombre » ; absent = celui du système). */
+export const THEME_COOKIE = "theme";
 
 export const CONFIG = {
   QUESTIONS_PAR_JOUR: 10,
@@ -96,7 +98,22 @@ export const ARENA = {
 export const SOLO = {
   GEMMES_PAR_SESSION: 5,
   MAX_PAR_JOUR: 15,
-  TYPES: ["flashcards", "memory", "arene"] as const,
+  TYPES: ["flashcards", "memory", "arene", "relier"] as const,
+};
+
+// Défi du jour (D41, remplace D40) : le quiz du jour d'une matière change de format chaque jour, selon sa date de jeu.
+// Mêmes questions, même score (erreurs puis temps), même pénalité s'il est raté (TROPHEES.PENALITE_QUIZ_MANQUE).
+export const DEFI = {
+  FORMATS: ["qcm", "relier", "vf"] as const,
+};
+
+// Relier : chaque notion (ou question) avec sa définition (ou réponse), en touchant l'une puis l'autre
+export const RELIER = {
+  PAIRES: 5,
+  MIN_PAIRES: 4, // en dessous, la partie n'est pas proposée
+  TERME_MAX: 110,
+  DEFINITION_MAX: 140,
+  DELAI_ERREUR_MS: 700, // une mauvaise association clignote ce temps-là
 };
 
 // Tableau de bord personnel (D38) : succès à débloquer

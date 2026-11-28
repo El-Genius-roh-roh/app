@@ -2,16 +2,17 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { sqlToday } from "@/lib/clock";
-import { CONFIG, FLASHCARDS, SOLO } from "@/config/constants";
+import { CONFIG, FLASHCARDS, RELIER, SOLO } from "@/config/constants";
 import { facteurRetard } from "@/lib/scoring";
 import Icon from "@/components/Icon";
+import { FORMATS, formatDuJour, type Format } from "@/lib/quiz/formats";
 import AutoRefresh from "@/components/AutoRefresh";
 import Details from "@/components/Details";
 import { Defis, MesSucces, MonClassement } from "@/components/Tableau";
 import { tableauDeBord } from "@/lib/tableau";
 import { sqlNbCartes } from "@/lib/notions-extraction";
 
-type Jour = { day_id: string; subject_id: string; matiere: string; groupe: string; jour: number; statut: string | null; erreurs: number | null; rang: number | null };
+type Jour = { day_id: string; subject_id: string; matiere: string; groupe: string; jour: number; date: string; format: Format | null; statut: string | null; erreurs: number | null; rang: number | null };
 
 export default async function Accueil() {
   const u = await requireUser();
@@ -20,10 +21,10 @@ export default async function Accueil() {
             (select count(*)::int from group_members x where x.group_id=g.id) as membres,
             (select count(*)::int from subjects s where s.group_id=g.id) as matieres
        from groups g join group_members m on m.group_id=g.id where m.user_id=$1 order by g.created_at`, [u.id]);
-  // le quiz du jour de chaque matière de mes groupes, avec mon état (à jouer / en cours / fait)
+  // le défi du jour (D41) de chaque matière de mes groupes, avec mon état (à jouer / en cours / fait)
   const jours = await q<Jour>(
     `select gd.id as day_id, s.id as subject_id, s.nom as matiere, g.nom as groupe, gd.jour_dans_saison as jour,
-            a.statut, a.erreurs, r.rang
+            to_char(gd.date,'YYYY-MM-DD') as date, a.format, a.statut, a.erreurs, r.rang
        from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
        join game_days gd on gd.subject_id=s.id and gd.date = ${sqlToday("s.id")}
        left join attempts a on a.game_day_id=gd.id and a.user_id=$1
@@ -42,14 +43,16 @@ export default async function Accueil() {
       where a.statut is null or a.statut = 'en_cours'
       order by gd.date, g.created_at, s.created_at`, [u.id, CONFIG.RATTRAPAGE_JOURS]);
   // jeux solo : cartes disponibles par matière (questions vérifiées des jours passés, comme les flashcards et le Memory)
-  const matieres = await q<{ id: string; nom: string; groupe: string; cartes: number }>(
+  const matieres = await q<{ id: string; nom: string; groupe: string; cartes: number; notions: number }>(
     `select s.id, s.nom, g.nom as groupe,
-            ${sqlNbCartes("s.id", sqlToday("s.id"))} as cartes
+            ${sqlNbCartes("s.id", sqlToday("s.id"))} as cartes, (select count(*)::int from notions n where n.subject_id=s.id) as notions
        from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
       order by g.created_at, s.created_at`, [u.id]);
   // tableau de bord personnel (D38) : défis du jour, mon classement, mes succès
-  const conseillee = [...matieres].filter((m) => m.cartes >= FLASHCARDS.MIN).sort((a, b) => b.cartes - a.cartes)[0]?.id ?? null;
-  const tb = await tableauDeBord(u.id, { faits: jours.length - restants.length, total: jours.length, href: prochain ? `/quiz/${prochain.day_id}` : "/" }, conseillee);
+  // matière conseillée : de vraies notions du cours d'abord (assez pour Relier et le Memory), puis le plus de cartes
+  const conseillee = [...matieres].filter((m) => m.cartes >= FLASHCARDS.MIN)
+    .sort((a, b) => Number(b.notions >= RELIER.MIN_PAIRES) - Number(a.notions >= RELIER.MIN_PAIRES) || b.cartes - a.cartes)[0]?.id ?? null;
+  const tb = await tableauDeBord(u.id, { faits: jours.length - restants.length, total: jours.length, href: prochain ? `/quiz/${prochain.day_id}` : "/" }, conseillee, u.premium);
 
   return (
     <main className="page">
@@ -57,29 +60,60 @@ export default async function Accueil() {
       <header className="entree">
         <p className="eyebrow">Réviser · salut {u.pseudo}</p>
         <h1 className="title mt-1">
-          {jours.length === 0 ? "Prêt à réviser ?" : restants.length === 0 ? "Tout est joué. Bravo !" : restants.length === 1 ? "Un quiz t'attend" : `${restants.length} quiz t'attendent`}
+          {jours.length === 0 ? "Prêt à réviser ?" : restants.length === 0 ? "Tout est joué. Bravo !" : restants.length === 1 ? "Un défi t'attend" : `${restants.length} défis t'attendent`}
         </h1>
       </header>
 
       <div className="space-y-7 lg:grid lg:grid-cols-[1.4fr_1fr] lg:items-start lg:gap-10 lg:space-y-0">
         <div className="space-y-7">
+          <section className="space-y-3" aria-labelledby="t-groupes">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="t-groupes" className="h2">Mes groupes</h2>
+              <span className="flex shrink-0 items-center gap-1 text-sm font-bold">
+                <Link href="/groupes/nouveau" className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-accent-fort hover:bg-accent-doux"><Icon name="plus" size={16} />Créer</Link>
+                <Link href="/rejoindre" className="inline-flex min-h-11 items-center rounded-lg px-2 text-texte-2 hover:bg-surface-2">Rejoindre</Link>
+              </span>
+            </div>
+            {groupes.length === 0 && (
+              <div className="card space-y-1">
+                <p className="font-semibold">Pas encore de groupe</p>
+                <p className="muted">Crée le tien, ou rejoins celui de tes amis avec leur code d&apos;invitation.</p>
+              </div>
+            )}
+            <ul className="grid gap-2.5 sm:grid-cols-2">
+              {groupes.map((g) => (
+                <li key={g.id}>
+                  <Link href={`/groupes/${g.id}`} className="tuile group flex items-center gap-3.5">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-surface-2 font-titre text-lg font-extrabold text-texte-2" aria-hidden>
+                      {g.nom.trim().charAt(0).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-bold">{g.nom}</span>
+                      <span className="num block text-xs text-texte-3">{g.membres} membre{g.membres > 1 ? "s" : ""} · {g.matieres} matière{g.matieres > 1 ? "s" : ""}</span>
+                    </span>
+                    <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <h2 className="h2">À faire dans tes matières</h2>
           {/* le moment fort : le prochain quiz à jouer */}
           {prochain && (
             <section className="hero entree" aria-labelledby="t-prochain">
               <div aria-hidden className="pointer-events-none absolute -top-10 -right-8 h-40 w-40 rounded-full bg-sur-accent/10" />
               <div aria-hidden className="pointer-events-none absolute top-5 right-5 h-5 w-5 rounded-full bg-or-vif" />
-              <p className="font-num text-xs font-medium tracking-[0.08em] uppercase opacity-85">Quiz du jour · {prochain.groupe}</p>
+              <p className="text-[13px] font-semibold opacity-85">Défi du jour · {prochain.groupe}</p>
               <h2 id="t-prochain" className="mt-2 max-w-[85%] font-titre text-4xl leading-[1.02] font-extrabold break-words lg:text-5xl">{prochain.matiere}</h2>
-              <p className="mt-2 text-sm opacity-90"><span className="num">{N}</span> questions · jour <span className="num">{prochain.jour}</span> · un seul essai</p>
+              <p className="mt-2 flex flex-wrap items-center gap-1.5 text-sm opacity-90"><Icon name={FORMATS[prochain.format ?? formatDuJour(prochain.date)].icone} size={16} /><b>{FORMATS[prochain.format ?? formatDuJour(prochain.date)].titre}</b> · <span className="num">{N}</span> questions · un seul essai</p>
               <Link href={`/quiz/${prochain.day_id}`}
                 className="btn-hero mt-6">
-                <Icon name="play" size={20} />{prochain.statut === "en_cours" ? "Reprendre le quiz" : "Jouer maintenant"}
+                <Icon name="play" size={20} />{prochain.statut === "en_cours" ? "Reprendre le défi" : "Jouer maintenant"}
               </Link>
             </section>
           )}
 
-          <Defis defis={tb.defis} />
-          <MonClassement classements={tb.classements} />
 
           <section className="space-y-3" aria-labelledby="t-jour">
             <div className="flex items-baseline justify-between gap-3">
@@ -108,7 +142,7 @@ export default async function Accueil() {
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-bold">{j.matiere}</span>
-                          <span className="block truncate text-sm text-texte-3">{j.groupe} · jour {j.jour}</span>
+                          <span className="block truncate text-sm text-texte-3">{j.groupe} · {FORMATS[j.format ?? formatDuJour(j.date)].titre}</span>
                         </span>
                         {ok ? (
                           <span className="text-right">
@@ -149,11 +183,6 @@ export default async function Accueil() {
             </section>
           )}
 
-        </div>
-
-        <aside className="space-y-7">
-          <MesSucces succes={tb.succes} />
-
           {/* sans chrono : on apprend à son rythme ; chaque session compte pour le score de la semaine (D37) */}
           {matieres.length > 0 && (
             <section className="space-y-3" aria-labelledby="t-solo">
@@ -161,7 +190,7 @@ export default async function Accueil() {
                 <h2 id="t-solo" className="h2">Flashcards et jeux solo</h2>
                 <Details>Sans chrono, sur les notions du cours et les questions des quiz déjà passés. Chaque session terminée rapporte +{SOLO.GEMMES_PAR_SESSION} gemmes pour ta semaine ({SOLO.MAX_PAR_JOUR} max. par jour).</Details>
               </div>
-              <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
+              <ul className="grid gap-2.5 sm:grid-cols-2">
                 {matieres.map((m) => {
                   const pret = m.cartes >= FLASHCARDS.MIN;
                   return (
@@ -175,8 +204,8 @@ export default async function Accueil() {
                       </Link>
                       {pret ? (
                         <div className="grid grid-cols-2 gap-2">
-                          <Link href={`/matieres/${m.id}/flashcards`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-accent-doux px-2 text-sm font-bold text-accent-fort transition-transform hover:-translate-y-px active:translate-y-px">
-                            <Icon name="cards" size={17} />Flashcards
+                          <Link href={u.premium ? `/matieres/${m.id}/flashcards` : "/profil#premium"} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-accent-doux px-2 text-sm font-bold text-accent-fort transition-transform hover:-translate-y-px active:translate-y-px">
+                            <Icon name={u.premium ? "cards" : "sparkles"} size={17} />Flashcards{!u.premium && <span className="sr-only"> (premium)</span>}
                           </Link>
                           <Link href={`/matieres/${m.id}/memory`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-or-doux px-2 text-sm font-bold text-or transition-transform hover:-translate-y-px active:translate-y-px">
                             <Icon name="target" size={17} />Memory
@@ -191,35 +220,12 @@ export default async function Accueil() {
               </ul>
             </section>
           )}
-          <section className="space-y-3" aria-labelledby="t-groupes">
-            <h2 id="t-groupes" className="h2">Mes groupes</h2>
-            {groupes.length === 0 && (
-              <div className="card space-y-1">
-                <p className="font-semibold">Pas encore de groupe</p>
-                <p className="muted">Crée le tien, ou rejoins celui de tes amis avec leur code d&apos;invitation.</p>
-              </div>
-            )}
-            <ul className="space-y-2.5">
-              {groupes.map((g) => (
-                <li key={g.id}>
-                  <Link href={`/groupes/${g.id}`} className="tuile group flex items-center gap-3.5">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-surface-2 font-titre text-lg font-extrabold text-texte-2" aria-hidden>
-                      {g.nom.trim().charAt(0).toUpperCase()}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-bold">{g.nom}</span>
-                      <span className="num block text-xs text-texte-3">{g.membres} membre{g.membres > 1 ? "s" : ""} · {g.matieres} matière{g.matieres > 1 ? "s" : ""}</span>
-                    </span>
-                    <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <div className="grid grid-cols-2 gap-2.5">
-              <Link href="/groupes/nouveau" className="btn-primary"><Icon name="plus" size={18} />Créer</Link>
-              <Link href="/rejoindre" className="btn-white">Rejoindre</Link>
-            </div>
-          </section>
+        </div>
+
+        <aside className="space-y-7">
+          <Defis defis={tb.defis} />
+          <MonClassement classements={tb.classements} />
+          <MesSucces succes={tb.succes} />
         </aside>
       </div>
     </main>

@@ -4,6 +4,7 @@ import { APP_NAME } from "@/config/constants";
 import Avatar from "./Avatar";
 import Onglets, { LiensBureau } from "./Onglets";
 import { marquerVisite } from "@/lib/tableau";
+import ThemeToggle from "./ThemeToggle";
 
 /**
  * Navigation : barre du haut (marque + profil) et, sur téléphone, barre d'onglets en bas (pouce).
@@ -22,6 +23,7 @@ export default async function TopBar() {
             <span className="font-titre text-lg font-extrabold tracking-tight">{APP_NAME}</span>
           </Link>
           <LiensBureau />
+          <ThemeToggle />
           <Link href="/profil" className="ml-2 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full" aria-label={`Profil de ${u.pseudo ?? "moi"}`}>
             <Avatar id={u.id} pseudo={u.pseudo ?? "?"} v={u.avatar_v} size={36} />
           </Link>

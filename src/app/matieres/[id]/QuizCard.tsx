@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FORMATS, formatDuJour } from "@/lib/quiz/formats";
 import { q } from "@/lib/db";
 import { CONFIG } from "@/config/constants";
 import { facteurRetard } from "@/lib/scoring";
@@ -51,8 +52,8 @@ export default async function QuizCard({ subjectId, userId, today }: { subjectId
   if (!d) return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <p className="eyebrow">Quiz du jour</p>
-        <p className="font-titre text-2xl font-extrabold">Pas de quiz aujourd&apos;hui</p>
+        <p className="eyebrow">Défi du jour</p>
+        <p className="font-titre text-2xl font-extrabold">Pas de défi aujourd&apos;hui</p>
         <p className="text-sm opacity-90">Ajoute des cours ou des questions : le prochain quiz se prépare tout seul.</p>
       </div>
       <Rattrapages liste={rattrapages} />
@@ -64,8 +65,8 @@ export default async function QuizCard({ subjectId, userId, today }: { subjectId
     <div className="space-y-5">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">Quiz du jour · jour <span className="num">{d.jour}</span></p>
-          <p className="mt-1.5 font-titre text-2xl leading-tight font-extrabold">{fait ? "Joué ! Ta correction t'attend." : `${CONFIG.QUESTIONS_PAR_JOUR} questions, un seul essai`}</p>
+          <p className="eyebrow">Défi du jour · {FORMATS[formatDuJour(d.date)].titre}</p>
+          <p className="mt-1.5 font-titre text-2xl leading-tight font-extrabold">{fait ? "Joué ! Ta correction t'attend." : `${FORMATS[formatDuJour(d.date)].titre} · ${CONFIG.QUESTIONS_PAR_JOUR} questions, un seul essai`}</p>
           {!fait && <p className="mt-1 text-sm opacity-90">Le chrono démarre à la première question.</p>}
         </div>
         {fait && (

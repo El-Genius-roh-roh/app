@@ -63,8 +63,8 @@ export default async function Matiere({ params, searchParams }: { params: Promis
             ))}
           </ul>
         )}
-        {canManage && (
-          <form action={importer} className="space-y-2">
+        {/* tout membre peut importer (D43) : les quiz, les notions, les flashcards et le Memory en sont tirés */}
+        <form action={importer} className="space-y-2">
             <input type="hidden" name="subject" value={id} />
             <input type="hidden" name="categorie" value={categorie} />
             <label className="block cursor-pointer rounded-xl border border-dashed border-ligne p-3 text-sm text-texte-2 transition-colors hover:border-accent/60">
@@ -74,7 +74,6 @@ export default async function Matiere({ params, searchParams }: { params: Promis
             </label>
             <button className="btn-white"><Icon name="upload" size={17} />Importer</button>
           </form>
-        )}
       </section>
     );
   };
@@ -108,7 +107,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
             <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-doux text-accent-fort shadow-[0_3px_0_var(--color-ligne)]">
               <Icon name="cards" size={22} />
             </span>
-            <span className="min-w-0 flex-1 font-bold">Flashcards</span>
+            <span className="flex min-w-0 flex-1 items-center gap-1.5 font-bold">Flashcards{!u.premium && <span className="rounded-full bg-or-vif px-1.5 py-px text-[11px] font-bold text-sur-or">Premium</span>}</span>
             <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link href={`/matieres/${id}/memory`} className="tuile group flex items-center gap-3.5">

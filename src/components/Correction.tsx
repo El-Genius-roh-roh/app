@@ -21,9 +21,10 @@ export default function Correction({ items }: { items: CorrectionItem[] }) {
                 <p className="min-w-0 font-medium break-words"><Tex>{it.enonce}</Tex></p>
               </div>
               <div className="space-y-1.5 pl-10">
-                {it.chosen !== null && !it.correct && (
-                  <p className="flex items-start gap-2 text-sm text-ko"><Icon name="x" size={16} className="mt-0.5" /><span className="line-through decoration-ko/60"><Tex>{it.choix[it.chosen]}</Tex></span></p>
-                )}
+                {it.chosen !== null && !it.correct && (it.chosen >= 0 && it.choix[it.chosen] !== undefined
+                  ? <p className="flex items-start gap-2 text-sm text-ko"><Icon name="x" size={16} className="mt-0.5" /><span className="line-through decoration-ko/60"><Tex>{it.choix[it.chosen]}</Tex></span></p>
+                  // défi Relier ou Vrai ou faux (D41) : la réponse donnée n'est pas un des choix de la question
+                  : <p className="flex items-start gap-2 text-sm text-ko"><Icon name="x" size={16} className="mt-0.5" />Mauvaise réponse</p>)}
                 <p className="flex items-start gap-2 font-medium text-ok"><Icon name="check" size={16} className="mt-0.5" /><Tex>{it.choix[it.correct_index]}</Tex></p>
                 {it.explication && <p className="text-sm text-texte-2"><Tex>{it.explication}</Tex></p>}
                 {it.source?.document_id && (

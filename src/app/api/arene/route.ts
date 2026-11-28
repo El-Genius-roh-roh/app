@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const u = await getUser();
   if (!u) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!u.premium) return NextResponse.json({ error: "L'Arène est réservée aux comptes premium." }, { status: 403 });
   const sp = new URL(req.url).searchParams;
   const r = await roomState(u.id, sp.get("code") ?? "", Number(sp.get("v") ?? -1));
   return NextResponse.json(r.body, { status: r.status });
@@ -15,6 +16,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const u = await getUser();
   if (!u) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
+  if (!u.premium) return NextResponse.json({ error: "L'Arène est réservée aux comptes premium." }, { status: 403 });
   const b = await req.json().catch(() => ({}));
   const code = String(b.code ?? "");
   let r;
