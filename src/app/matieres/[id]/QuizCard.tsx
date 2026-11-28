@@ -31,10 +31,13 @@ function Rattrapages({ liste }: { liste: Jour[] }) {
         return (
           <Link key={r.id} href={`/quiz/${r.id}`} className="flex min-h-11 items-center gap-2 rounded-[12px] bg-surface px-3 py-2 text-sm text-texte transition-transform hover:-translate-y-px">
             <Icon name="calendar" size={16} className="text-accent" />
-            <span className="font-semibold">Jour <span className="num">{r.jour}</span> · {r.statut === "en_cours" ? "reprendre" : "jouer"}</span>
-            <span className="ml-auto text-right text-xs text-texte-3">
-              <span className="num">{Math.round(facteurRetard(r.retard) * 100)} %</span> des gemmes · {reste === 0 ? "dernier jour" : <>encore <span className="num">{reste + 1}</span> j</>}
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">Jour <span className="num">{r.jour}</span></span>
+              <span className="block text-xs text-texte-3">
+                {Math.round(facteurRetard(r.retard) * 100)}&nbsp;% des gemmes · {reste === 0 ? "dernier jour" : `encore ${reste + 1} j`}
+              </span>
             </span>
+            <span className="inline-flex items-center gap-1 font-bold text-accent-fort">{r.statut === "en_cours" ? "Reprendre" : "Jouer"}<Icon name="arrowRight" size={15} /></span>
           </Link>
         );
       })}

@@ -106,7 +106,7 @@ export async function addBot(userId: string, code: string): Promise<Res> {
     const libres = ARENA.BOTS.filter((b) => !s.joueurs.some((p) => p.id === `bot:${b}`));
     if (!libres.length) return err(409, "Plus de bot disponible.");
     const b = libres[crypto.randomInt(libres.length)];
-    s.joueurs.push(joueur(`bot:${b}`, `${b} 🤖`, true, 0.45 + crypto.randomInt(45) / 100));
+    s.joueurs.push(joueur(`bot:${b}`, `${b} (bot)`, true, 0.45 + crypto.randomInt(45) / 100));
     s.v += 1;
   });
 }

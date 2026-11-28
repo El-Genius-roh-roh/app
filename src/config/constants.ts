@@ -61,7 +61,6 @@ export const PLATEAU = {
   MAX_JOUEURS: 6,
 };
 
-// Mode « Arène » (duels en direct, hors classements quotidiens : docs/04 n'est pas modifié).
 // Arène, mode Course : chaque bonne réponse fait avancer sa voiture, chaque erreur la fait reculer
 export const COURSE = {
   ARRIVEE: 10, // cases jusqu'à la ligne d'arrivée
@@ -70,6 +69,7 @@ export const COURSE = {
   ERREUR: 1, // recul sur une mauvaise réponse (pas de réponse : on reste sur place)
 };
 
+// Mode « Arène » (duels en direct, hors classements quotidiens : docs/04 n'est pas modifié).
 export const ARENA = {
   DUREE_QCM_S: 15,
   DUREE_VF_S: 10,
