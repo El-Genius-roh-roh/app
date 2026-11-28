@@ -15,15 +15,9 @@ export type EntreeDefis = {
   multi: number;
   /** Matière conseillée pour les outils de révision (de vraies notions d'abord, puis le plus de cartes), null s'il n'y en a pas. */
   matiere: string | null;
-  /** Compte premium (D42) : flashcards et Arène. */
-  premium: boolean;
 };
 
-/**
- * Défis du jour : le défi du jour (s'il y en a), deux outils de révision dans la matière conseillée, et pour un compte
- * premium une partie d'Arène. Un compte gratuit n'a que des défis qu'il peut faire : Memory et Relier au lieu des
- * flashcards, pas d'Arène (D42).
- */
+/** Défis du jour : le défi du jour (s'il y en a), une session de flashcards, un Memory, une partie d'Arène (seul ou à plusieurs). */
 export function defisDuJour(e: EntreeDefis): Defi[] {
   const d: Defi[] = [];
   if (e.quiz.total > 0) d.push({
@@ -31,14 +25,12 @@ export function defisDuJour(e: EntreeDefis): Defi[] {
     detail: `${e.quiz.faits}/${e.quiz.total} joué${e.quiz.faits > 1 ? "s" : ""}`, fait: e.quiz.faits >= e.quiz.total, href: e.quiz.href,
   });
   if (e.matiere) {
-    if (e.premium) d.push({ id: "flashcards", mode: "solo", titre: "Termine une session de flashcards", detail: "+5 gemmes pour ta semaine",
+    d.push({ id: "flashcards", mode: "solo", titre: "Termine une session de flashcards", detail: "+5 gemmes pour ta semaine",
       fait: e.solo.flashcards > 0, href: `/matieres/${e.matiere}/flashcards` });
     d.push({ id: "memory", mode: "solo", titre: "Termine un Memory", detail: "+5 gemmes pour ta semaine",
       fait: e.solo.memory > 0, href: `/matieres/${e.matiere}/memory` });
-    if (!e.premium) d.push({ id: "relier", mode: "solo", titre: "Termine une partie de Relier", detail: "+5 gemmes pour ta semaine",
-      fait: (e.solo.relier ?? 0) > 0, href: `/matieres/${e.matiere}/relier` });
   }
-  if (e.premium) d.push({ id: "arene", mode: "multi", titre: "Joue une partie d'Arène", detail: "Contre tes amis ou contre des bots",
+  d.push({ id: "arene", mode: "multi", titre: "Joue une partie d'Arène", detail: "Contre tes amis ou contre des bots",
     fait: e.multi + e.solo.arene > 0, href: "/arene" });
   return d;
 }

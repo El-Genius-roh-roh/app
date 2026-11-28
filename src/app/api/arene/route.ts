@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
+import { accesJeux, MESSAGE_VERROU } from "@/lib/acces";
 import { addBot, answerRoom, createRoom, joinRoom, leaveRoom, roomState, startRoom } from "@/lib/arena/service";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +8,6 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const u = await getUser();
   if (!u) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
-  if (!u.premium) return NextResponse.json({ error: "L'Arène est réservée aux comptes premium." }, { status: 403 });
   const sp = new URL(req.url).searchParams;
   const r = await roomState(u.id, sp.get("code") ?? "", Number(sp.get("v") ?? -1));
   return NextResponse.json(r.body, { status: r.status });
@@ -16,9 +16,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const u = await getUser();
   if (!u) return NextResponse.json({ error: "Non connecté" }, { status: 401 });
-  if (!u.premium) return NextResponse.json({ error: "L'Arène est réservée aux comptes premium." }, { status: 403 });
   const b = await req.json().catch(() => ({}));
   const code = String(b.code ?? "");
+  // jeux verrouillés tant que le défi du jour n'est pas joué (D45) : on ne bloque que l'entrée dans une partie
+  if (["create", "join", "bot", "start"].includes(b.action) && !(await accesJeux(u.id)).ouvert) return NextResponse.json({ error: MESSAGE_VERROU }, { status: 403 });
   let r;
   switch (b.action) {
     case "create": r = await createRoom(u.id, String(b.groupId ?? ""), String(b.mode ?? "mix"), Number(b.rounds)); break;

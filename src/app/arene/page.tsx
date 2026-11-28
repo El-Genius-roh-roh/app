@@ -8,7 +8,8 @@ import ArenaCreate from "./ArenaCreate";
 import PlateauCreate from "./PlateauCreate";
 import { openRooms as plateauxOuverts, themesDuGroupe } from "@/lib/plateau/service";
 import Icon from "@/components/Icon";
-import PremiumRequis from "@/components/PremiumRequis";
+import JeuxVerrouilles from "@/components/JeuxVerrouilles";
+import { accesJeux } from "@/lib/acces";
 import Details from "@/components/Details";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,8 @@ const TIER_COLOR: Record<string, string> = {
 
 export default async function Arene() {
   const u = await requireUser();
-  if (!u.premium) return <PremiumRequis titre="L'Arène" texte="Les duels en direct, les parties contre des bots et le jeu de plateau sont réservés aux comptes premium." />;
+  const acces = await accesJeux(u.id);
+  if (!acces.ouvert) return <JeuxVerrouilles jeu={"Arène"} acces={acces} />;
   const groupes = await q<{ id: string; nom: string }>(
     "select g.id,g.nom from groups g join group_members m on m.group_id=g.id where m.user_id=$1 order by g.created_at", [u.id]);
   const rooms = [

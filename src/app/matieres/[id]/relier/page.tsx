@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { accesJeux } from "@/lib/acces";
+import JeuxVerrouilles from "@/components/JeuxVerrouilles";
 import { q } from "@/lib/db";
 import { getSubjectFor } from "@/lib/subjects";
 import { sqlToday } from "@/lib/clock";
@@ -18,6 +20,8 @@ export default async function Relier({ params }: { params: Promise<{ id: string 
   const u = await requireUser();
   const ctx = await getSubjectFor(id, u.id);
   if (!ctx) notFound();
+  const acces = await accesJeux(u.id);
+  if (!acces.ouvert) return <JeuxVerrouilles jeu="Relier" acces={acces} retour={{ href: `/matieres/${id}`, label: ctx.subject.nom }} />;
 
   // mêmes sources que le Memory : notions du cours en priorité, sinon questions vérifiées des jours passés (rien du quiz du jour)
   const notions = await q<{ id: string; terme: string; definition: string }>("select id, terme, definition from notions where subject_id=$1", [id]);

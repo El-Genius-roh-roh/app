@@ -42,3 +42,6 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q32 | Défi du jour : pourquoi pas de Memory comme format ? | Le Memory se joue à l’aveugle sur des positions de cartes : impossible à vérifier côté serveur et à classer équitablement. Il reste un outil de révision (gratuit) |
 | Q33 | Relier : réponse en double dans la réserve ? | Une seule case par texte ; une réponse est juste si son texte est celui de la bonne réponse (deux questions peuvent avoir la même) |
 | Q34 | Comment devient-on premium sans paiement ? | En démo (`DEMO_MODE=1`), depuis son profil (activer / retirer). Hors démo, en base : `update revision_app.profiles set premium=true where …`. Les comptes existants sont gratuits après la migration 013 |
+| Q34 | (obsolète depuis D45) | Plus de premium |
+| Q35 | Quels « jeux » sont verrouillés avant le défi ? | Arène, jeu de plateau, Memory, Relier. Les flashcards et le glossaire restent ouverts (révision) |
+| Q36 | Un rattrapage en retard bloque-t-il les jeux ? | Non : seuls les défis du jour comptent ; les rattrapages restent facultatifs (avec leur pénalité de gemmes) |

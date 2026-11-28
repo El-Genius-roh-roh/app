@@ -2,14 +2,16 @@ import { requireUser } from "@/lib/auth";
 import { joinRoom } from "@/lib/arena/service";
 import ArenaRoom from "./ArenaRoom";
 import Link from "next/link";
-import PremiumRequis from "@/components/PremiumRequis";
+import JeuxVerrouilles from "@/components/JeuxVerrouilles";
+import { accesJeux } from "@/lib/acces";
 
 export const dynamic = "force-dynamic";
 
 export default async function Partie({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const u = await requireUser();
-  if (!u.premium) return <PremiumRequis titre="L'Arène" texte="Les duels en direct, les parties contre des bots et le jeu de plateau sont réservés aux comptes premium." />;
+  const acces = await accesJeux(u.id);
+  if (!acces.ouvert) return <JeuxVerrouilles jeu={"Arène"} acces={acces} />;
   const r = await joinRoom(u.id, code);
   if (r.status !== 200) {
     return (

@@ -6,7 +6,6 @@ import Avatar from "@/components/Avatar";
 import Icon from "@/components/Icon";
 import Details from "@/components/Details";
 import PhotoForm from "./PhotoForm";
-import { basculerPremium } from "./actions";
 
 async function enregistrer(fd: FormData) {
   "use server";
@@ -42,21 +41,6 @@ export default async function Profil({ searchParams }: { searchParams: Promise<{
         )}
         <button className="btn-primary">Enregistrer le pseudo</button>
       </form>
-      <section id="premium" className={`card scroll-mt-24 space-y-3 ${u.premium ? "border-or/50" : ""}`} aria-labelledby="t-premium">
-        <div className="flex items-center gap-3">
-          <span aria-hidden className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${u.premium ? "bg-or-vif text-sur-or" : "bg-surface-2 text-texte-3"}`}><Icon name="sparkles" size={20} /></span>
-          <div className="min-w-0 flex-1">
-            <h2 id="t-premium" className="font-bold">{u.premium ? "Compte premium" : "Compte gratuit"}</h2>
-            <p className="text-sm text-texte-3">{u.premium ? "Flashcards et Arène débloquées." : "Défi du jour, Memory et Relier. Les flashcards et l'Arène sont premium."}</p>
-          </div>
-        </div>
-        {process.env.DEMO_MODE === "1" ? (
-          <form action={basculerPremium}>
-            <input type="hidden" name="premium" value={u.premium ? "0" : "1"} />
-            <button className={u.premium ? "btn-white" : "btn-primary"}><Icon name="sparkles" size={17} />{u.premium ? "Repasser en gratuit (démo)" : "Activer le premium (démo, sans paiement)"}</button>
-          </form>
-        ) : !u.premium && <p className="text-sm text-texte-3">Le paiement n&apos;est pas encore ouvert.</p>}
-      </section>
       <form action={quitter}>
         <button className="btn-white text-texte-2"><Icon name="log" size={17} />Se déconnecter</button>
       </form>
