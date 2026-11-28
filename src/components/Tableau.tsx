@@ -71,7 +71,11 @@ export function MonClassement({ classements }: { classements: ClassementGroupe[]
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-xs font-semibold tracking-wide text-texte-3 uppercase">{c.nom}</span>
                     <span className="block font-titre text-xl font-extrabold" style={{ color: `light-dark(${ligue.fonce}, ${ligue.clair})` }}>Ligue {ligue.nom}</span>
-                    <span className="text-sm text-texte-2"><span className="num font-semibold text-texte">{rangTexte(etat.rang)}</span> sur <span className="num">{c.membres}</span> aux trophées</span>
+                    <span className="text-sm text-texte-2">
+                      {etat.courant > 0
+                        ? <><span className="num font-semibold text-texte">{rangTexte(etat.rang)}</span> sur <span className="num">{c.membres}</span> aux trophées</>
+                        : "Pas encore de trophée"}
+                    </span>
                   </span>
                   <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
                 </span>

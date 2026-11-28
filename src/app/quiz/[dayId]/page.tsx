@@ -49,7 +49,9 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
     // ligue du mois (fixée en fin de mois précédent, D36) ; la progression tient compte de la semaine en cours
     const etat = tr.lignes.find((l) => l.userId === u.id) ?? { fige: 0, courant: 0, projection: 0 };
     const mesTrophees = etat.projection;
-    const ligue = { ...ligueDe(etat.projection), ligue: ligueDe(etat.fige).ligue };
+    const actuelle = ligueDe(etat.fige);
+    const ligue = { ...ligueDe(etat.projection), ligue: actuelle.ligue };
+    const verdict = ligue.index > actuelle.index ? `Fin du mois : montée en ${ligueDe(etat.projection).ligue.nom}` : ligue.index < actuelle.index ? `Fin du mois : descente en ${ligueDe(etat.projection).ligue.nom}` : null;
     return (
       <main className="page lg:max-w-3xl">
         <AutoRefresh every={15000} />
@@ -89,7 +91,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
               <div className="h-2.5 overflow-hidden rounded-full bg-accent-ombre/60" role="progressbar" aria-label={`Progression vers la ligue suivante`} aria-valuenow={Math.round(ligue.progression * 100)} aria-valuemin={0} aria-valuemax={100}>
                 <div className="h-2.5 rounded-full bg-or-vif" style={{ width: `${Math.round(ligue.progression * 100)}%` }} />
               </div>
-              {ligue.suivante && <p className="text-xs opacity-90">Encore <span className="num font-semibold">{ligue.manque}</span> trophées pour la ligue {ligue.suivante.nom}</p>}
+              {verdict ? <p className="text-xs font-semibold opacity-95">{verdict}</p> : ligue.suivante && <p className="text-xs opacity-90">Encore <span className="num font-semibold">{ligue.manque}</span> trophées pour la ligue {ligue.suivante.nom}</p>}
               {!jour?.fige && <p className="text-xs opacity-80">Provisoire : les gemmes bougent tant que d&apos;autres joueurs peuvent encore jouer ce quiz. Les trophées se gagnent chaque semaine : le 1er du groupe aux gemmes gagne, chaque quiz manqué en coûte.</p>}
             </div>
           )}
