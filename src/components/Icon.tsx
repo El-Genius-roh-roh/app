@@ -33,6 +33,8 @@ const P: Record<string, React.ReactNode> = {
   cards: <><rect x="8" y="3" width="12" height="16" rx="2.5" /><path d="M5 6.5 4.2 7A2.5 2.5 0 0 0 3.4 10.4l5 9.1a2.5 2.5 0 0 0 3.4 1l1.4-.8" /></>,
   rotate: <><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" /></>,
   lightbulb:<><path d="M9 18h6" /><path d="M10 21h4" /><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z" /></>,
+  sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" /></>,
+  moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />,
 };
 
 export type IconName = keyof typeof P;

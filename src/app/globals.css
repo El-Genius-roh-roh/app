@@ -6,7 +6,7 @@
     Bleu = action. Braise = énergie (série, arène). Or = classements. Vert / rouge = juste / faux, rien d'autre.
   - Matière : papier clair, cartes à socle (ombre pleine sous la carte), boutons « en relief » qui s'enfoncent au clic.
   - Typo : titres Bricolage Grotesque (gras, joueur), texte Geist, chiffres et étiquettes Geist Mono (tableau de score).
-  - Thème sombre automatique (prefers-color-scheme), mêmes jetons.
+  - Thème sombre : celui du système par défaut, ou forcé par le bouton du haut (<html data-theme="clair|sombre">).
 */
 @theme {
   --font-sans: var(--nf-texte), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -50,8 +50,43 @@
   --radius-carte: 18px;
 }
 
+/* icône du bouton de thème : la lune en clair (passer en sombre), le soleil en sombre */
+:root { --aff-lune: inline-block; --aff-soleil: none; }
+
+/* jetons sombres : forcés par le bouton (data-theme="sombre"), ou suivis du système quand rien n'est forcé.
+   Les deux blocs portent les mêmes valeurs. */
+:root[data-theme="sombre"] {
+  color-scheme: dark;
+  --aff-lune: none; --aff-soleil: inline-block;
+  --color-fond: #181c21;
+  --color-surface: #2d3136;
+  --color-surface-2: #3d444d;
+  --color-ligne: #3d444d;
+  --color-ligne-forte: #515962;
+  --color-texte: #f4f7fb;
+  --color-texte-2: #b9c2cd;
+  --color-texte-3: #9aa2ad;
+  --color-accent: #6d9ffe;
+  --color-accent-fort: #a0c1fe;
+  --color-accent-ombre: #0a4ac5;
+  --color-accent-doux: #00154b;
+  --color-sur-accent: #181c21;
+  --color-energie: #ff702f;
+  --color-energie-doux: #340e01;
+  --color-or: #f1b620;
+  --color-or-doux: #261900;
+  --color-sur-energie: #181c21;
+  --color-sur-ok: #181c21;
+  --color-sur-ko: #181c21;
+  --color-ok: #64de8c;
+  --color-ok-doux: #01230d;
+  --color-ko: #ff6a68;
+  --color-ko-doux: #3c0005;
+}
+:root[data-theme="clair"] { color-scheme: light; }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="clair"]) {
+    --aff-lune: none; --aff-soleil: inline-block;
     --color-fond: #181c21;
     --color-surface: #2d3136;
     --color-surface-2: #3d444d;

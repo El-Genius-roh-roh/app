@@ -1,5 +1,7 @@
 // Constantes centralisées (docs/04-regles-scoring.md). Jamais codées en dur ailleurs.
 export const APP_NAME = process.env.NEXT_PUBLIC_APP_NAME ?? "APP_NAME";
+/** Cookie du thème choisi avec le bouton du haut (« clair » ou « sombre » ; absent = celui du système). */
+export const THEME_COOKIE = "theme";
 
 export const CONFIG = {
   QUESTIONS_PAR_JOUR: 10,
