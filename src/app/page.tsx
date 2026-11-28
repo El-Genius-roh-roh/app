@@ -5,12 +5,13 @@ import { sqlToday } from "@/lib/clock";
 import { CONFIG, FLASHCARDS, RELIER, SOLO } from "@/config/constants";
 import { facteurRetard } from "@/lib/scoring";
 import Icon from "@/components/Icon";
+import { FORMATS, formatDuJour, type Format } from "@/lib/quiz/formats";
 import AutoRefresh from "@/components/AutoRefresh";
 import { Defis, MesSucces, MonClassement } from "@/components/Tableau";
 import { tableauDeBord } from "@/lib/tableau";
 import { sqlNbCartes } from "@/lib/notions-extraction";
 
-type Jour = { day_id: string; subject_id: string; matiere: string; groupe: string; jour: number; statut: string | null; erreurs: number | null; rang: number | null };
+type Jour = { day_id: string; subject_id: string; matiere: string; groupe: string; jour: number; date: string; format: Format | null; statut: string | null; erreurs: number | null; rang: number | null };
 
 export default async function Accueil() {
   const u = await requireUser();
@@ -19,10 +20,10 @@ export default async function Accueil() {
             (select count(*)::int from group_members x where x.group_id=g.id) as membres,
             (select count(*)::int from subjects s where s.group_id=g.id) as matieres
        from groups g join group_members m on m.group_id=g.id where m.user_id=$1 order by g.created_at`, [u.id]);
-  // le quiz du jour de chaque matière de mes groupes, avec mon état (à jouer / en cours / fait)
+  // le défi du jour (D41) de chaque matière de mes groupes, avec mon état (à jouer / en cours / fait)
   const jours = await q<Jour>(
     `select gd.id as day_id, s.id as subject_id, s.nom as matiere, g.nom as groupe, gd.jour_dans_saison as jour,
-            a.statut, a.erreurs, r.rang
+            to_char(gd.date,'YYYY-MM-DD') as date, a.format, a.statut, a.erreurs, r.rang
        from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
        join game_days gd on gd.subject_id=s.id and gd.date = ${sqlToday("s.id")}
        left join attempts a on a.game_day_id=gd.id and a.user_id=$1
@@ -50,7 +51,7 @@ export default async function Accueil() {
   // matière conseillée : de vraies notions du cours d'abord (assez pour Relier et le Memory), puis le plus de cartes
   const conseillee = [...matieres].filter((m) => m.cartes >= FLASHCARDS.MIN)
     .sort((a, b) => Number(b.notions >= RELIER.MIN_PAIRES) - Number(a.notions >= RELIER.MIN_PAIRES) || b.cartes - a.cartes)[0]?.id ?? null;
-  const tb = await tableauDeBord(u.id, { faits: jours.length - restants.length, total: jours.length, href: prochain ? `/quiz/${prochain.day_id}` : "/" }, conseillee);
+  const tb = await tableauDeBord(u.id, { faits: jours.length - restants.length, total: jours.length, href: prochain ? `/quiz/${prochain.day_id}` : "/" }, conseillee, u.premium);
 
   return (
     <main className="page">
@@ -58,7 +59,7 @@ export default async function Accueil() {
       <header className="entree">
         <p className="eyebrow">Réviser · salut {u.pseudo}</p>
         <h1 className="title mt-1">
-          {jours.length === 0 ? "Prêt à réviser ?" : restants.length === 0 ? "Tout est joué. Bravo !" : restants.length === 1 ? "Un quiz t'attend" : `${restants.length} quiz t'attendent`}
+          {jours.length === 0 ? "Prêt à réviser ?" : restants.length === 0 ? "Tout est joué. Bravo !" : restants.length === 1 ? "Un défi t'attend" : `${restants.length} défis t'attendent`}
         </h1>
       </header>
 
@@ -102,12 +103,12 @@ export default async function Accueil() {
             <section className="hero entree" aria-labelledby="t-prochain">
               <div aria-hidden className="pointer-events-none absolute -top-10 -right-8 h-40 w-40 rounded-full bg-sur-accent/10" />
               <div aria-hidden className="pointer-events-none absolute top-5 right-5 h-5 w-5 rounded-full bg-or-vif" />
-              <p className="text-[13px] font-semibold opacity-85">Quiz du jour · {prochain.groupe}</p>
+              <p className="text-[13px] font-semibold opacity-85">Défi du jour · {prochain.groupe}</p>
               <h2 id="t-prochain" className="mt-2 max-w-[85%] font-titre text-4xl leading-[1.02] font-extrabold break-words lg:text-5xl">{prochain.matiere}</h2>
-              <p className="mt-2 text-sm opacity-90"><span className="num">{N}</span> questions · jour <span className="num">{prochain.jour}</span> · un seul essai</p>
+              <p className="mt-2 flex flex-wrap items-center gap-1.5 text-sm opacity-90"><Icon name={FORMATS[prochain.format ?? formatDuJour(prochain.date)].icone} size={16} /><b>{FORMATS[prochain.format ?? formatDuJour(prochain.date)].titre}</b> · <span className="num">{N}</span> questions · un seul essai</p>
               <Link href={`/quiz/${prochain.day_id}`}
                 className="btn-hero mt-6">
-                <Icon name="play" size={20} />{prochain.statut === "en_cours" ? "Reprendre le quiz" : "Jouer maintenant"}
+                <Icon name="play" size={20} />{prochain.statut === "en_cours" ? "Reprendre le défi" : "Jouer maintenant"}
               </Link>
             </section>
           )}
@@ -140,7 +141,7 @@ export default async function Accueil() {
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-bold">{j.matiere}</span>
-                          <span className="block truncate text-sm text-texte-3">{j.groupe} · jour {j.jour}</span>
+                          <span className="block truncate text-sm text-texte-3">{j.groupe} · {FORMATS[j.format ?? formatDuJour(j.date)].titre}</span>
                         </span>
                         {ok ? (
                           <span className="text-right">
@@ -202,8 +203,8 @@ export default async function Accueil() {
                       </Link>
                       {pret ? (
                         <div className="grid grid-cols-2 gap-2">
-                          <Link href={`/matieres/${m.id}/flashcards`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-accent-doux px-2 text-sm font-bold text-accent-fort transition-transform hover:-translate-y-px active:translate-y-px">
-                            <Icon name="cards" size={17} />Flashcards
+                          <Link href={u.premium ? `/matieres/${m.id}/flashcards` : "/profil#premium"} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-accent-doux px-2 text-sm font-bold text-accent-fort transition-transform hover:-translate-y-px active:translate-y-px">
+                            <Icon name={u.premium ? "cards" : "sparkles"} size={17} />Flashcards{!u.premium && <span className="sr-only"> (premium)</span>}
                           </Link>
                           <Link href={`/matieres/${m.id}/memory`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-or-doux px-2 text-sm font-bold text-or transition-transform hover:-translate-y-px active:translate-y-px">
                             <Icon name="target" size={17} />Memory

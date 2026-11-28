@@ -4,7 +4,6 @@ import { realToday, todayGroupe } from "./clock";
 import { getGroupResults, getGroupTrophees, type TropheeLine } from "./ranking";
 import { lundiDe, vitrine, type BilanJoueur, type Resultat } from "./trophees";
 import { soloDuJour } from "./solo";
-import { jeuDuJour } from "./jeu-du-jour";
 import { defisDuJour, succes, titresDuGroupe, type Defi, type Succes } from "./succes";
 
 /** Note le jour de visite (succès « fidèle »). Au plus une écriture par joueur et par jour et par processus. */
@@ -23,7 +22,7 @@ export type TableauDeBord = { classements: ClassementGroupe[]; defis: Defi[]; su
  * @param quiz quiz du jour de mes matières (faits / prévus) et lien vers le prochain
  * @param matiere matière conseillée pour les jeux solo (celle qui a le plus de cartes)
  */
-export async function tableauDeBord(userId: string, quiz: { faits: number; total: number; href: string }, matiere: string | null): Promise<TableauDeBord> {
+export async function tableauDeBord(userId: string, quiz: { faits: number; total: number; href: string }, matiere: string | null, premium: boolean): Promise<TableauDeBord> {
   const groupes = await q<{ id: string; nom: string }>(
     "select g.id, g.nom from groups g join group_members m on m.group_id=g.id where m.user_id=$1 order by g.created_at", [userId]);
 
@@ -69,7 +68,7 @@ export async function tableauDeBord(userId: string, quiz: { faits: number; total
            + (select count(*) from plateau_rooms where phase='final' and updated_at >= $2::date and state->'joueurs' @> $1::jsonb))::int as multi`,
     [moi, realToday()]);
 
-  const defis = defisDuJour({ quiz, solo: await soloDuJour(userId, [...dates]), multi, matiere, jeu: jeuDuJour(realToday()) });
+  const defis = defisDuJour({ quiz, solo: await soloDuJour(userId, [...dates]), multi, matiere, premium });
   const liste = succes({
     today: realToday(), visites, vitrine: vitrine(resultats, userId, realToday()),
     solo: { flashcards: soloTotal.flashcards ?? 0, memory: soloTotal.memory ?? 0, arene: soloTotal.arene ?? 0 },

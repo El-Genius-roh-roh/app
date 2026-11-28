@@ -21,8 +21,15 @@ async function manager(fd: FormData) {
   return c?.canManage ? id : null;
 }
 
+/** Tout membre du groupe peut ajouter des cours et des annales (D43) ; le reste de la gestion reste aux gestionnaires. */
+async function membre(fd: FormData) {
+  const user = await requireUser();
+  const id = String(fd.get("subject") ?? "");
+  return (await getSubjectFor(id, user.id)) ? id : null;
+}
+
 export async function importer(fd: FormData) {
-  const id = await manager(fd);
+  const id = await membre(fd);
   if (!id) return;
   const categorie = fd.get("categorie") === "annale" ? "annale" : "cours";
   const files = fd.getAll("fichier").filter((f): f is File => f instanceof File && f.size > 0);

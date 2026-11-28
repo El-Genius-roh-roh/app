@@ -11,7 +11,8 @@ import { memberRole } from "@/lib/groups";
 export async function creerMatiere(fd: FormData) {
   const user = await requireUser();
   const id = String(fd.get("group") ?? "");
-  if ((await memberRole(id, user.id)) !== "admin") redirect(`/groupes/${id}`);
+  // tout membre peut créer une matière (D43) : il en devient le gestionnaire
+  if (!(await memberRole(id, user.id))) redirect(`/groupes/${id}`);
   const nom = String(fd.get("nom") ?? "").trim();
   const debut = String(fd.get("date_debut") ?? "");
   const jours = Math.max(1, Math.min(120, Number(fd.get("jours")) || 30));

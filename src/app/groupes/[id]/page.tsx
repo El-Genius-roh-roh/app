@@ -55,7 +55,7 @@ export default async function Groupe({ params, searchParams }: { params: Promise
 
       {onglet === "defi" ? <Defi groupId={id} userId={u.id} matieres={matieres} /> : <Competitif groupId={id} userId={u.id} />}
 
-      {onglet === "defi" && role === "admin" && (
+      {onglet === "defi" && (
         <details className="card group/d">
           <summary className="flex min-h-11 items-center gap-2 font-medium text-texte">
             <Icon name="plus" size={18} className="text-accent" />Nouvelle matière

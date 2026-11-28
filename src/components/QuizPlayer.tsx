@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { url } from "@/lib/url";
 import Tex from "./Tex";
 import Icon from "./Icon";
+import { FORMATS, type Format } from "@/lib/quiz/formats";
 
-type Q = { id: string; type: "qcm" | "vrai_faux"; enonce: string; choices: string[] };
-type State = { attemptId: string; index: number; total: number; question: Q; elapsedMs: number };
+type Q = { id: string; type: "qcm" | "vrai_faux"; mode: "qcm" | "vf" | "relier"; enonce: string; choices: string[]; proposition?: string; restantes?: string[] };
+type State = { attemptId: string; format: Format; index: number; total: number; question: Q; elapsedMs: number };
 
 const fmt = (ms: number) => {
   const s = Math.floor(ms / 1000);
@@ -14,7 +15,8 @@ const fmt = (ms: number) => {
 };
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 
-export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; initial: State | null }) {
+/** Défi du jour (D41) : même déroulé pour les trois formats (une question à la fois, validée par le serveur), affichage selon le mode. */
+export default function QuizPlayer({ gameDayId, initial, format }: { gameDayId: string; initial: State | null; format: Format }) {
   const router = useRouter();
   const [st, setSt] = useState<State | null>(initial);
   const [busy, setBusy] = useState(false);
@@ -40,8 +42,8 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
       if (busy || e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toLowerCase();
       let i = Number(k) - 1;
-      if (Number.isNaN(i) || i < 0) i = "abcdef".indexOf(k);
-      if (st.question.type === "vrai_faux" && (k === "v" || k === "f")) i = k === "v" ? 0 : 1;
+      if (Number.isNaN(i) || i < 0) i = st.question.mode === "relier" ? -1 : "abcdef".indexOf(k);
+      if ((st.question.type === "vrai_faux" || st.question.mode === "vf") && (k === "v" || k === "f")) i = k === "v" ? 0 : 1;
       if (i >= 0 && i < st.question.choices.length) answer(i);
     };
     window.addEventListener("keydown", h);
@@ -75,9 +77,11 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
     return (
       <div className="hero entree space-y-5">
         <div className="space-y-3">
-          <p className="eyebrow">Quiz du jour</p>
-          <p className="font-titre text-4xl leading-[1.02] font-extrabold">10 questions,<br />un seul essai</p>
+          <p className="eyebrow">Défi du jour · {FORMATS[format].titre}</p>
+          <p className="flex items-center gap-3 font-titre text-4xl leading-[1.02] font-extrabold"><Icon name={FORMATS[format].icone} size={34} />{FORMATS[format].titre}</p>
+          <p className="text-[15px] opacity-95">{FORMATS[format].consigne}</p>
           <ul className="space-y-2 text-[15px]">
+            <li className="flex items-center gap-2.5"><Icon name="flame" size={18} className="opacity-80" />Un seul essai. Raté, il coûte des trophées.</li>
             <li className="flex items-center gap-2.5"><Icon name="clock" size={18} className="opacity-80" />Le chrono démarre à la première question.</li>
             <li className="flex items-center gap-2.5"><Icon name="target" size={18} className="opacity-80" />Classement : d&apos;abord les erreurs, puis le temps.</li>
             <li className="flex items-center gap-2.5"><Icon name="arrowRight" size={18} className="opacity-80" />Pas de retour en arrière.</li>
@@ -90,7 +94,8 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
       </div>
     );
   }
-  const vf = st.question.type === "vrai_faux";
+  const mode = st.question.mode;
+  const vf = st.question.type === "vrai_faux" || mode === "vf";
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
@@ -106,20 +111,32 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
         ))}
       </div>
       <h2 key={st.question.id} className="entree py-2 font-sans text-[22px] leading-snug font-bold tracking-normal break-words lg:text-3xl"><Tex>{st.question.enonce}</Tex></h2>
-      <div className={vf ? "grid grid-cols-2 gap-3" : "grid gap-2.5"}>
+      {mode === "vf" && st.question.proposition !== undefined && (
+        <div key={st.question.id + "p"} className="entree rounded-[16px] border-2 border-dashed border-energie/50 bg-energie-doux px-4 py-3">
+          <p className="text-[13px] font-semibold text-energie">Réponse proposée</p>
+          <p className="text-lg font-bold break-words"><Tex>{st.question.proposition}</Tex></p>
+        </div>
+      )}
+      {mode === "relier" && (
+        <p className="flex items-center gap-2 text-sm font-semibold text-texte-2">
+          <Icon name="share" size={16} className="text-accent" />Choisis sa réponse dans la réserve
+          <span className="ml-auto text-texte-3">encore <span className="num">{st.question.restantes?.length ?? 0}</span> à relier</span>
+        </p>
+      )}
+      <div className={vf ? "grid grid-cols-2 gap-3" : mode === "relier" ? "grid gap-2 sm:grid-cols-2" : "grid gap-2.5"}>
         {st.question.choices.map((c, i) => {
           const sel = picked === i;
           return (
             <button key={st.question.id + i} disabled={busy} onClick={() => answer(i)}
               className={`group flex min-h-15 w-full items-center gap-3 rounded-[16px] border-2 px-4 py-3 text-left text-base font-medium transition-[border-color,background-color,transform,box-shadow] duration-100 active:translate-y-[3px] active:shadow-none disabled:cursor-wait
                 ${sel ? "translate-y-[3px] border-accent bg-accent-doux shadow-none" : "border-ligne bg-surface shadow-[0_3px_0_var(--color-ligne)] hover:border-accent hover:shadow-[0_3px_0_var(--color-accent)]"} ${vf ? "justify-center py-7 text-xl font-bold" : ""}`}>
-              {!vf && <span className={`num flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border-2 text-sm font-semibold ${sel ? "border-accent bg-accent text-sur-accent" : "border-ligne text-texte-3 group-hover:border-accent group-hover:text-accent-fort"}`}>{LETTRES[i]}</span>}
+              {!vf && mode !== "relier" && <span className={`num flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border-2 text-sm font-semibold ${sel ? "border-accent bg-accent text-sur-accent" : "border-ligne text-texte-3 group-hover:border-accent group-hover:text-accent-fort"}`}>{LETTRES[i]}</span>}
               <Tex className="block min-w-0 break-words">{c}</Tex>
             </button>
           );
         })}
       </div>
-      <p className="hidden text-center text-xs text-texte-3 lg:block">Astuce : touches {vf ? "V / F" : "1 à 4"} pour répondre</p>
+      <p className="hidden text-center text-xs text-texte-3 lg:block">Astuce : touches {vf ? "V / F" : mode === "relier" ? "1 à 9" : "1 à 4"} pour répondre</p>
       {err && <p className="text-sm text-ko" role="alert">{err}</p>}
     </div>
   );

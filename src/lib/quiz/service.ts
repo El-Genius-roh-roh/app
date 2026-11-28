@@ -7,6 +7,7 @@ import { hashString, shuffled, secureRand } from "../rng";
 import { classementDuJour } from "../scoring";
 import { generateQuestions, validateTechnical, qkey, type GenQuestion, type SrcPage } from "./generate";
 import { verifyQuestion } from "./verify";
+import { formatDuJour, formatJouable, propositionVF, relierJuste, reserveRelier, vfJuste, type Format } from "./formats";
 
 /* ------------------------------------------------------------------ génération */
 
@@ -159,19 +160,59 @@ export async function ensureQuestions(gameDayId: string, preset?: GenQuestion[])
 
 /* ------------------------------------------------------------------ tentatives */
 
-type Attempt = { id: string; game_day_id: string; user_id: string; ordre_questions: string[]; ordre_choix: Record<string, number[]>; started_at: Date; statut: "en_cours" | "terminee" | "cloturee" };
-export type QuizQuestion = { id: string; type: "qcm" | "vrai_faux"; enonce: string; choices: string[] };
-export type QuizState = { attemptId: string; index: number; total: number; question: QuizQuestion; elapsedMs: number };
+type Attempt = {
+  id: string; game_day_id: string; user_id: string; ordre_questions: string[]; ordre_choix: Record<string, number[]>; started_at: Date;
+  statut: "en_cours" | "terminee" | "cloturee";
+  /** Format du défi du jour (D41), fixé au début. Vrai ou faux : ordre_choix[q] = [réponse proposée]. Relier : `reserve` = ordre des réponses. */
+  format: Format; reserve: string[] | null;
+};
+/** Comment afficher la question en cours : QCM classique, Vrai ou faux sur une réponse proposée, ou Relier (choisir dans la réserve). */
+export type QuizMode = "qcm" | "vf" | "relier";
+export type QuizQuestion = {
+  id: string; type: "qcm" | "vrai_faux"; mode: QuizMode; enonce: string; choices: string[];
+  /** Vrai ou faux : la réponse proposée. */
+  proposition?: string;
+  /** Relier : les questions qui restent à relier (celle en cours comprise), pour montrer le plateau. */
+  restantes?: string[];
+};
+export type QuizState = { attemptId: string; format: Format; index: number; total: number; question: QuizQuestion; elapsedMs: number };
+
+type QRow = { id: string; type: "qcm" | "vrai_faux"; enonce: string; choix: string[]; correct_index: number };
+const bonneReponse = (r: QRow) => r.choix[r.correct_index];
+
+/** Mode d'une question selon le format : les vrai/faux natifs restent des vrai/faux dans tous les formats. */
+const modeDe = (a: Attempt, type: QRow["type"]): QuizMode => (type === "vrai_faux" ? "qcm" : a.format);
+
+/** Relier : la réserve encore disponible (réponses des QCM pas encore joués), avec le texte de chaque réponse. */
+async function reserveCourante(a: Attempt): Promise<{ id: string; texte: string }[]> {
+  const jouees = new Set((await q<{ question_id: string }>("select question_id from attempt_answers where attempt_id=$1", [a.id])).map((r) => r.question_id));
+  const ids = reserveRelier(a.reserve ?? [], jouees);
+  const rows = await q<QRow>("select id,type,enonce,choix,correct_index from questions where id = any($1::uuid[])", [ids]);
+  const par = new Map(rows.map((r) => [r.id, r]));
+  // deux questions peuvent avoir la même réponse : une seule case par texte (la correction compare les textes)
+  const vus = new Set<string>();
+  return ids.filter((id) => par.has(id)).map((id) => ({ id, texte: bonneReponse(par.get(id)!) }))
+    .filter((r) => { const k = r.texte.normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim(); if (vus.has(k)) return false; vus.add(k); return true; });
+}
 
 export async function currentState(a: Attempt): Promise<QuizState | null> {
   const [{ n }] = await q<{ n: string }>("select count(*) n from attempt_answers where attempt_id=$1", [a.id]);
   const index = Number(n);
   const qid = a.ordre_questions[index];
   if (!qid) return null;
-  const [row] = await q<{ id: string; type: "qcm" | "vrai_faux"; enonce: string; choix: string[] }>("select id,type,enonce,choix from questions where id=$1", [qid]);
+  const [row] = await q<QRow>("select id,type,enonce,choix,correct_index from questions where id=$1", [qid]);
   const perm = a.ordre_choix[qid];
+  const mode = modeDe(a, row.type);
+  const base = { attemptId: a.id, format: a.format, index, total: a.ordre_questions.length, elapsedMs: Date.now() - new Date(a.started_at).getTime() };
   // la bonne réponse n'est jamais renvoyée ici
-  return { attemptId: a.id, index, total: a.ordre_questions.length, question: { id: row.id, type: row.type, enonce: row.enonce, choices: perm.map((i) => row.choix[i]) }, elapsedMs: Date.now() - new Date(a.started_at).getTime() };
+  if (mode === "vf") return { ...base, question: { id: row.id, type: row.type, mode, enonce: row.enonce, choices: ["Vrai", "Faux"], proposition: row.choix[perm[0]] } };
+  if (mode === "relier") {
+    const reserve = await reserveCourante(a);
+    const restantes = a.ordre_questions.slice(index).filter((id) => (a.reserve ?? []).includes(id));
+    const enonces = new Map((await q<{ id: string; enonce: string }>("select id,enonce from questions where id = any($1::uuid[])", [restantes])).map((r) => [r.id, r.enonce]));
+    return { ...base, question: { id: row.id, type: row.type, mode, enonce: row.enonce, choices: reserve.map((r) => r.texte), restantes: restantes.map((id) => enonces.get(id) ?? "") } };
+  }
+  return { ...base, question: { id: row.id, type: row.type, mode, enonce: row.enonce, choices: perm.map((i) => row.choix[i]) } };
 }
 
 /** Termine une tentative (terminée par le joueur, ou clôturée) et recalcule les résultats provisoires du jour. */
@@ -256,15 +297,22 @@ export async function startAttempt(gameDayId: string, userId: string): Promise<S
     const ids = (await q<{ id: string }>("select id from questions where game_day_id=$1", [gameDayId])).map((r) => r.id);
     const rand = secureRand();
     const ordre = shuffled(ids, rand);
-    const types = new Map((await q<{ id: string; type: string; n: number }>("select id,type,jsonb_array_length(choix) n from questions where game_day_id=$1", [gameDayId])).map((r) => [r.id, r]));
+    const types = new Map((await q<{ id: string; type: string; n: number; correct_index: number }>(
+      "select id,type,jsonb_array_length(choix) n,correct_index from questions where game_day_id=$1", [gameDayId])).map((r) => [r.id, r]));
+    const qcm = ordre.filter((id) => types.get(id)!.type !== "vrai_faux");
+    // défi du jour (D41) : le format dépend de la date du jour joué (un rattrapage garde le format de son jour)
+    const format = formatJouable(formatDuJour(gd.date), qcm.length);
     const choix: Record<string, number[]> = {};
     for (const id of ordre) {
       const t = types.get(id)!;
       const idx = Array.from({ length: t.n }, (_, i) => i);
-      choix[id] = t.type === "vrai_faux" ? idx : shuffled(idx, rand); // Vrai/Faux garde son ordre naturel
+      if (t.type === "vrai_faux") choix[id] = idx; // Vrai/Faux garde son ordre naturel
+      else if (format === "vf") choix[id] = [propositionVF(t.n, t.correct_index, rand)];
+      else choix[id] = shuffled(idx, rand);
     }
-    await q("insert into attempts(game_day_id,user_id,ordre_questions,ordre_choix,retard_jours) values ($1,$2,$3,$4,$5) on conflict (game_day_id,user_id) do nothing",
-      [gameDayId, userId, JSON.stringify(ordre), JSON.stringify(choix), retard]);
+    const reserve = format === "relier" ? shuffled(qcm, rand) : null;
+    await q("insert into attempts(game_day_id,user_id,ordre_questions,ordre_choix,retard_jours,format,reserve) values ($1,$2,$3,$4,$5,$6,$7) on conflict (game_day_id,user_id) do nothing",
+      [gameDayId, userId, JSON.stringify(ordre), JSON.stringify(choix), retard, format, reserve && JSON.stringify(reserve)]);
     a = await get();
   }
   const st = await currentState(a!);
@@ -283,12 +331,28 @@ export async function submitAnswer(attemptId: string, userId: string, questionId
   const expected = a.ordre_questions[Number(n)];
   if (!expected || expected !== questionId) return { status: 409, body: { error: "Ce n'est pas la question en cours." } };
   const perm = a.ordre_choix[questionId];
-  if (!Number.isInteger(choice) || choice < 0 || choice >= perm.length) return { status: 400, body: { error: "Choix invalide." } };
-  const orig = perm[choice];
-  const [qq] = await q<{ correct_index: number }>("select correct_index from questions where id=$1", [questionId]);
+  const [qq] = await q<QRow>("select id,type,enonce,choix,correct_index from questions where id=$1", [questionId]);
+  const mode = modeDe(a, qq.type);
+  // choix_index garde l'indice (dans les choix de la question) de la réponse donnée, -1 si elle n'en fait pas partie
+  let orig: number, juste: boolean;
+  if (mode === "vf") {
+    if (choice !== 0 && choice !== 1) return { status: 400, body: { error: "Choix invalide." } };
+    juste = vfJuste(choice, perm[0], qq.correct_index);
+    orig = choice === 0 ? perm[0] : juste ? qq.correct_index : -1;
+  } else if (mode === "relier") {
+    const reserve = await reserveCourante(a);
+    if (!Number.isInteger(choice) || choice < 0 || choice >= reserve.length) return { status: 400, body: { error: "Choix invalide." } };
+    const texte = reserve[choice].texte;
+    juste = relierJuste(texte, bonneReponse(qq));
+    orig = juste ? qq.correct_index : qq.choix.findIndex((c) => relierJuste(c, texte));
+  } else {
+    if (!Number.isInteger(choice) || choice < 0 || choice >= perm.length) return { status: 400, body: { error: "Choix invalide." } };
+    orig = perm[choice];
+    juste = orig === qq.correct_index;
+  }
   const ins = await q(
     "insert into attempt_answers(attempt_id,question_id,choix_index,correct) values ($1,$2,$3,$4) on conflict do nothing returning question_id",
-    [a.id, questionId, orig, orig === qq.correct_index]);
+    [a.id, questionId, orig, juste]);
   if (!ins.length) return { status: 409, body: { error: "Réponse déjà enregistrée." } };
   if (Number(n) + 1 >= a.ordre_questions.length) {
     await finishAttempt(a.id, "terminee");

@@ -6,6 +6,7 @@ import { memberRole } from "@/lib/groups";
 import { todayParis } from "@/lib/clock";
 import { closeStaleAttempts, currentState, getCorrection, joursEntre } from "@/lib/quiz/service";
 import QuizPlayer from "@/components/QuizPlayer";
+import { formatDuJour, type Format } from "@/lib/quiz/formats";
 import Correction from "@/components/Correction";
 import { fmtMs } from "@/components/RankTable";
 import { getDayRanking, getGroupTrophees } from "@/lib/ranking";
@@ -122,7 +123,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
           <span><b>Rattrapage du jour {gd.jour}</b> (<span className="num">{retard}</span> jour{retard > 1 ? "s" : ""} de retard) : tu gagneras <span className="num font-semibold">{Math.round(facteurRetard(retard) * 100)} %</span> des gemmes habituelles.</span>
         </p>
       )}
-      <QuizPlayer gameDayId={dayId} initial={initial} />
+      <QuizPlayer gameDayId={dayId} initial={initial} format={(attempt as { format?: Format } | null)?.format ?? formatDuJour(gd.date)} />
     </main>
   );
 }

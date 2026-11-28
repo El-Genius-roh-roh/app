@@ -101,12 +101,10 @@ export const SOLO = {
   TYPES: ["flashcards", "memory", "arene", "relier"] as const,
 };
 
-// Mini-jeu du jour (D40) : un jeu différent chaque jour, le même pour tout le monde (rotation sur la date de Paris).
-// « relier » et « memory » se jouent seul sur une matière ; « blitz », « vf » et « course » sont des parties d'Arène
-// avec des bots (on peut aussi y inviter ses amis). L'Arène libre reste ouverte à côté.
-export const JEU_DU_JOUR = {
-  ROTATION: ["relier", "blitz", "memory", "vf", "course"] as const,
-  BOTS: 2, // bots ajoutés d'office aux parties d'Arène du jeu du jour
+// Défi du jour (D41, remplace D40) : le quiz du jour d'une matière change de format chaque jour, selon sa date de jeu.
+// Mêmes questions, même score (erreurs puis temps), même pénalité s'il est raté (TROPHEES.PENALITE_QUIZ_MANQUE).
+export const DEFI = {
+  FORMATS: ["qcm", "relier", "vf"] as const,
 };
 
 // Relier : chaque notion (ou question) avec sa définition (ou réponse), en touchant l'une puis l'autre

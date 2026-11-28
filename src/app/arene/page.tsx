@@ -3,15 +3,12 @@ import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { arenaLeaderboard, arenaPool, openRooms } from "@/lib/arena/service";
 import { MODES, tierOf } from "@/lib/arena/engine";
-import { ARENA, MEMORY, RELIER, SOLO } from "@/config/constants";
-import { addDays, realToday, sqlToday } from "@/lib/clock";
-import { jeuDuJour, jeuFait } from "@/lib/jeu-du-jour";
-import { sqlNbCartes } from "@/lib/notions-extraction";
-import { lancerJeuDuJour } from "./actions";
+import { ARENA } from "@/config/constants";
 import ArenaCreate from "./ArenaCreate";
 import PlateauCreate from "./PlateauCreate";
 import { openRooms as plateauxOuverts, themesDuGroupe } from "@/lib/plateau/service";
 import Icon from "@/components/Icon";
+import PremiumRequis from "@/components/PremiumRequis";
 
 export const dynamic = "force-dynamic";
 
@@ -20,9 +17,9 @@ const TIER_COLOR: Record<string, string> = {
   Bronze: "#b0703a", Argent: "#6b7684", Or: "#8b6706", Platine: "#1f7f77", Diamant: "#2463df",
 };
 
-export default async function Arene({ searchParams }: { searchParams: Promise<{ erreur?: string }> }) {
-  const { erreur } = await searchParams;
+export default async function Arene() {
   const u = await requireUser();
+  if (!u.premium) return <PremiumRequis titre="L'Arène" texte="Les duels en direct, les parties contre des bots et le jeu de plateau sont réservés aux comptes premium." />;
   const groupes = await q<{ id: string; nom: string }>(
     "select g.id,g.nom from groups g join group_members m on m.group_id=g.id where m.user_id=$1 order by g.created_at", [u.id]);
   const rooms = [
@@ -34,29 +31,6 @@ export default async function Arene({ searchParams }: { searchParams: Promise<{ 
     themes: (await themesDuGroupe(g.id)).themes.map((t) => t.nom),
   })));
 
-  // mini-jeu du jour (D40) : le même pour tous ; pour un jeu de matière, une matière du groupe qui a assez de notions du
-  // cours (de vraies définitions), sinon celle qui a le plus de cartes
-  const today = realToday();
-  const jeu = jeuDuJour(today);
-  const demain = jeuDuJour(addDays(today, 1));
-  const minCartes = jeu.id === "memory" ? MEMORY.MIN_PAIRES : RELIER.MIN_PAIRES;
-  const matieres = jeu.lieu === "matiere" ? await q<{ id: string; nom: string; group_id: string; cartes: number; notions: number }>(
-    `select s.id, s.nom, s.group_id, ${sqlNbCartes("s.id", sqlToday("s.id"))} as cartes,
-            (select count(*)::int from notions n where n.subject_id=s.id) as notions
-       from subjects s where s.group_id = any($1::uuid[])`,
-    [groupes.map((g) => g.id)]) : [];
-  const [{ n: sessions }] = await q<{ n: number }>(
-    "select count(*)::int as n from solo_sessions where user_id=$1 and type=$2 and (created_at at time zone 'Europe/Paris')::date = $3::date",
-    [u.id, jeu.solo, today]);
-  const moi = JSON.stringify([{ id: u.id }]);
-  const [{ multi }] = jeu.lieu === "arene" ? await q<{ multi: number }>(
-    "select count(*)::int as multi from arena_rooms where phase='final' and updated_at >= $2::date and state->'players' @> $1::jsonb", [moi, today]) : [{ multi: 0 }];
-  const fait = jeuFait(jeu, { [jeu.solo]: sessions }, multi);
-  const jeuParGroupe = data.map((g) => ({
-    ...g,
-    matiere: [...matieres].filter((m) => m.group_id === g.id && m.cartes >= minCartes).sort((a, b) => Number(b.notions >= minCartes) - Number(a.notions >= minCartes) || b.cartes - a.cartes)[0] ?? null,
-  }));
-  const dateLongue = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${today}T12:00:00Z`));
 
   return (
     <main className="page">
@@ -74,45 +48,6 @@ export default async function Arene({ searchParams }: { searchParams: Promise<{ 
           </button>
         </form>
       </section>
-
-      {groupes.length > 0 && (
-        <section id="jeu-du-jour" className="card scroll-mt-24 space-y-4" aria-labelledby="t-jdj">
-          <div className="flex items-start gap-3.5">
-            <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-energie text-sur-energie shadow-[0_3px_0_color-mix(in_oklab,var(--color-energie)_55%,black)]">
-              <Icon name={jeu.icone} size={24} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="eyebrow first-letter:uppercase">Mini-jeu du jour · {dateLongue}</p>
-              <h2 id="t-jdj" className="h2">{jeu.titre}</h2>
-            </div>
-            {fait && <span className="chip shrink-0 border-ok/40 bg-ok-doux text-ok"><Icon name="check" size={14} />Fait</span>}
-          </div>
-          <p className="text-[15px] text-texte-2">{jeu.desc}</p>
-          {erreur && <p className="text-sm font-semibold text-ko" role="alert">{erreur}</p>}
-          <ul className="grid gap-2 sm:grid-cols-2">
-            {jeuParGroupe.map((g) => (
-              <li key={g.id}>
-                {jeu.lieu === "matiere" ? (
-                  g.matiere ? (
-                    <Link href={`/matieres/${g.matiere.id}/${jeu.id}`} className="btn-orange">
-                      <Icon name="play" size={17} /><span className="truncate">{fait ? "Rejouer" : "Jouer"} · {g.matiere.nom}</span>
-                    </Link>
-                  ) : <p className="rounded-[14px] border-2 border-dashed border-ligne p-3 text-sm text-texte-3">{g.nom} : pas encore assez de notions ni de questions passées pour ce jeu.</p>
-                ) : g.dispo >= ARENA.MIN_QUESTIONS ? (
-                  <form action={lancerJeuDuJour}>
-                    <input type="hidden" name="groupe" value={g.id} />
-                    <button className="btn-orange"><Icon name="play" size={17} /><span className="truncate">{fait ? "Rejouer" : "Jouer"}{groupes.length > 1 ? ` · ${g.nom}` : " contre des bots"}</span></button>
-                  </form>
-                ) : <p className="rounded-[14px] border-2 border-dashed border-ligne p-3 text-sm text-texte-3">{g.nom} : pas encore assez de questions des jours passés.</p>}
-              </li>
-            ))}
-          </ul>
-          <p className="text-sm text-texte-3">
-            {jeu.lieu === "arene" && "Tes amis peuvent te rejoindre avec le code avant le lancement. "}
-            Un nouveau jeu chaque jour, <span className="num">+{SOLO.GEMMES_PAR_SESSION}</span> gemmes pour ta semaine. Demain : <b className="text-texte-2">{demain.titre}</b>.
-          </p>
-        </section>
-      )}
 
       {groupes.length === 0 && (
         <div className="card space-y-2">

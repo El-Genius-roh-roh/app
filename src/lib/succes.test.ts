@@ -1,27 +1,29 @@
 import { describe, expect, it } from "vitest";
 import { defisDuJour, succes, titresDuGroupe, type EntreeSucces } from "./succes";
 import { vitrine } from "./trophees";
-import { JEUX } from "./jeu-du-jour";
 
 const solo0 = { flashcards: 0, memory: 0, arene: 0 };
 
 describe("défis du jour", () => {
-  it("quiz, flashcards, mini-jeu du jour et Arène, cochés selon ce qui a été fait", () => {
-    const d = defisDuJour({ quiz: { faits: 1, total: 2, href: "/quiz/x" }, solo: { ...solo0, flashcards: 1, relier: 1 }, multi: 0, matiere: "m", jeu: JEUX.relier });
-    expect(d.map((x) => [x.id, x.fait])).toEqual([["quiz", false], ["flashcards", true], ["jeu", true], ["arene", false]]);
+  const base = { quiz: { faits: 1, total: 2, href: "/quiz/x" }, solo: { ...solo0, flashcards: 1 }, multi: 0, matiere: "m" };
+  it("premium : défi du jour, flashcards, Memory et Arène, cochés selon ce qui a été fait", () => {
+    const d = defisDuJour({ ...base, premium: true });
+    expect(d.map((x) => [x.id, x.fait])).toEqual([["quiz", false], ["flashcards", true], ["memory", false], ["arene", false]]);
+    expect(d[0].titre).toBe("Joue tes défis du jour");
     expect(d[1].href).toBe("/matieres/m/flashcards");
-    expect(d[2]).toMatchObject({ titre: "Mini-jeu du jour : Relier", href: "/matieres/m/relier", mode: "solo" });
   });
-  it("un mini-jeu d'Arène se joue même sans matière jouable", () => {
-    const d = defisDuJour({ quiz: { faits: 0, total: 0, href: "/" }, solo: solo0, multi: 0, matiere: null, jeu: JEUX.vf });
-    expect(d.map((x) => x.id)).toEqual(["jeu", "arene"]);
-    expect(d[0]).toMatchObject({ href: "/arene#jeu-du-jour", mode: "multi" });
+  it("gratuit : seulement ce qu'il peut faire (Memory et Relier, pas de flashcards ni d'Arène)", () => {
+    const d = defisDuJour({ ...base, solo: { ...solo0, relier: 1 }, premium: false });
+    expect(d.map((x) => [x.id, x.fait])).toEqual([["quiz", false], ["memory", false], ["relier", true]]);
+    expect(d[2].href).toBe("/matieres/m/relier");
   });
-  it("pas de quiz aujourd'hui ni de matière jouable : seulement l'Arène", () => {
-    expect(defisDuJour({ quiz: { faits: 0, total: 0, href: "/" }, solo: solo0, multi: 0, matiere: null, jeu: JEUX.memory }).map((x) => x.id)).toEqual(["arene"]);
+  it("pas de défi du jour ni de matière jouable : seulement l'Arène (premium)", () => {
+    const vide = { quiz: { faits: 0, total: 0, href: "/" }, solo: solo0, multi: 0, matiere: null };
+    expect(defisDuJour({ ...vide, premium: true }).map((x) => x.id)).toEqual(["arene"]);
+    expect(defisDuJour({ ...vide, premium: false })).toEqual([]);
   });
   it("l'Arène compte seul contre des bots comme entre amis", () => {
-    const f = (multi: number, arene: number) => defisDuJour({ quiz: { faits: 0, total: 0, href: "/" }, solo: { ...solo0, arene }, multi, matiere: null, jeu: JEUX.relier })[0].fait;
+    const f = (multi: number, arene: number) => defisDuJour({ quiz: { faits: 0, total: 0, href: "/" }, solo: { ...solo0, arene }, multi, matiere: null, premium: true })[0].fait;
     expect([f(0, 0), f(1, 0), f(0, 1)]).toEqual([false, true, true]);
   });
 });
