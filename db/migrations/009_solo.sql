@@ -13,3 +13,10 @@ CREATE TABLE IF NOT EXISTS solo_sessions (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_solo_sessions_groupe ON solo_sessions(group_id, date);
+
+-- Jours de visite (succès « fidèle » : connecté N jours d'affilée). Un jour = date de Paris, une ligne par joueur et par jour.
+CREATE TABLE IF NOT EXISTS user_activity (
+  user_id uuid NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  date date NOT NULL,
+  PRIMARY KEY (user_id, date)
+);

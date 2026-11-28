@@ -99,6 +99,13 @@ export const SOLO = {
   TYPES: ["flashcards", "memory", "arene"] as const,
 };
 
+// Tableau de bord personnel (D38) : succès à débloquer
+export const SUCCES = {
+  FIDELE_JOURS: [7, 30], // ouvrir l'application N jours d'affilée
+  SESSIONS: 10, // flashcards, Memory, parties d'Arène
+  MIN_QUIZ_TITRE: 3, // quiz joués pour prétendre au titre « l'éclair de la bande »
+};
+
 // Flashcards : recto = l'énoncé, verso = la bonne réponse et l'explication (questions vérifiées des jours passés)
 export const FLASHCARDS = {
   PAQUET: 12, // cartes par session ; les moins sues passent en premier

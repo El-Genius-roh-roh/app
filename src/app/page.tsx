@@ -6,6 +6,8 @@ import { CONFIG, FLASHCARDS, SOLO } from "@/config/constants";
 import { facteurRetard } from "@/lib/scoring";
 import Icon from "@/components/Icon";
 import AutoRefresh from "@/components/AutoRefresh";
+import { Defis, MesSucces, MonClassement } from "@/components/Tableau";
+import { tableauDeBord } from "@/lib/tableau";
 
 type Jour = { day_id: string; subject_id: string; matiere: string; groupe: string; jour: number; statut: string | null; erreurs: number | null; rang: number | null };
 
@@ -44,6 +46,9 @@ export default async function Accueil() {
               where qq.subject_id=s.id and qq.verifiee and gd.date < ${sqlToday("s.id")}) as cartes
        from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
       order by g.created_at, s.created_at`, [u.id]);
+  // tableau de bord personnel (D38) : défis du jour, mon classement, mes succès
+  const conseillee = [...matieres].filter((m) => m.cartes >= FLASHCARDS.MIN).sort((a, b) => b.cartes - a.cartes)[0]?.id ?? null;
+  const tb = await tableauDeBord(u.id, { faits: jours.length - restants.length, total: jours.length, href: prochain ? `/quiz/${prochain.day_id}` : "/" }, conseillee);
 
   return (
     <main className="page">
@@ -71,6 +76,9 @@ export default async function Accueil() {
               </Link>
             </section>
           )}
+
+          <Defis defis={tb.defis} />
+          <MonClassement classements={tb.classements} />
 
           <section className="space-y-3" aria-labelledby="t-jour">
             <div className="flex items-baseline justify-between gap-3">
@@ -140,6 +148,11 @@ export default async function Accueil() {
             </section>
           )}
 
+        </div>
+
+        <aside className="space-y-7">
+          <MesSucces succes={tb.succes} />
+
           {/* sans chrono : on apprend à son rythme ; chaque session compte pour le score de la semaine (D37) */}
           {matieres.length > 0 && (
             <section className="space-y-3" aria-labelledby="t-solo">
@@ -147,7 +160,7 @@ export default async function Accueil() {
                 <h2 id="t-solo" className="h2">Flashcards et jeux solo</h2>
                 <p className="text-sm text-texte-3">Sans chrono, sur les questions des quiz déjà passés. Chaque session terminée rapporte +{SOLO.GEMMES_PAR_SESSION} gemmes pour ta semaine ({SOLO.MAX_PAR_JOUR} max. par jour).</p>
               </div>
-              <ul className="grid gap-2.5 sm:grid-cols-2">
+              <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
                 {matieres.map((m) => {
                   const pret = m.cartes >= FLASHCARDS.MIN;
                   return (
@@ -177,9 +190,6 @@ export default async function Accueil() {
               </ul>
             </section>
           )}
-        </div>
-
-        <aside className="space-y-7">
           <section className="space-y-3" aria-labelledby="t-groupes">
             <h2 id="t-groupes" className="h2">Mes groupes</h2>
             {groupes.length === 0 && (
