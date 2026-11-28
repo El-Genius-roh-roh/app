@@ -52,7 +52,7 @@ export default async function Accueil() {
   // matière conseillée : de vraies notions du cours d'abord (assez pour Relier et le Memory), puis le plus de cartes
   const conseillee = [...matieres].filter((m) => m.cartes >= FLASHCARDS.MIN)
     .sort((a, b) => Number(b.notions >= RELIER.MIN_PAIRES) - Number(a.notions >= RELIER.MIN_PAIRES) || b.cartes - a.cartes)[0]?.id ?? null;
-  const tb = await tableauDeBord(u.id, { faits: jours.length - restants.length, total: jours.length, href: prochain ? `/quiz/${prochain.day_id}` : "/" }, conseillee, u.premium);
+  const tb = await tableauDeBord(u.id, { faits: jours.length - restants.length, total: jours.length, href: prochain ? `/quiz/${prochain.day_id}` : "/" }, conseillee);
 
   return (
     <main className="page">
@@ -204,8 +204,8 @@ export default async function Accueil() {
                       </Link>
                       {pret ? (
                         <div className="grid grid-cols-2 gap-2">
-                          <Link href={u.premium ? `/matieres/${m.id}/flashcards` : "/profil#premium"} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-accent-doux px-2 text-sm font-bold text-accent-fort transition-transform hover:-translate-y-px active:translate-y-px">
-                            <Icon name={u.premium ? "cards" : "sparkles"} size={17} />Flashcards{!u.premium && <span className="sr-only"> (premium)</span>}
+                          <Link href={`/matieres/${m.id}/flashcards`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-accent-doux px-2 text-sm font-bold text-accent-fort transition-transform hover:-translate-y-px active:translate-y-px">
+                            <Icon name="cards" size={17} />Flashcards
                           </Link>
                           <Link href={`/matieres/${m.id}/memory`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-or-doux px-2 text-sm font-bold text-or transition-transform hover:-translate-y-px active:translate-y-px">
                             <Icon name="target" size={17} />Memory

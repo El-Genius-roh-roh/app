@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
+import { accesJeux, MESSAGE_VERROU } from "@/lib/acces";
 import { q } from "@/lib/db";
 import { getSubjectFor } from "@/lib/subjects";
 import { sqlToday, todayParis } from "@/lib/clock";
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
   const type = b.type === "flashcards" || b.type === "memory" || b.type === "relier" ? b.type : null;
   const subjectId = typeof b.subjectId === "string" && UUID.test(b.subjectId) ? b.subjectId : null;
   if (!type || !subjectId) return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
-  if (type === "flashcards" && !u.premium) return NextResponse.json({ error: "Les flashcards sont réservées aux comptes premium." }, { status: 403 });
+  if (type !== "flashcards" && !(await accesJeux(u.id)).ouvert) return NextResponse.json({ error: MESSAGE_VERROU }, { status: 403 });
   const ctx = await getSubjectFor(subjectId, u.id);
   if (!ctx) return NextResponse.json({ error: "Matière introuvable." }, { status: 404 });
   // même source que les jeux : questions vérifiées des jours passés ; pas de gemmes sans assez de cartes

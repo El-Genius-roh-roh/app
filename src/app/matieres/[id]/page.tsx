@@ -107,7 +107,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
             <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-doux text-accent-fort shadow-[0_3px_0_var(--color-ligne)]">
               <Icon name="cards" size={22} />
             </span>
-            <span className="flex min-w-0 flex-1 items-center gap-1.5 font-bold">Flashcards{!u.premium && <span className="rounded-full bg-or-vif px-1.5 py-px text-[11px] font-bold text-sur-or">Premium</span>}</span>
+            <span className="flex min-w-0 flex-1 items-center gap-1.5 font-bold">Flashcards</span>
             <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link href={`/matieres/${id}/memory`} className="tuile group flex items-center gap-3.5">

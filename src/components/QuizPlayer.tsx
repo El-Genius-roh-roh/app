@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { url } from "@/lib/url";
 import Tex from "./Tex";
 import Icon from "./Icon";
-import Details from "./Details";
 import { FORMATS, type Format } from "@/lib/quiz/formats";
+import Details from "./Details";
 
 type Q = { id: string; type: "qcm" | "vrai_faux"; mode: "qcm" | "vf" | "relier"; enonce: string; choices: string[]; proposition?: string; restantes?: string[] };
 type State = { attemptId: string; format: Format; index: number; total: number; question: Q; elapsedMs: number };
