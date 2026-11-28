@@ -7,6 +7,7 @@ import { facteurRetard } from "@/lib/scoring";
 import Icon from "@/components/Icon";
 import { FORMATS, formatDuJour, type Format } from "@/lib/quiz/formats";
 import AutoRefresh from "@/components/AutoRefresh";
+import Details from "@/components/Details";
 import { Defis, MesSucces, MonClassement } from "@/components/Tableau";
 import { tableauDeBord } from "@/lib/tableau";
 import { sqlNbCartes } from "@/lib/notions-extraction";
@@ -185,9 +186,9 @@ export default async function Accueil() {
           {/* sans chrono : on apprend à son rythme ; chaque session compte pour le score de la semaine (D37) */}
           {matieres.length > 0 && (
             <section className="space-y-3" aria-labelledby="t-solo">
-              <div className="space-y-0.5">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h2 id="t-solo" className="h2">Flashcards et jeux solo</h2>
-                <p className="text-sm text-texte-3">Sans chrono, sur les notions du cours et les questions des quiz déjà passés. Chaque session terminée rapporte +{SOLO.GEMMES_PAR_SESSION} gemmes pour ta semaine ({SOLO.MAX_PAR_JOUR} max. par jour).</p>
+                <Details>Sans chrono, sur les notions du cours et les questions des quiz déjà passés. Chaque session terminée rapporte +{SOLO.GEMMES_PAR_SESSION} gemmes pour ta semaine ({SOLO.MAX_PAR_JOUR} max. par jour).</Details>
               </div>
               <ul className="grid gap-2.5 sm:grid-cols-2">
                 {matieres.map((m) => {
@@ -211,7 +212,7 @@ export default async function Accueil() {
                           </Link>
                         </div>
                       ) : (
-                        <p className="rounded-[12px] bg-surface-2 px-3 py-2.5 text-sm text-texte-3">Disponible dès qu’un cours est importé ou après les premiers quiz.</p>
+                        <Details label="Bientôt disponible">Disponible dès qu&apos;un cours est importé ou après les premiers quiz.</Details>
                       )}
                     </li>
                   );

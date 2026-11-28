@@ -5,6 +5,7 @@ import { FLASHCARDS } from "@/config/constants";
 import { acquises, classer, nouvelleSession, paquet, repondre, type Boites, type Flashcard, type Session } from "@/lib/flashcards";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
+import Details from "@/components/Details";
 import RecompenseSolo from "@/components/RecompenseSolo";
 
 /** Flashcards d'une matière : file de cartes, boîtes de Leitner gardées dans le navigateur (aucun classement). */
@@ -82,7 +83,7 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
             <RecompenseSolo type="flashcards" subjectId={subjectId} />
             {ratees.length > 0 && <span className="chip border-transparent bg-surface text-texte"><Icon name="rotate" size={14} /><span className="num">{ratees.length}</span> revue{ratees.length > 1 ? "s" : ""} plusieurs fois</span>}
           </div>
-          <p className="text-[15px] opacity-90">Une carte est acquise quand tu l&apos;as sue trois fois de suite. Les autres repassent en priorité à la prochaine session.</p>
+          <Details inverted>Une carte est acquise quand tu l&apos;as sue trois fois de suite. Les autres repassent en priorité à la prochaine session.</Details>
           <div className="flex flex-wrap gap-2">
             <button onClick={() => demarrer(paquet(source, boites, FLASHCARDS.PAQUET, Math.random).map((c) => c.id))} className="btn-hero w-auto">
               <Icon name="play" size={16} />Nouvelle session
@@ -165,7 +166,7 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
       ) : (
         <button onClick={retourner} className="btn-primary"><Icon name="rotate" size={18} />Retourner la carte</button>
       )}
-      <p className="text-center text-xs text-texte-3 max-sm:hidden">Clavier : espace pour retourner, ← à revoir, → je savais</p>
+      <Details label="Raccourcis" className="text-center max-sm:hidden">Clavier : espace pour retourner, ← à revoir, → je savais</Details>
       <p className="sr-only" aria-live="polite">{message}</p>
     </div>
   );

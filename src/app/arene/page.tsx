@@ -9,6 +9,7 @@ import PlateauCreate from "./PlateauCreate";
 import { openRooms as plateauxOuverts, themesDuGroupe } from "@/lib/plateau/service";
 import Icon from "@/components/Icon";
 import PremiumRequis from "@/components/PremiumRequis";
+import Details from "@/components/Details";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ export default async function Arene() {
         <div aria-hidden className="pointer-events-none absolute -top-12 -right-10 h-44 w-44 rounded-full bg-sur-energie/10" />
         <p className="eyebrow">Compétition · multijoueur en direct</p>
         <h1 className="mt-1 flex items-center gap-3 font-titre text-4xl font-extrabold lg:text-5xl"><Icon name="swords" size={34} />Arène</h1>
-        <p className="mt-2 max-w-xl text-[15px] opacity-95">Des duels sur les quiz des jours passés. Le plus juste et le plus rapide gagne des points de cote.</p>
+        <Details inverted className="mt-1">Des duels sur les quiz des jours passés. Le plus juste et le plus rapide gagne des points de cote.</Details>
         <form action="/arene/rejoindre" className="mt-5 flex max-w-sm gap-2">
           <label htmlFor="code-arene" className="sr-only">Code de la partie</label>
           <input id="code-arene" name="code" required maxLength={ARENA.CODE_LONGUEUR} placeholder="CODE" autoComplete="off"

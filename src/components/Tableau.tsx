@@ -6,6 +6,7 @@ import type { Defi, Succes as SuccesData } from "@/lib/succes";
 import type { ClassementGroupe } from "@/lib/tableau";
 import { GainTrophees, GemmesCompteur, LigueBlason } from "./Trophees";
 import Icon from "./Icon";
+import Details from "./Details";
 
 const MODE = { quiz: { label: "Quiz", cls: "bg-accent-doux text-accent-fort" }, solo: { label: "Solo", cls: "bg-or-doux text-or" }, multi: { label: "Multi", cls: "bg-energie-doux text-energie" } } as const;
 const ICONE_DEFI: Record<string, string> = { quiz: "play", flashcards: "cards", memory: "target", arene: "swords" };
@@ -94,11 +95,11 @@ export function MonClassement({ classements }: { classements: ClassementGroupe[]
                     </span>
                   </span>
                 </span>
-                <span className="block text-xs text-texte-3">
-                  {s?.rang === 1 ? `En tête : +${TROPHEES.SEMAINE_GAINS[0]} trophées si ça tient jusqu'à dimanche.` : "Le 1er de la semaine gagne des trophées."}{" "}
-                  Fin du mois ({fin.slice(8)}/{fin.slice(5, 7)}) : {proj.index > actuelle.index ? `montée en ${proj.ligue.nom}` : proj.index < actuelle.index ? `descente en ${proj.ligue.nom}` : `tu restes en ${ligue.nom}`}.
-                </span>
               </Link>
+              <Details className="mt-1.5 px-1">
+                {s?.rang === 1 ? `En tête : +${TROPHEES.SEMAINE_GAINS[0]} trophées si ça tient jusqu'à dimanche.` : "Le 1er de la semaine gagne des trophées."}{" "}
+                Fin du mois ({fin.slice(8)}/{fin.slice(5, 7)}) : {proj.index > actuelle.index ? `montée en ${proj.ligue.nom}` : proj.index < actuelle.index ? `descente en ${proj.ligue.nom}` : `tu restes en ${ligue.nom}`}.
+              </Details>
             </li>
           );
         })}

@@ -5,6 +5,7 @@ import { url } from "@/lib/url";
 import Tex from "./Tex";
 import Icon from "./Icon";
 import { FORMATS, type Format } from "@/lib/quiz/formats";
+import Details from "./Details";
 
 type Q = { id: string; type: "qcm" | "vrai_faux"; mode: "qcm" | "vf" | "relier"; enonce: string; choices: string[]; proposition?: string; restantes?: string[] };
 type State = { attemptId: string; format: Format; index: number; total: number; question: Q; elapsedMs: number };
@@ -136,7 +137,7 @@ export default function QuizPlayer({ gameDayId, initial, format }: { gameDayId: 
           );
         })}
       </div>
-      <p className="hidden text-center text-xs text-texte-3 lg:block">Astuce : touches {vf ? "V / F" : mode === "relier" ? "1 à 9" : "1 à 4"} pour répondre</p>
+      <Details label="Raccourcis" className="hidden text-center lg:block">Touches {vf ? "V / F" : mode === "relier" ? "1 à 9" : "1 à 4"} pour répondre</Details>
       {err && <p className="text-sm text-ko" role="alert">{err}</p>}
     </div>
   );

@@ -5,6 +5,7 @@ import { MEMORY } from "@/config/constants";
 import { distribuer, meilleur, vontEnsemble, type Carte, type Paire, type Score } from "@/lib/memory";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
+import Details from "@/components/Details";
 import RecompenseSolo from "@/components/RecompenseSolo";
 
 const LIBELLES_QCM = { notion: "Question", definition: "Réponse" } as const;
@@ -108,7 +109,7 @@ export default function MemoryGame({ subjectId, source, initial, n }: { subjectI
               ? <span className="chip border-transparent bg-or-vif text-sur-or"><Icon name="trophy" size={14} />Nouveau record</span>
               : record && <span className="chip border-transparent bg-surface text-texte">Record : <span className="num">{record.coups}</span> coups · <span className="num">{fmt(record.ms)}</span></span>}
           </div>
-          <p className="text-[15px] opacity-90">Parfait : <span className="num">{n}</span> coups. Chaque coup en plus est une carte que tu as dû chercher.</p>
+          <Details inverted>Parfait : <span className="num">{n}</span> coups. Chaque coup en plus est une carte que tu as dû chercher.</Details>
           <div className="flex flex-wrap gap-2">
             <button onClick={rejouer} className="btn-hero w-auto"><Icon name="play" size={16} />Rejouer avec d&apos;autres cartes</button>
           </div>

@@ -15,6 +15,7 @@ import AutoRefresh from "@/components/AutoRefresh";
 import { CONFIG, SOLO, TROPHEES } from "@/config/constants";
 import Icon from "@/components/Icon";
 import CopyButton from "@/components/CopyButton";
+import Details from "@/components/Details";
 
 type Onglet = "defi" | "competitif";
 
@@ -139,7 +140,7 @@ async function Defi({ groupId, userId, matieres }: { groupId: string; userId: st
       <section className="space-y-3" aria-labelledby="t-gen">
         <div className="flex items-baseline justify-between gap-2">
           <h2 id="t-gen" className="eyebrow">Classement général</h2>
-          <span className="text-xs text-texte-3">gemmes, toutes matières</span>
+          <Details>Gemmes cumulées sur toutes les matières.</Details>
         </div>
         <RankTable podium meId={userId} groupId={groupId} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
           detail: `${l.jours} quiz joué${l.jours > 1 ? "s" : ""}`, badge: <GemmesCompteur n={l.points} className="text-base text-accent-fort" /> }))} />
@@ -176,18 +177,18 @@ async function Competitif({ groupId, userId }: { groupId: string; userId: string
             userId: j.userId, pseudo: pseudo.get(j.userId) ?? "?", rang: j.rang ?? classes + 1,
             detail: `${j.gemmes} quiz + ${j.solo} solo${j.manques ? ` · ${j.manques} quiz manqué${j.manques > 1 ? "s" : ""}` : ""}`,
             badge: <><GemmesCompteur n={j.score} className="text-sm text-accent-fort" />{j.gain - j.perte !== 0 && <GainTrophees n={j.gain - j.perte} provisoire />}</> }))} />
-          <p className="text-sm text-texte-3">
+          <Details>
             Le 1er de la semaine (gemmes des quiz du jour + gemmes solo) gagne <span className="num">+{TROPHEES.SEMAINE_GAINS[0]}</span> trophées.
             Chaque quiz du jour manqué et non rattrapé en coûte <span className="num">{TROPHEES.PENALITE_QUIZ_MANQUE}</span>.
             Flashcards, Memory et Arène contre des bots : <span className="num">+{SOLO.GEMMES_PAR_SESSION}</span> gemmes par session, <span className="num">{SOLO.MAX_PAR_JOUR}</span> max. par jour.
-          </p>
+          </Details>
         </section>
 
         <section className="space-y-3" aria-labelledby="t-tr">
           <h2 id="t-tr" className="eyebrow">Classement des trophées</h2>
           <RankTable podium meId={userId} groupId={groupId} lines={tr.lignes.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
             badge: <><LigueBadge ligue={ligueDe(l.fige).ligue} /><TropheesCompteur n={l.trophees} className="text-sm text-or" /></> }))} />
-          <p className="text-sm text-texte-3">La ligue est recalculée à la fin de chaque mois d&apos;après les trophées : on peut monter comme descendre.</p>
+          <Details>La ligue est recalculée à la fin de chaque mois d&apos;après les trophées : on peut monter comme descendre.</Details>
         </section>
       </div>
       <div className="space-y-6">
