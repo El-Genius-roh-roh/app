@@ -93,6 +93,17 @@ export default async function Matiere({ params, searchParams }: { params: Promis
           <Classements subjectId={id} nom={s.nom} groupId={s.group_id} userId={u.id} today={today} saisonParam={saisonParam} />
         </div>
         <aside className="space-y-6">
+          <Link href={`/matieres/${id}/memory`} className="tuile group flex items-center gap-3.5">
+            <span aria-hidden className="grid h-11 w-11 shrink-0 grid-cols-2 gap-1 rounded-xl bg-accent p-2 shadow-[0_3px_0_var(--color-accent-ombre)]">
+              <span className="rounded-[3px] bg-sur-accent/85" /><span className="rounded-full bg-or-vif" />
+              <span className="rounded-full bg-sur-accent/45" /><span className="rounded-[3px] bg-sur-accent/85" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-bold">Memory</span>
+              <span className="block text-sm text-texte-3">Associe chaque question à sa réponse</span>
+            </span>
+            <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
+          </Link>
           {canManage && llmConfigured() && <IaPanel subjectId={id} etat={etatIA} secondes={etatIA?.enCours ? Math.round((Date.now() - etatIA.debut) / 1000) : 0} />}
           {canManage && (
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">

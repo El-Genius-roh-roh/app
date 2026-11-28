@@ -159,3 +159,14 @@
 .tex .katex { font-size: 1.08em; }
 .tex .tex-bloc { display: block; margin: 0.35em 0; text-align: center; }
 .tex .katex-html { white-space: normal; }
+
+/* Memory : carte qui se retourne (la face visible n'existe dans le DOM qu'une fois retournée) */
+@layer components {
+  .mem-carte { perspective: 900px; }
+  .mem-in { @apply relative h-full w-full transition-transform duration-300 ease-out; transform-style: preserve-3d; }
+  .mem-carte[data-up="true"] .mem-in { transform: rotateY(180deg); }
+  .mem-face { @apply absolute inset-0 overflow-hidden rounded-[14px] border-2; backface-visibility: hidden; }
+  .mem-avant { transform: rotateY(180deg); }
+  @keyframes mem-non { 0%, 100% { translate: 0; } 25% { translate: -4px; } 75% { translate: 4px; } }
+  .mem-non { animation: mem-non 0.28s ease-in-out 2; }
+}
