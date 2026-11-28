@@ -14,6 +14,7 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
   const [total, setTotal] = useState(0);
   const [tour, setTour] = useState(0); // change à chaque carte : la carte suivante arrive face question, sans animation de retour
   const [retournee, setRetournee] = useState(false);
+  const [swipe, setSwipe] = useState<"left" | "right" | null>(null);
   const [message, setMessage] = useState("");
   const parId = new Map(source.map((c) => [c.id, c]));
 
@@ -39,12 +40,15 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
 
   const noter = useCallback((savais: boolean) => {
     if (!carte || !session || !retournee) return;
-    const b = classer(boites, carte.id, savais);
-    setBoites(b);
-    try { localStorage.setItem(cle, JSON.stringify(b)); } catch { /* stockage indisponible */ }
-    const s = repondre(session, savais);
-    setSession(s); setRetournee(false); setTour((t) => t + 1);
-    setMessage(s.file.length === 0 ? "Session terminée." : savais ? "Carte suivante." : "Elle reviendra un peu plus tard.");
+    setSwipe(savais ? "right" : "left");
+    setTimeout(() => {
+      const b = classer(boites, carte.id, savais);
+      setBoites(b);
+      try { localStorage.setItem(cle, JSON.stringify(b)); } catch { /* stockage indisponible */ }
+      const s = repondre(session, savais);
+      setSession(s); setRetournee(false); setSwipe(null); setTour((t) => t + 1);
+      setMessage(s.file.length === 0 ? "Session terminée." : savais ? "Carte suivante." : "Elle reviendra un peu plus tard.");
+    }, 300);
   }, [boites, carte, cle, retournee, session]);
 
   // clavier : espace ou entrée retourne, ← à revoir, → je savais
@@ -120,7 +124,7 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
         </div>
       </div>
 
-      <div key={tour} className="mem-carte pop h-72 sm:h-80" data-up={retournee}>
+      <div key={tour} className={`mem-carte pop flash-stack h-72 sm:h-80 ${swipe === "left" ? "flash-swipe-left" : swipe === "right" ? "flash-swipe-right" : ""}`} data-up={retournee}>
         <button type="button" onClick={retourner} disabled={retournee}
           aria-label={retournee ? `Réponse : ${carte.verso}` : `Question : ${carte.recto}. Retourner la carte`}
           className="mem-in block rounded-[18px] text-left">

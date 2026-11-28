@@ -1,6 +1,7 @@
 import { LIGUES } from "@/config/constants";
 import type { Ligue, LigueInfo, Vitrine as VitrineData } from "@/lib/trophees";
 import Icon from "./Icon";
+import TiltCard from "./TiltCard";
 
 const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n);
 const indexDe = (l: Ligue) => Math.max(0, LIGUES.findIndex((x) => x.nom === l.nom));
@@ -114,11 +115,11 @@ function Embleme({ index, fill, stroke }: { index: number; fill: string; stroke:
 }
 
 /** Blason d'une ligue (SVG) : bouclier métallique aux couleurs de la ligue, couronne pour la ligue Maître. */
-export function LigueBlason({ ligue, size = 48, verrouille = false }: { ligue: Ligue; size?: number; verrouille?: boolean }) {
+export function LigueBlason({ ligue, size = 48, verrouille = false, tilt = false }: { ligue: Ligue; size?: number; verrouille?: boolean; tilt?: boolean }) {
   const i = indexDe(ligue);
   const g = `lg-${i}`;
   const maitre = i === LIGUES.length - 1;
-  return (
+  const svg = (
     <svg width={size} height={size * 1.2} viewBox="0 -18 100 134" aria-label={`Ligue ${ligue.nom}`} role="img"
       className={`inline-block shrink-0 drop-shadow-sm ${verrouille ? "opacity-35 grayscale" : ""}`}>
       <defs>
@@ -142,6 +143,7 @@ export function LigueBlason({ ligue, size = 48, verrouille = false }: { ligue: L
       <path d="M50 14l33 10v14c-14-4-46 4-66 14V24z" fill="#fff" opacity=".18" />
     </svg>
   );
+  return tilt ? <TiltCard className="inline-block rounded-2xl">{svg}</TiltCard> : svg;
 }
 
 /** Pastille de ligue pour les classements : petit blason + nom. */
@@ -153,14 +155,17 @@ export function LigueBadge({ ligue }: { ligue: Ligue }) {
   );
 }
 
-/** Grande carte « Ma ligue » : blason, trophées, progression vers la ligue suivante. */
+/** Grande carte « Ma ligue » : blason, trophées, progression vers la ligue suivante. Tilt 3D au survol. */
 export function LigueCard({ info, trophees, serie }: { info: LigueInfo; trophees: number; serie: number }) {
   const { ligue, suivante, progression, manque, index } = info;
   return (
+    <TiltCard>
     <section className="card relative overflow-hidden" style={{ borderColor: `${ligue.clair}55` }}>
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-25" style={{ background: `radial-gradient(60% 100% at 20% 0%, ${ligue.clair}, transparent)` }} />
       <div className="relative flex items-center gap-4">
-        <LigueBlason ligue={ligue} size={72} />
+        <div className="shrink-0" style={{ transform: "translateZ(20px)" }}>
+          <LigueBlason ligue={ligue} size={72} />
+        </div>
         <div className="min-w-0">
           <p className="eyebrow">Ma ligue</p>
           <p className="font-titre text-3xl" style={{ color: `light-dark(${ligue.fonce}, ${ligue.clair})` }}>{ligue.nom}</p>
@@ -186,6 +191,7 @@ export function LigueCard({ info, trophees, serie }: { info: LigueInfo; trophees
         ))}
       </div>
     </section>
+    </TiltCard>
   );
 }
 

@@ -46,7 +46,7 @@ export default async function Classements({ subjectId, nom, groupId, userId, tod
           <h2 className="eyebrow">Classement de la saison{seasons.length > 1 ? ` ${saison}` : ""}</h2>
           <p className="num text-xs text-texte-3">{info.termine ? "Saison terminée" : `Fin le ${jj(info.fin)}`}</p>
         </div>
-        <RankTable meId={userId} groupId={groupId} empty="Personne n'a encore joué cette saison."
+        <RankTable podium meId={userId} groupId={groupId} empty="Personne n'a encore joué cette saison."
           lines={st.classement.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
             badge: <><GemmesCompteur n={l.points} className="text-sm text-accent-fort" /><GainTrophees n={l.trophees} provisoire={!info.termine} /></> }))} />
         <p className="text-sm text-texte-3">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { url } from "@/lib/url";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
+import CopyButton from "@/components/CopyButton";
 
 type P = {
   id: string; name: string; bot: boolean; left: boolean; host: boolean; score: number; streak: number; rank: number; pos: number;
@@ -167,6 +168,7 @@ export default function ArenaRoom({ code }: { code: string }) {
         <section className="hero entree text-center">
           <p className="eyebrow">Code de la partie</p>
           <p className="num mt-2 text-6xl font-semibold tracking-[0.25em]">{v.code}</p>
+          <CopyButton text={v.code} label="Copier le code" className="absolute top-3 right-3 text-sur-accent/70 hover:!bg-sur-accent/15 hover:!text-sur-accent" />
           <p className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
             <span>{v.modeTitre} · <span className="num">{v.nrounds}</span> manches</span>
             <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-0.5 font-semibold text-texte">
@@ -223,12 +225,15 @@ export default function ArenaRoom({ code }: { code: string }) {
           <p className="eyebrow">Fin de la partie</p>
           <h1 className="title mt-1">{me && me.rank === 1 ? "Victoire !" : me ? `${me.rank}e place` : "Podium"}</h1>
         </header>
-        <div className="flex items-end justify-center gap-2.5">
+        <div className="podium-3d">
           {order.map((i) => (
-            <div key={top[i].id} className="pop flex w-28 flex-col items-center gap-1.5">
+            <div key={top[i].id} className="podium-3d-step pop">
               <span className="w-full truncate text-center text-sm font-bold">{top[i].name}</span>
               <span className="num text-sm text-texte-2">{v.mode === "course" ? `case ${top[i].pos}/${v.arrivee}` : `${top[i].score} pts`}</span>
-              <div className={`flex w-full items-start justify-center rounded-t-[14px] pt-2 font-titre text-3xl font-extrabold ${MARCHES[i].h} ${MARCHES[i].c}`}>{i + 1}</div>
+              <div className={`podium-3d-block ${MARCHES[i].h}`}>
+                <div className={`podium-3d-cap ${MARCHES[i].c}`} aria-hidden />
+                <div className={`podium-3d-face font-titre ${MARCHES[i].c}`}>{i + 1}</div>
+              </div>
             </div>
           ))}
         </div>

@@ -14,6 +14,7 @@ import { quizDisponibles } from "@/app/matieres/[id]/QuizCard";
 import AutoRefresh from "@/components/AutoRefresh";
 import { CONFIG } from "@/config/constants";
 import Icon from "@/components/Icon";
+import CopyButton from "@/components/CopyButton";
 
 type Onglet = "defi" | "competitif";
 
@@ -38,6 +39,7 @@ export default async function Groupe({ params, searchParams }: { params: Promise
         </div>
         <div className="chip px-3 py-1.5 text-sm" title="À donner à tes amis pour qu'ils rejoignent le groupe">
           <Icon name="share" size={15} />Code <span className="tracking-[0.18em] text-texte">{g.code_invitation}</span>
+          <CopyButton text={g.code_invitation} label="Copier le code d'invitation" />
         </div>
       </header>
 
@@ -139,7 +141,7 @@ async function Defi({ groupId, userId, matieres }: { groupId: string; userId: st
           <h2 id="t-gen" className="eyebrow">Classement général</h2>
           <span className="text-xs text-texte-3">gemmes, toutes matières</span>
         </div>
-        <RankTable meId={userId} groupId={groupId} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
+        <RankTable podium meId={userId} groupId={groupId} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
           detail: `${l.jours} quiz joué${l.jours > 1 ? "s" : ""}`, badge: <GemmesCompteur n={l.points} className="text-base text-accent-fort" /> }))} />
       </section>
     </div>
@@ -161,7 +163,7 @@ async function Competitif({ groupId, userId }: { groupId: string; userId: string
         <LigueCard info={ligueDe(mesTrophees)} trophees={mesTrophees} serie={maVitrine.serieActuelle} />
         <section className="space-y-3" aria-labelledby="t-tr">
           <h2 id="t-tr" className="eyebrow">Classement des trophées</h2>
-          <RankTable meId={userId} groupId={groupId} lines={tr.lignes.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
+          <RankTable podium meId={userId} groupId={groupId} lines={tr.lignes.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
             badge: <><LigueBadge ligue={ligueDe(l.trophees).ligue} /><TropheesCompteur n={l.trophees} className="text-sm text-or" /></> }))} />
           <p className="text-sm text-texte-3">Les trophées se gagnent à la fin de chaque saison : jours de la saison × joueurs classés derrière soi aux gemmes.</p>
         </section>

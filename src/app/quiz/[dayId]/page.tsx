@@ -64,7 +64,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
             </div>
             {res && (
               <div className="flex items-center gap-3 rounded-[16px] bg-surface p-3 text-texte shadow-[0_4px_0_var(--color-accent-ombre)]">
-                <LigueBlason ligue={ligue.ligue} size={44} />
+                <LigueBlason ligue={ligue.ligue} size={44} tilt />
                 <div>
                   <p className="num flex items-center gap-1.5 text-2xl leading-none font-semibold text-accent-fort" title="Gemmes gagnées">
                     +{res.points} <GemmeIcone size={20} />

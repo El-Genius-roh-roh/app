@@ -170,3 +170,153 @@
   @keyframes mem-non { 0%, 100% { translate: 0; } 25% { translate: -4px; } 75% { translate: 4px; } }
   .mem-non { animation: mem-non 0.28s ease-in-out 2; }
 }
+
+/* ------------------------------------------------------------------ 3D : Dé, plateau, flashcards, tilt, podium */
+@layer components {
+  /* — Dé 3D (cube CSS) -------------------------------------------------- */
+  .de-3d {
+    perspective: 600px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .de-3d-cube {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out;
+  }
+  .de-3d-cube[data-rolling="true"] { animation: de-roll 0.75s cubic-bezier(0.22, 0.6, 0.36, 1) both; }
+  .de-3d-face {
+    position: absolute; inset: 0;
+    display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+    place-items: center;
+    border-radius: 20%; border: 2px solid var(--color-ligne-forte); background: var(--color-surface);
+    backface-visibility: hidden;
+  }
+  .de-3d-face[data-f="1"] { transform: rotateY(0deg)   translateZ(var(--de-tz)); }
+  .de-3d-face[data-f="2"] { transform: rotateY(180deg) translateZ(var(--de-tz)); }
+  .de-3d-face[data-f="3"] { transform: rotateY(-90deg) translateZ(var(--de-tz)); }
+  .de-3d-face[data-f="4"] { transform: rotateY(90deg)  translateZ(var(--de-tz)); }
+  .de-3d-face[data-f="5"] { transform: rotateX(90deg)  translateZ(var(--de-tz)); }
+  .de-3d-face[data-f="6"] { transform: rotateX(-90deg) translateZ(var(--de-tz)); }
+  .de-3d-dot {
+    width: 28%; height: 28%; border-radius: 50%; background: var(--color-texte);
+  }
+
+  /* rotations finales pour afficher la face voulue (légèrement inclinée pour garder le relief 3D) */
+  .de-3d-cube[data-show="idle"] { transform: rotateX(-20deg) rotateY(28deg); }
+  .de-3d-cube[data-show="1"] { transform: rotateX(-8deg) rotateY(10deg) rotateY(0deg); }
+  .de-3d-cube[data-show="2"] { transform: rotateX(-8deg) rotateY(10deg) rotateY(180deg); }
+  .de-3d-cube[data-show="3"] { transform: rotateX(-8deg) rotateY(10deg) rotateY(90deg); }
+  .de-3d-cube[data-show="4"] { transform: rotateX(-8deg) rotateY(10deg) rotateY(-90deg); }
+  .de-3d-cube[data-show="5"] { transform: rotateX(-8deg) rotateY(10deg) rotateX(-90deg); }
+  .de-3d-cube[data-show="6"] { transform: rotateX(-8deg) rotateY(10deg) rotateX(90deg); }
+
+  @keyframes de-roll {
+    0%   { transform: rotateX(0) rotateY(0) rotateZ(0) scale(0.8); }
+    25%  { transform: rotateX(270deg) rotateY(180deg) rotateZ(90deg) scale(1.08); }
+    50%  { transform: rotateX(540deg) rotateY(360deg) rotateZ(180deg) scale(1.02); }
+    70%  { transform: rotateX(680deg) rotateY(500deg) rotateZ(220deg) scale(1); }
+    100% { transform: var(--de-final); }
+  }
+  .de-3d-shadow {
+    width: 60%; height: 10px; border-radius: 50%;
+    background: radial-gradient(ellipse, rgb(0 0 0 / 0.18), transparent 70%);
+    margin: 2px auto 0;
+  }
+
+  /* — Plateau en perspective ----------------------------------------------- */
+  .plateau-3d {
+    perspective: 1100px;
+    padding-top: 4px;
+    padding-bottom: 10px;
+  }
+  .plateau-3d > ol {
+    transform: rotateX(16deg);
+    transform-style: preserve-3d;
+    transition: transform 0.3s ease-out;
+  }
+  .plateau-3d .case-vise {
+    transform: translateZ(10px) scale(1.05);
+    transition: transform 0.3s ease-out;
+    z-index: 10;
+  }
+  .plateau-3d .pion-3d {
+    transform: rotateX(-16deg) translateY(-2px);
+    box-shadow: 0 3px 6px rgb(0 0 0 / 0.28);
+  }
+
+  /* — Flashcards : pile de cartes + swipe --------------------------------- */
+  .flash-stack {
+    position: relative;
+  }
+  .flash-stack::before,
+  .flash-stack::after {
+    content: ""; position: absolute; inset: 0;
+    border-radius: 18px; border: 2px solid var(--color-ligne); background: var(--color-surface);
+    pointer-events: none;
+  }
+  .flash-stack::before { transform: translateY(6px) scale(0.97); opacity: 0.5; z-index: -2; }
+  .flash-stack::after  { transform: translateY(3px) scale(0.985); opacity: 0.75; z-index: -1; }
+
+  .flash-swipe-left  { animation: flash-swipe-l 0.32s ease-in both; }
+  .flash-swipe-right { animation: flash-swipe-r 0.32s ease-in both; }
+  @keyframes flash-swipe-l {
+    0%   { transform: none; opacity: 1; }
+    100% { transform: translateX(-120%) rotate(-12deg); opacity: 0; }
+  }
+  @keyframes flash-swipe-r {
+    0%   { transform: none; opacity: 1; }
+    100% { transform: translateX(120%) rotate(12deg); opacity: 0; }
+  }
+
+  /* — Tilt 3D interactif --------------------------------------------------- */
+  .tilt-3d {
+    perspective: 800px;
+  }
+  .tilt-3d-inner {
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out;
+    position: relative; overflow: hidden;
+    border-radius: var(--radius-carte);
+  }
+  .tilt-3d-shine {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at var(--shine-x, 50%) var(--shine-y, 50%),
+      rgba(255,255,255,0.22) 0%, transparent 60%);
+    opacity: 0; transition: opacity 0.2s;
+    border-radius: inherit; z-index: 1;
+  }
+  .tilt-3d:hover .tilt-3d-shine,
+  .tilt-3d:active .tilt-3d-shine { opacity: 1; }
+
+  /* — Podium 3D ------------------------------------------------------------ */
+  .podium-3d {
+    display: flex; align-items: flex-end; justify-content: center; gap: 8px;
+    perspective: 800px; perspective-origin: 50% 15%;
+    padding-top: 8px;
+  }
+  .podium-3d-step {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    width: 7rem;
+    transform-style: preserve-3d;
+  }
+  .podium-3d-block {
+    position: relative; width: 100%;
+    transform-style: preserve-3d;
+  }
+  .podium-3d-cap {
+    position: absolute; left: 0; right: 0; bottom: 100%; height: 18px;
+    border-radius: 10px 10px 0 0;
+    transform-origin: bottom;
+    transform: rotateX(68deg);
+    filter: brightness(1.14);
+  }
+  .podium-3d-face {
+    width: 100%; height: 100%;
+    display: flex; align-items: flex-start; justify-content: center;
+    padding-top: 8px;
+    border-radius: 4px 4px 10px 10px;
+    border-top: 2px solid rgb(255 255 255 / 0.28);
+    box-shadow: inset 0 -4px 0 rgb(0 0 0 / 0.2), 0 6px 14px rgb(0 0 0 / 0.1);
+    font-weight: 800; font-size: 1.75rem;
+  }
+}

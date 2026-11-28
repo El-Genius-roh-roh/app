@@ -4,6 +4,7 @@ import Link from "next/link";
 import { url } from "@/lib/url";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
+import CopyButton from "@/components/CopyButton";
 
 type J = { id: string; name: string; bot: boolean; left: boolean; pos: number; bonnes: number; tentees: number; host: boolean };
 type Vue = {
@@ -20,17 +21,43 @@ const THEMES = ["#2463df", "#b54303", "#0f6e78", "#8b6706", "#515962", "#9b2f6b"
 const PIONS = ["#0a4ac5", "#943501", "#036a34", "#a7001c", "#573f02", "#515962"];
 const COLS = 5;
 
+/** Dé 3D en CSS – cube avec 6 faces, animation de lancer. */
 function De({ n, size = 56 }: { n: number | null; size?: number }) {
-  const P: Record<number, [number, number][]> = {
-    1: [[2, 2]], 2: [[1, 1], [3, 3]], 3: [[1, 1], [2, 2], [3, 3]], 4: [[1, 1], [3, 1], [1, 3], [3, 3]],
-    5: [[1, 1], [3, 1], [2, 2], [1, 3], [3, 3]], 6: [[1, 1], [3, 1], [1, 2], [3, 2], [1, 3], [3, 3]],
+  const DOTS: Record<number, number[]> = {
+    1: [5], 2: [1, 9], 3: [1, 5, 9], 4: [1, 3, 7, 9], 5: [1, 3, 5, 7, 9], 6: [1, 3, 4, 6, 7, 9],
   };
+  const half = size / 2;
+  // rotation finale selon la face à montrer
+  const FINAL: Record<number, string> = {
+    1: "rotateX(-8deg) rotateY(10deg) rotateY(0deg)",
+    2: "rotateX(-8deg) rotateY(10deg) rotateY(180deg)",
+    3: "rotateX(-8deg) rotateY(10deg) rotateY(90deg)",
+    4: "rotateX(-8deg) rotateY(10deg) rotateY(-90deg)",
+    5: "rotateX(-8deg) rotateY(10deg) rotateX(-90deg)",
+    6: "rotateX(-8deg) rotateY(10deg) rotateX(90deg)",
+  };
+  const [rolling, setRolling] = useState(false);
+  const prevN = useRef<number | null>(null);
+  useEffect(() => {
+    if (n !== null && prevN.current !== n) { setRolling(true); const t = setTimeout(() => setRolling(false), 760); prevN.current = n; return () => clearTimeout(t); }
+    prevN.current = n;
+  }, [n]);
+  const face = n ?? 1;
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" role="img" aria-label={n ? `Dé : ${n}` : "Dé"} className="pop shrink-0">
-      <rect x="1.5" y="1.5" width="37" height="37" rx="9" className="fill-surface stroke-ligne-forte" strokeWidth="2" />
-      {(n ? P[n] : []).map(([x, y], i) => <circle key={i} cx={x * 10} cy={y * 10} r="3.6" className="fill-texte" />)}
-      {!n && <text x="20" y="26" textAnchor="middle" className="fill-texte-3 font-titre" fontSize="16" fontWeight="800">?</text>}
-    </svg>
+    <div className="shrink-0" role="img" aria-label={n ? `Dé : ${n}` : "Dé"}>
+      <div className="de-3d" style={{ width: size, height: size, "--de-tz": `${half}px`, "--de-final": FINAL[face] } as React.CSSProperties}>
+        <div className="de-3d-cube" data-show={rolling ? undefined : (n ?? "idle")} data-rolling={rolling || undefined}>
+          {[1, 2, 3, 4, 5, 6].map((f) => (
+            <div key={f} className="de-3d-face" data-f={f}>
+              {Array.from({ length: 9 }, (_, i) => (
+                <span key={i} className={DOTS[f].includes(i + 1) ? "de-3d-dot" : ""} />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="de-3d-shadow" aria-hidden />
+    </div>
   );
 }
 
@@ -39,6 +66,7 @@ export default function PlateauRoom({ code }: { code: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [gone, setGone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [vue3d, setVue3d] = useState(true);
   const [, setTick] = useState(0);
   const offset = useRef(0);
   const ver = useRef(-1);
@@ -107,6 +135,7 @@ export default function PlateauRoom({ code }: { code: string }) {
         <section className="hero entree text-center">
           <p className="eyebrow">Jeu de plateau · code</p>
           <p className="num mt-2 text-6xl font-semibold tracking-[0.25em]">{v.code}</p>
+          <CopyButton text={v.code} label="Copier le code" className="absolute top-3 right-3 text-sur-accent/70 hover:!bg-sur-accent/15 hover:!text-sur-accent" />
           <p className="mt-3 text-sm opacity-90">À saisir dans « Rejoindre », sur la page Arène.</p>
         </section>
         <div className="card flex items-start gap-3 text-sm text-texte-2">
@@ -148,6 +177,13 @@ export default function PlateauRoom({ code }: { code: string }) {
   }
   const plateau = (
     <section aria-label="Plateau" className="space-y-3">
+      <div className="flex items-center justify-end">
+        <button type="button" onClick={() => setVue3d((x) => !x)} aria-pressed={vue3d}
+          className="chip cursor-pointer transition-colors hover:border-ligne-forte hover:text-texte">
+          {vue3d ? "Vue 3D" : "Vue 2D"}
+        </button>
+      </div>
+      <div className={vue3d ? "plateau-3d" : ""}>
       <ol className="grid grid-cols-5 gap-1.5 sm:gap-2">
         {grille.map((i, k) => {
           if (i === null) return <li key={`v${k}`} aria-hidden />;
@@ -157,7 +193,7 @@ export default function PlateauRoom({ code }: { code: string }) {
           const depart = i === 0, fin = i === v.arrivee;
           return (
             <li key={i} aria-label={`Case ${i}${depart ? ", départ" : `, ${nomTheme(t)}`}${fin ? ", arrivée" : ""}${ici.length ? ` : ${ici.map((j) => j.name).join(", ")}` : ""}`}
-              className={`relative flex aspect-[6/5] flex-col sm:aspect-square justify-between overflow-hidden rounded-[12px] p-1 sm:p-1.5 ${depart ? "border-2 border-ligne-forte bg-surface-2 text-texte" : "text-white"} ${vise ? "z-10 outline-4 outline-offset-2 outline-or-vif" : ""}`}
+              className={`relative flex aspect-[6/5] flex-col sm:aspect-square justify-between overflow-hidden rounded-[12px] p-1 sm:p-1.5 transition-transform duration-300 ${depart ? "border-2 border-ligne-forte bg-surface-2 text-texte" : "text-white"} ${vise ? "case-vise outline-4 outline-offset-2 outline-or-vif" : ""}`}
               style={depart ? undefined : { background: couleurTheme(t), boxShadow: "inset 0 -3px 0 rgb(0 0 0 / 0.22)" }}>
               {fin && <span aria-hidden className="absolute inset-x-0 top-0 h-2 bg-[repeating-conic-gradient(#fff_0_25%,#181c21_0_50%)] bg-[length:8px_8px]" />}
               <span className={`num text-[11px] leading-none font-semibold sm:text-xs ${fin ? "mt-2" : ""}`}>{depart ? "Départ" : i}</span>
@@ -166,7 +202,7 @@ export default function PlateauRoom({ code }: { code: string }) {
                 <span className="absolute right-0.5 bottom-3.5 flex -space-x-1.5 sm:right-1 sm:bottom-5">
                   {ici.map((j) => (
                     <span key={j.id} title={j.name}
-                      className={`flex items-center justify-center rounded-full font-titre font-extrabold text-white ring-2 ring-white ${j.id === v.tour && v.phase !== "final" ? "h-6 w-6 text-[11px] sm:h-8 sm:w-8 sm:text-sm" : "h-5 w-5 text-[9px] sm:h-6 sm:w-6 sm:text-[11px]"}`}
+                      className={`pion-3d flex items-center justify-center rounded-full font-titre font-extrabold text-white ring-2 ring-white ${j.id === v.tour && v.phase !== "final" ? "h-6 w-6 text-[11px] sm:h-8 sm:w-8 sm:text-sm" : "h-5 w-5 text-[9px] sm:h-6 sm:w-6 sm:text-[11px]"}`}
                       style={{ background: pion(j.id) }}>{j.bot ? <Icon name="bot" size={12} /> : j.name[0]?.toUpperCase()}</span>
                   ))}
                 </span>
@@ -175,6 +211,7 @@ export default function PlateauRoom({ code }: { code: string }) {
           );
         })}
       </ol>
+      </div>
       <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-texte-2" aria-label="Thèmes">
         {v.themes.map((t) => <li key={t.id} className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-[4px]" style={{ background: couleurTheme(t.id) }} />{t.nom}</li>)}
       </ul>
