@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { url } from "@/lib/url";
 import Tex from "@/components/Tex";
+import Icon from "@/components/Icon";
 
 type P = {
   id: string; name: string; bot: boolean; left: boolean; host: boolean; score: number; streak: number; rank: number;
@@ -16,8 +17,16 @@ type View = {
   final?: { changes: Record<string, number>; recap: { enonce: string; bonne: string; explication: string; ok: boolean; pts: number }[] };
 };
 
-const COLORS = ["bg-rose-500", "bg-sky-500", "bg-amber-500", "bg-emerald-500", "bg-accent-500", "bg-pink-500"];
-const SHAPES = ["▲", "◆", "●", "■", "★", "⬟"];
+// Réponses : une couleur ET une forme par case (jamais la couleur seule). Nuances 600-700 de scripts/palette.mjs,
+// texte blanc ≥ 4,5:1. Le vert est exclu : il signifie « juste » à la correction.
+const CASES = [
+  { fond: "#c71f2d", ombre: "#830215", forme: "M12 3 22 20H2z" },                                  // rouge, triangle
+  { fond: "#2463df", ombre: "#0037a0", forme: "M12 2 22 12 12 22 2 12z" },                          // bleu, losange
+  { fond: "#8b6706", ombre: "#573f02", forme: "M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18z" },             // or, rond
+  { fond: "#0f6e78", ombre: "#0a4a51", forme: "M4 4h16v16H4z" },                                    // sarcelle, carré
+];
+const JOUEURS = ["#0a4ac5", "#943501", "#036a34", "#a7001c", "#573f02", "#515962"];
+const Forme = ({ d, size = 22 }: { d: string; size?: number }) => <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden><path d={d} fill="currentColor" /></svg>;
 
 export default function ArenaRoom({ code }: { code: string }) {
   const [v, setV] = useState<View | null>(null);
@@ -87,9 +96,14 @@ export default function ArenaRoom({ code }: { code: string }) {
   }
 
   if (gone) return (
-    <Shell><p className="text-red-200">{err ?? "Partie fermée."}</p><Link href="/arene" className="underline">← Retour à l&apos;Arène</Link></Shell>
+    <Shell>
+      <div className="card space-y-3">
+        <p className="font-semibold text-ko" role="alert">{err ?? "Cette partie est terminée ou n'existe plus."}</p>
+        <Link href="/arene" className="btn-white"><Icon name="arrowLeft" size={17} />Retour à l&apos;Arène</Link>
+      </div>
+    </Shell>
   );
-  if (!v) return <Shell><p className="animate-pulse">Connexion à la partie…</p></Shell>;
+  if (!v) return <Shell><p className="flex items-center gap-2 text-texte-2"><span className="h-4 w-4 animate-spin rounded-full border-2 border-accent/25 border-t-accent" aria-hidden />Connexion à la partie…</p></Shell>;
 
   const now = Date.now() + offset.current;
   const meHost = v.host === v.me;
@@ -100,30 +114,43 @@ export default function ArenaRoom({ code }: { code: string }) {
     const humans = v.players.filter((p) => !p.bot).length;
     return (
       <Shell>
-        <div className="text-center">
-          <p className="text-sm uppercase tracking-widest opacity-80">Code de la partie</p>
-          <p className="text-6xl font-bold tracking-[0.3em]">{v.code}</p>
-          <p className="mt-1 text-sm opacity-80">{v.modeTitre} · {v.nrounds} manches · {v.classee ? "partie classée" : "entraînement (non classé)"}</p>
-        </div>
-        <ul className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-          {v.players.map((p, i) => (
-            <li key={p.id} className="flex items-center gap-2 rounded-xl bg-white/15 p-2">
-              <span className={`flex h-8 w-8 items-center justify-center rounded-full font-bold ${COLORS[i % COLORS.length]}`}>{p.name[0]}</span>
-              <span className="truncate">{p.name}{p.host && " (hôte)"}</span>
-            </li>
-          ))}
-        </ul>
+        <section className="hero entree text-center">
+          <p className="eyebrow">Code de la partie</p>
+          <p className="num mt-2 text-6xl font-semibold tracking-[0.25em]">{v.code}</p>
+          <p className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span>{v.modeTitre} · <span className="num">{v.nrounds}</span> manches</span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-surface px-2.5 py-0.5 font-semibold text-texte">
+              <Icon name={v.classee ? "trophy" : "target"} size={14} className={v.classee ? "text-or" : "text-texte-2"} />{v.classee ? "Classée" : "Entraînement"}
+            </span>
+          </p>
+        </section>
+        <section className="space-y-3" aria-labelledby="t-joueurs">
+          <h2 id="t-joueurs" className="h2">Joueurs <span className="num text-texte-3">{v.players.length}</span></h2>
+          <ul className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+            {v.players.map((p, i) => (
+              <li key={p.id} className="card pop flex items-center gap-2.5 p-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-titre font-extrabold text-white" style={{ background: JOUEURS[i % JOUEURS.length] }} aria-hidden>
+                  {p.bot ? <Icon name="bot" size={18} /> : p.name[0]?.toUpperCase()}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-bold">{p.name}</span>
+                  {p.host && <span className="block text-xs font-semibold text-energie">Hôte</span>}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
         {meHost ? (
-          <div className="space-y-2">
-            <button onClick={() => act("bot")} className="w-full rounded-xl bg-white/20 p-3">+ Ajouter un bot</button>
-            <button onClick={() => act("start")} className="w-full rounded-xl bg-emerald-400 p-4 text-lg font-bold text-emerald-950 shadow-lg">
-              Lancer la partie ({v.players.length} joueur{v.players.length > 1 ? "s" : ""})
+          <div className="space-y-3">
+            <button onClick={() => act("start")} className="btn-primary min-h-14 text-lg">
+              <Icon name="play" size={20} />Lancer la partie
             </button>
-            {humans < 2 && <p className="text-center text-xs opacity-80">Partage le code à tes amis pour une partie classée, ou ajoute des bots pour t&apos;entraîner (non classé).</p>}
+            <button onClick={() => act("bot")} className="btn-white"><Icon name="bot" size={18} />Ajouter un bot</button>
+            {humans < 2 && <p className="text-center text-sm text-texte-3">Partage le code à tes amis pour une partie classée. Avec des bots, c&apos;est de l&apos;entraînement.</p>}
           </div>
-        ) : <p className="animate-pulse text-center">En attente du lancement par l&apos;hôte…</p>}
-        <button onClick={() => act("leave").then(() => (location.href = url("/arene")))} className="text-sm underline opacity-80">Quitter</button>
-        {err && <p className="text-center text-sm text-red-200">{err}</p>}
+        ) : <p className="card flex items-center justify-center gap-2 text-texte-2"><span className="h-2.5 w-2.5 animate-pulse rounded-full bg-accent" aria-hidden />En attente du lancement par l&apos;hôte…</p>}
+        <button onClick={() => act("leave").then(() => (location.href = url("/arene")))} className="back mx-auto flex"><Icon name="arrowLeft" size={16} />Quitter la partie</button>
+        {err && <p className="text-center text-sm font-semibold text-ko" role="alert">{err}</p>}
       </Shell>
     );
   }
@@ -133,37 +160,43 @@ export default function ArenaRoom({ code }: { code: string }) {
     const top = v.players.slice(0, 3);
     const order = [1, 0, 2].filter((i) => top[i]);
     const delta = v.final?.changes[v.me];
+    const MARCHES = [{ h: "h-32", c: "bg-or-vif text-sur-or" }, { h: "h-24", c: "bg-ligne-forte text-texte" }, { h: "h-16", c: "bg-[#b0703a] text-white" }];
     return (
       <Shell>
-        <h1 className="text-center text-3xl font-bold">Fin de la partie</h1>
-        <div className="flex items-end justify-center gap-2">
+        <header className="entree text-center">
+          <p className="eyebrow">Fin de la partie</p>
+          <h1 className="title mt-1">{me && me.rank === 1 ? "Victoire !" : me ? `${me.rank}e place` : "Podium"}</h1>
+        </header>
+        <div className="flex items-end justify-center gap-2.5">
           {order.map((i) => (
-            <div key={top[i].id} className="flex w-24 flex-col items-center">
-              <span className="text-2xl font-bold tabular-nums">{i + 1}</span>
-              <span className="w-full truncate text-center text-sm font-semibold">{top[i].name}</span>
-              <div className={`mt-1 w-full rounded-t-lg bg-white/25 text-center font-bold ${["h-28", "h-20", "h-14"][i]} pt-2`}>{top[i].score}</div>
+            <div key={top[i].id} className="pop flex w-28 flex-col items-center gap-1.5">
+              <span className="w-full truncate text-center text-sm font-bold">{top[i].name}</span>
+              <span className="num text-sm text-texte-2">{top[i].score} pts</span>
+              <div className={`flex w-full items-start justify-center rounded-t-[14px] pt-2 font-titre text-3xl font-extrabold ${MARCHES[i].h} ${MARCHES[i].c}`}>{i + 1}</div>
             </div>
           ))}
         </div>
         {delta !== undefined ? (
-          <p className="text-center text-lg">Ta ligue : <b className={delta >= 0 ? "text-emerald-300" : "text-rose-300"}>{delta >= 0 ? "+" : ""}{delta} pts</b></p>
+          <p className="card text-center">Ta cote Arène : <b className={`num ${delta >= 0 ? "text-ok" : "text-ko"}`}>{delta >= 0 ? "+" : "−"}{Math.abs(delta)} pts</b></p>
         ) : !v.classee && (
-          <p className="text-center text-sm opacity-80">Partie d&apos;entraînement : elle ne compte pas pour le classement (il faut au moins 2 joueurs humains).</p>
+          <p className="card flex items-start gap-2 text-sm text-texte-2"><Icon name="target" size={17} className="mt-0.5 shrink-0" />Partie d&apos;entraînement : elle ne compte pas au classement (il faut au moins 2 joueurs humains).</p>
         )}
         <Ranking players={v.players} me={v.me} changes={v.final?.changes} />
         {v.final && v.final.recap.some((r) => !r.ok) && (
-          <section className="space-y-2 rounded-xl bg-white/60 backdrop-blur-md p-3 text-gray-900">
-            <h2 className="font-bold">À revoir</h2>
-            {v.final.recap.filter((r) => !r.ok).map((r, i) => (
-              <div key={i} className="border-t pt-2 text-sm">
-                <p className="whitespace-pre-line font-medium"><Tex>{r.enonce}</Tex></p>
-                <p className="text-emerald-700">✓ <Tex>{r.bonne}</Tex></p>
-                {r.explication && <p className="text-gray-600"><Tex>{r.explication}</Tex></p>}
-              </div>
-            ))}
+          <section className="space-y-3" aria-labelledby="t-revoir">
+            <h2 id="t-revoir" className="h2 flex items-center gap-2"><Icon name="book" className="text-texte-3" />À revoir</h2>
+            <ul className="space-y-2.5">
+              {v.final.recap.filter((r) => !r.ok).map((r, i) => (
+                <li key={i} className="card space-y-2">
+                  <p className="font-medium whitespace-pre-line"><Tex>{r.enonce}</Tex></p>
+                  <p className="flex items-start gap-2 font-semibold text-ok"><Icon name="check" size={16} className="mt-0.5 shrink-0" /><Tex>{r.bonne}</Tex></p>
+                  {r.explication && <p className="text-sm text-texte-2"><Tex>{r.explication}</Tex></p>}
+                </li>
+              ))}
+            </ul>
           </section>
         )}
-        <Link href="/arene" className="block rounded-xl bg-emerald-400 p-3 text-center text-emerald-950">Rejouer / retour à l&apos;Arène</Link>
+        <Link href="/arene" className="btn-primary"><Icon name="swords" size={18} />Rejouer</Link>
       </Shell>
     );
   }
@@ -177,67 +210,82 @@ export default function ArenaRoom({ code }: { code: string }) {
   const chosen = question ? (v.my?.answered ? v.my.choice ?? picked : picked) : (mine?.choice ?? null);
   const nAnswered = v.players.filter((p) => p.answered && !p.left).length;
   const nActive = v.players.filter((p) => !p.left).length;
+  const urgent = question && left < 5000;
 
   return (
     <Shell>
-      <div className="flex items-center justify-between text-sm">
-        <span className="rounded-full bg-white/20 px-3 py-1">Manche {v.idx + 1}/{v.nrounds}</span>
-        <span className="font-mono text-2xl font-bold">{Math.ceil(left / 1000)}</span>
-        <span className="rounded-full bg-white/20 px-3 py-1">{me?.score ?? 0} pts{me && me.streak >= 2 ? ` · série ${me.streak}` : ""}</span>
+      <div className="flex items-center justify-between gap-3">
+        <span className="chip text-sm">Manche {v.idx + 1}/{v.nrounds}</span>
+        <span className={`num flex h-14 w-14 items-center justify-center rounded-full border-[3px] text-2xl font-semibold ${urgent ? "border-ko text-ko" : "border-accent text-texte"}`} aria-label={`${Math.ceil(left / 1000)} secondes`}>
+          {Math.ceil(left / 1000)}
+        </span>
+        <span className="chip text-sm">
+          <span className="num">{me?.score ?? 0}</span> pts
+          {me && me.streak >= 2 && <span className="ml-1 inline-flex items-center gap-0.5 text-energie"><Icon name="flame" size={13} />{me.streak}</span>}
+        </span>
       </div>
-      <div className="h-2 overflow-hidden rounded bg-white/20">
-        <div className={`h-2 ${question ? "bg-emerald-300" : "bg-white/60"}`} style={{ width: `${(left / total) * 100}%`, transition: "width 100ms linear" }} />
+      <div className="h-2.5 overflow-hidden rounded-full bg-ligne">
+        <div className={`h-2.5 rounded-full ${question ? (urgent ? "bg-ko" : "bg-accent") : "bg-ligne-forte"}`} style={{ width: `${(left / total) * 100}%`, transition: "width 100ms linear" }} />
       </div>
-      <h2 className="min-h-20 whitespace-pre-line rounded-2xl bg-white/60 backdrop-blur-md p-4 text-lg font-bold text-gray-900 shadow lg:p-6 lg:text-2xl"><Tex>{r.enonce}</Tex></h2>
+      <h2 key={v.idx} className="entree card min-h-20 font-sans text-xl leading-snug font-bold tracking-normal whitespace-pre-line lg:p-6 lg:text-2xl"><Tex>{r.enonce}</Tex></h2>
 
       <div className={`grid gap-3 ${r.kind === "vf" ? "grid-cols-2" : "grid-cols-1 sm:grid-cols-2"}`}>
         {r.choices.map((c, i) => {
           const isKey = r.key === i;
           const isMine = chosen === i;
-          let cls = r.kind === "vf" ? (i === 0 ? "bg-emerald-500" : "bg-rose-500") : COLORS[i % COLORS.length];
-          if (!question) cls = isKey ? "bg-emerald-500 ring-4 ring-white" : isMine ? "bg-rose-700 opacity-80" : "bg-gray-500 opacity-40";
-          else if (chosen !== null && !isMine) cls += " opacity-40";
+          const k = CASES[i % CASES.length];
+          let style: React.CSSProperties = { background: k.fond, boxShadow: `0 4px 0 ${k.ombre}`, color: "#fff" };
+          let etat = "";
+          if (!question) {
+            if (isKey) { style = {}; etat = "border-[3px] border-ok bg-ok-doux text-ok"; }
+            else if (isMine) { style = {}; etat = "border-[3px] border-ko bg-ko-doux text-ko"; }
+            else { style = {}; etat = "border-2 border-ligne bg-surface text-texte-3 opacity-60"; }
+          } else if (chosen !== null && !isMine) etat = "opacity-35";
+          else if (isMine) etat = "translate-y-[4px] !shadow-none ring-4 ring-texte/25";
           return (
-            <button key={i} disabled={!question || chosen !== null} onClick={() => send(i)}
-              className={`${cls} flex min-h-16 items-center gap-3 rounded-2xl p-4 text-left text-white shadow-lg transition active:scale-95 ${r.kind === "vf" ? "justify-center text-2xl" : ""}`}>
-              {r.kind !== "vf" && <span className="text-xl opacity-80">{SHAPES[i]}</span>}
+            <button key={i} disabled={!question || chosen !== null} onClick={() => send(i)} style={style}
+              className={`flex min-h-18 items-center gap-3 rounded-[18px] p-4 text-left text-lg font-bold transition-[transform,opacity,box-shadow] duration-100 active:translate-y-[4px] active:shadow-none ${r.kind === "vf" ? "justify-center text-2xl" : ""} ${etat}`}>
+              {r.kind !== "vf" && <Forme d={k.forme} />}
               <Tex className="min-w-0 break-words">{c}</Tex>
-              {!question && isKey && <span className="ml-auto">✓</span>}
+              {!question && isKey && <Icon name="check" size={22} className="ml-auto shrink-0" label="Bonne réponse" />}
+              {!question && isMine && !isKey && <Icon name="x" size={22} className="ml-auto shrink-0" label="Ta réponse" />}
             </button>
           );
         })}
       </div>
 
       {question ? (
-        <p className="text-center text-sm opacity-90">
-          {chosen !== null ? "Réponse envoyée ✔ " : "Touche 1-4 ou clique "}· {nAnswered}/{nActive} ont répondu
+        <p className="text-center text-sm text-texte-2">
+          {chosen !== null ? <span className="font-semibold text-accent-fort">Réponse envoyée · </span> : <span className="max-lg:hidden">Touches 1 à 4 · </span>}
+          <span className="num">{nAnswered}/{nActive}</span> ont répondu
         </p>
       ) : (
         <div className="space-y-3">
-          <div className={`rounded-2xl p-3 text-center text-lg font-bold ${mine?.ok ? "bg-emerald-400 text-emerald-950" : "bg-rose-500"}`}>
-            {mine?.ok ? `Bravo ! +${mine.pts}${mine.bonus ? ` (dont +${mine.bonus})` : ""}` : mine?.missed ? "Temps écoulé…" : "Raté !"}
+          <div className={`pop flex items-center justify-center gap-2 rounded-[18px] p-4 text-center text-lg font-extrabold ${mine?.ok ? "bg-ok text-sur-ok" : "bg-ko text-sur-ko"}`} role="status">
+            <Icon name={mine?.ok ? "check" : mine?.missed ? "clock" : "x"} size={22} />
+            {mine?.ok ? <>Bravo ! <span className="num">+{mine.pts}</span>{mine.bonus ? <span className="inline-flex items-center gap-0.5 text-base font-bold opacity-90">(dont <Icon name="flame" size={15} /> +{mine.bonus})</span> : null}</> : mine?.missed ? "Temps écoulé" : "Raté !"}
           </div>
-          {r.explication && <p className="rounded-xl bg-white/15 p-3 text-sm"><Tex>{r.explication}</Tex></p>}
+          {r.explication && <p className="card flex items-start gap-2 text-sm text-texte-2"><Icon name="lightbulb" size={17} className="mt-0.5 shrink-0 text-or" /><span><Tex>{r.explication}</Tex></span></p>}
           <Ranking players={v.players} me={v.me} />
         </div>
       )}
-      {err && <p className="text-center text-sm text-red-200">{err}</p>}
+      {err && <p className="text-center text-sm font-semibold text-ko" role="alert">{err}</p>}
     </Shell>
   );
 }
 
 function Ranking({ players, me, changes }: { players: P[]; me: string; changes?: Record<string, number> }) {
   return (
-    <ol className="space-y-1">
+    <ol className="liste">
       {players.map((p) => (
-        <li key={p.id} className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${p.id === me ? "bg-white/60 backdrop-blur-md text-gray-900 font-bold" : "bg-white/10"} ${p.left ? "opacity-50" : ""}`}>
-          <span className="w-6">{p.rank}</span>
-          <span className="flex-1 truncate">{p.name}{p.left && " (parti)"}</span>
-          {p.round && <span className="text-xs">{p.round.ok ? `+${p.round.pts}` : "✗"}</span>}
+        <li key={p.id} className={`ligne ${p.id === me ? "bg-accent-doux shadow-[inset_4px_0_0_var(--color-accent)]" : ""} ${p.left ? "opacity-50" : ""}`}>
+          <span className={`rang ${p.rank <= 3 ? "text-or" : ""}`}>{p.rank}</span>
+          <span className="min-w-0 flex-1 truncate font-semibold">{p.name}{p.id === me && <span className="ml-1.5 text-xs font-bold text-accent-fort">moi</span>}{p.left && <span className="ml-1 text-xs text-texte-3">(parti)</span>}</span>
+          {p.round && <span className={`num text-xs font-semibold ${p.round.ok ? "text-ok" : "text-ko"}`}>{p.round.ok ? `+${p.round.pts}` : "✗"}</span>}
           {changes && changes[p.id] !== undefined && (
-            <span className={`text-xs ${changes[p.id] >= 0 ? "text-emerald-500" : "text-rose-400"}`}>{changes[p.id] >= 0 ? "▲" : "▼"}{Math.abs(changes[p.id])}</span>
+            <span className={`num text-xs font-semibold ${changes[p.id] >= 0 ? "text-ok" : "text-ko"}`}>{changes[p.id] >= 0 ? "▲" : "▼"}{Math.abs(changes[p.id])}</span>
           )}
-          <span className="w-14 text-right font-mono">{p.score}</span>
+          <span className="num w-14 text-right font-semibold">{p.score}</span>
         </li>
       ))}
     </ol>
@@ -245,9 +293,5 @@ function Ranking({ players, me, changes }: { players: P[]; me: string; changes?:
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-accent-700 via-accent-700 to-accent-700 text-white">
-      <div className="mx-auto max-w-xl space-y-4 p-4 lg:max-w-3xl lg:space-y-6 lg:pt-10">{children}</div>
-    </main>
-  );
+  return <main className="mx-auto max-w-xl space-y-5 px-4 pt-5 pb-16 lg:max-w-3xl lg:space-y-6 lg:pt-10">{children}</main>;
 }

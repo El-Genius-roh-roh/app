@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { url } from "@/lib/url";
+import Icon from "@/components/Icon";
 
 type M = { id: string; titre: string; desc: string };
 
@@ -24,28 +25,35 @@ export default function ArenaCreate({ groupId, modes, dispo }: { groupId: string
     router.push(`/arene/${j.code}`);
   }
 
+  const choix = (actif: boolean) =>
+    `min-h-11 rounded-[12px] border-2 px-2 text-sm font-bold transition-colors ${actif ? "border-accent bg-accent-doux text-accent-fort" : "border-ligne text-texte-2 hover:border-ligne-forte"}`;
+
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-3 gap-2">
-        {modes.map((m) => (
-          <button key={m.id} onClick={() => setMode(m.id)} title={m.desc}
-            className={`rounded-lg border-2 p-2 text-xs ${mode === m.id ? "border-accent-600 bg-accent-50 text-accent-700" : "border-gray-200"}`}>
-            {m.titre}
-          </button>
-        ))}
-      </div>
-      <p className="text-xs text-gray-500">{modes.find((m) => m.id === mode)?.desc}</p>
-      <div className="flex items-center gap-2 text-sm">
-        Manches
-        {[5, 8, 10, 15].map((n) => (
-          <button key={n} onClick={() => setRounds(n)} className={`rounded border px-2 py-1 ${rounds === n ? "bg-accent-600 text-white" : ""}`}>{n}</button>
-        ))}
-      </div>
-      <button onClick={create} disabled={busy} className="w-full rounded-lg bg-accent-600 p-2 text-white disabled:opacity-50">
-        {busy ? "Création…" : "Créer une partie"}
+    <div className="space-y-4">
+      <fieldset className="space-y-2">
+        <legend className="eyebrow mb-2">Mode</legend>
+        <div className="grid grid-cols-3 gap-2">
+          {modes.map((m) => (
+            <button key={m.id} type="button" onClick={() => setMode(m.id)} aria-pressed={mode === m.id} className={choix(mode === m.id)}>{m.titre}</button>
+          ))}
+        </div>
+        <p className="text-sm text-texte-3">{modes.find((m) => m.id === mode)?.desc}</p>
+      </fieldset>
+      <fieldset>
+        <legend className="eyebrow mb-2">Manches</legend>
+        <div className="grid grid-cols-4 gap-2">
+          {[5, 8, 10, 15].map((n) => (
+            <button key={n} type="button" onClick={() => setRounds(n)} aria-pressed={rounds === n} className={`num ${choix(rounds === n)}`}>{n}</button>
+          ))}
+        </div>
+      </fieldset>
+      <button onClick={create} disabled={busy} className="btn-orange">
+        {busy ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-sur-energie/30 border-t-sur-energie" aria-hidden />Création…</> : <><Icon name="plus" size={18} />Créer une partie</>}
       </button>
-      <p className="text-xs text-gray-400">{dispo} question(s) disponible(s) (quiz des jours passés).</p>
-      {err && <p className="text-sm text-red-600">{err}</p>}
+      <p className="text-xs text-texte-3">
+        {dispo === 0 ? "Pas encore de question disponible : l'Arène pioche dans les quiz des jours passés." : <><span className="num">{dispo}</span> question{dispo > 1 ? "s" : ""} disponible{dispo > 1 ? "s" : ""} (quiz des jours passés).</>}
+      </p>
+      {err && <p className="text-sm font-semibold text-ko" role="alert">{err}</p>}
     </div>
   );
 }

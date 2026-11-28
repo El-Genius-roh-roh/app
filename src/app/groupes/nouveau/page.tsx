@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { genCode, joinGroup } from "@/lib/groups";
+import Icon from "@/components/Icon";
 
 async function creer(fd: FormData) {
   "use server";
@@ -17,12 +18,16 @@ async function creer(fd: FormData) {
 export default async function Page() {
   await requireUser();
   return (
-    <main className="page max-w-sm">
-      <Link href="/" className="back">Accueil</Link>
-      <h1 className="title">Nouveau groupe</h1>
+    <main className="page lg:max-w-md">
+      <Link href="/" className="back"><Icon name="arrowLeft" size={16} />Accueil</Link>
+      <header className="entree">
+        <h1 className="title">Nouveau groupe</h1>
+        <p className="mt-2 text-texte-2">Un groupe = tes amis + vos matières. Tu recevras un code à leur partager.</p>
+      </header>
       <form action={creer} className="card space-y-3">
-        <input name="nom" required placeholder="Nom du groupe (ex. Promo 2027)" className="input" />
-        <button className="btn-primary">Créer</button>
+        <label htmlFor="nom" className="block text-sm font-bold">Nom du groupe</label>
+        <input id="nom" name="nom" required maxLength={60} placeholder="ex. Promo 2027" autoComplete="off" className="input" />
+        <button className="btn-primary"><Icon name="plus" size={18} />Créer le groupe</button>
       </form>
     </main>
   );

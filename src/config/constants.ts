@@ -47,9 +47,19 @@ export const LIGUES = [
   { nom: "Argent", min: 100, clair: "#f1f4f9", fonce: "#6b7689", fond: "from-slate-300 to-slate-600" },
   { nom: "Or", min: 250, clair: "#ffe58a", fonce: "#a86b00", fond: "from-yellow-300 to-amber-600" },
   { nom: "Platine", min: 500, clair: "#b5f5ea", fonce: "#127a73", fond: "from-teal-300 to-cyan-700" },
-  { nom: "Diamant", min: 800, clair: "#b9e2ff", fonce: "#2b44b8", fond: "from-sky-400 to-accent-700" },
-  { nom: "Maître", min: 1200, clair: "#f6b8ff", fonce: "#5b1385", fond: "from-accent-500 to-accent-800" },
+  { nom: "Diamant", min: 800, clair: "#b9e2ff", fonce: "#2b44b8", fond: "from-sky-400 to-indigo-700" },
+  { nom: "Maître", min: 1200, clair: "#ffb4b4", fonce: "#8f1d2c", fond: "from-rose-400 to-red-800" },
 ] as const;
+
+// Jeu de plateau : chacun son tour lance le dé et répond à une question du thème (matière) de la case visée
+export const PLATEAU = {
+  CASES: 24, // case 0 = départ, case CASES = arrivée
+  FACES: 6,
+  LANCER_S: 15, // sans lancer dans ce délai, le dé est lancé automatiquement
+  REPONSE_S: 25, // sans réponse : compté faux, le joueur reste sur place
+  RESULTAT_S: 4, // affichage de la correction avant le tour suivant
+  MAX_JOUEURS: 6,
+};
 
 // Mode « Arène » (duels en direct, hors classements quotidiens : docs/04 n'est pas modifié).
 export const ARENA = {

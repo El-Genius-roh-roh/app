@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Tex from "@/components/Tex";
 import ConfirmButton from "@/components/ConfirmButton";
+import Icon from "@/components/Icon";
 import QuestionForm from "./QuestionForm";
 import { supprimerQuestion } from "./actions";
 import type { EditQuestion } from "@/lib/quiz/manual";
@@ -13,22 +14,23 @@ export default function QuestionItem({ n, q, subjectId, dayId, docs, locked }: {
 }) {
   const [edit, setEdit] = useState(false);
   return (
-    <li className="card space-y-2">
-      <div className="flex items-start gap-2">
-        <span className="font-titre text-lg font-bold text-accent-500">{n}.</span>
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex flex-wrap gap-1">
-            <span className="chip bg-accent-100 text-accent-700">{q.type === "qcm" ? "QCM" : "Vrai/Faux"}</span>
-            <span className="chip bg-sky-100 text-sky-700">{q.kind === "new" ? "nouvelle" : "révision"}</span>
-            {q.manuelle && <span className="chip bg-amber-100 text-amber-700">manuelle</span>}
+    <li className="card space-y-3">
+      <div className="flex items-start gap-3">
+        <span className="num flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-sm font-semibold text-texte-2">{n}</span>
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="chip">{q.type === "qcm" ? "QCM" : "Vrai / Faux"}</span>
+            <span className={`chip ${q.kind === "new" ? "border-accent/30 bg-accent-doux text-accent-fort" : ""}`}>{q.kind === "new" ? "Nouvelle" : "Révision"}</span>
+            {q.manuelle && <span className="chip border-or/30 bg-or-doux text-or"><Icon name="pencil" size={11} />Manuelle</span>}
           </div>
           {!edit && (
             <>
               <p className="font-semibold break-words"><Tex>{q.enonce}</Tex></p>
-              <ul className="space-y-0.5 text-sm">
+              <ul className="space-y-1 text-sm">
                 {q.choix.map((c, i) => (
-                  <li key={i} className={i === q.correct_index ? "font-bold text-emerald-600" : "text-slate-600"}>
-                    {i === q.correct_index ? "✓ " : "· "}<Tex>{c}</Tex>
+                  <li key={i} className={`flex items-start gap-1.5 ${i === q.correct_index ? "font-semibold text-ok" : "text-texte-2"}`}>
+                    {i === q.correct_index ? <Icon name="check" size={15} className="mt-0.5 shrink-0" label="Bonne réponse" /> : <span className="w-[15px] shrink-0 text-center" aria-hidden>·</span>}
+                    <Tex>{c}</Tex>
                   </li>
                 ))}
               </ul>
@@ -40,13 +42,15 @@ export default function QuestionItem({ n, q, subjectId, dayId, docs, locked }: {
       {edit && <QuestionForm subjectId={subjectId} dayId={dayId} docs={docs} question={q} onDone={() => setEdit(false)} />}
 
       {!locked && (
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setEdit((e) => !e)} className="btn-ghost py-2 text-sm">{edit ? "Annuler" : "Modifier"}</button>
-          <form action={supprimerQuestion} className="w-full">
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => setEdit((e) => !e)} className="btn-white min-h-11 text-sm">
+            {edit ? "Annuler" : <><Icon name="pencil" size={15} />Modifier</>}
+          </button>
+          <form action={supprimerQuestion}>
             <input type="hidden" name="subject" value={subjectId} />
             <input type="hidden" name="day" value={dayId} />
             <input type="hidden" name="question" value={q.id} />
-            <ConfirmButton message="Supprimer cette question ?" className="btn w-full bg-rose-50 hover:bg-rose-100 py-2 text-sm text-rose-600">Supprimer</ConfirmButton>
+            <ConfirmButton message="Supprimer cette question ? Elle sera retirée du quiz." className="btn-danger min-h-11 text-sm"><Icon name="trash" size={15} />Supprimer</ConfirmButton>
           </form>
         </div>
       )}

@@ -13,8 +13,9 @@ import { exploitsDuJour, ligueDe } from "@/lib/trophees";
 import { GemmeIcone, LigueBlason, TropheesCompteur } from "@/components/Trophees";
 import { CONFIG } from "@/config/constants";
 import { facteurRetard } from "@/lib/scoring";
-import NextButton from "@/components/NextButton";
 import AutoRefresh from "@/components/AutoRefresh";
+import NextButton from "@/components/NextButton";
+import Icon from "@/components/Icon";
 
 export default async function QuizPage({ params }: { params: Promise<{ dayId: string }> }) {
   const { dayId } = await params;
@@ -27,8 +28,8 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
   await closeStaleAttempts();
   const { attempt, items } = await getCorrection(dayId, u.id);
   const finished = attempt && attempt.statut !== "en_cours";
-  const back = <Link href={`/matieres/${gd.subject_id}`} className="back">{gd.nom}</Link>;
-  // suivant : le quiz du jour d'une autre matière du groupe pas encore joué, sinon retour à la matière
+  const back = <Link href={`/matieres/${gd.subject_id}`} className="back"><Icon name="arrowLeft" size={16} />{gd.nom}</Link>;
+  // suivant : un quiz du jour (ou un rattrapage) du groupe pas encore joué, sinon retour à la matière
   const [autre] = await q<{ id: string; nom: string }>(
     `select g.id, s.nom from game_days g join subjects s on s.id=g.subject_id
       where s.group_id=$1 and g.id<>$2 and g.date between $3::date - $5::int and $3::date
@@ -51,30 +52,43 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
       <main className="page lg:max-w-3xl">
         <AutoRefresh every={15000} />
         {back}
-        <section className="hero text-center">
-          <p className="text-sm font-semibold tracking-wide text-white/80 uppercase">{score === items.length ? "Sans faute" : score >= items.length * 0.7 ? "Bien joué" : "Continue comme ça"}</p>
-          <p className="mt-1 text-5xl font-bold">{score}/{items.length}</p>
-          <p className="mt-2 font-semibold text-white/90">{fmtMs(a.duree_ms)}{res ? ` · ${res.rang}${res.rang === 1 ? "er" : "e"} du jour` : ""}</p>
+        <section className="hero entree">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Résultat · jour {gd.jour}</p>
+              <p className="num pop mt-2 text-7xl leading-none font-semibold">{score}<span className="text-3xl opacity-70">/{items.length}</span></p>
+              <p className="num mt-3 flex flex-wrap items-center gap-2 text-sm">
+                <span className="inline-flex items-center gap-1"><Icon name="clock" size={15} />{fmtMs(a.duree_ms)}</span>
+                {res && <span className="rounded-full bg-or-vif px-2.5 py-0.5 font-semibold text-sur-or">{res.rang === 1 ? "1er" : `${res.rang}e`} du jour</span>}
+              </p>
+            </div>
+            {res && (
+              <div className="flex items-center gap-3 rounded-[16px] bg-surface p-3 text-texte shadow-[0_4px_0_var(--color-accent-ombre)]">
+                <LigueBlason ligue={ligue.ligue} size={44} />
+                <div>
+                  <p className="num flex items-center gap-1.5 text-2xl leading-none font-semibold text-accent-fort" title="Gemmes gagnées">
+                    +{res.points} <GemmeIcone size={20} />
+                  </p>
+                  {res.retard > 0 && <p className="mt-1 text-xs text-texte-3">Rattrapage : −<span className="num">{Math.round((1 - facteurRetard(res.retard)) * 100)} %</span> de gemmes</p>}
+                  <p className="mt-1 text-xs text-texte-2">Ligue {ligue.ligue.nom} · <TropheesCompteur n={mesTrophees} className="text-or" /></p>
+                </div>
+              </div>
+            )}
+          </div>
           {ex && (ex.premier || ex.sansFaute || ex.plusRapide) && (
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {ex.premier && <span className="chip bg-white/25 text-sm text-white">1er du jour !</span>}
-              {ex.sansFaute && <span className="chip bg-white/25 text-sm text-white">Sans faute !</span>}
-              {ex.plusRapide && <span className="chip bg-white/25 text-sm text-white">Le plus rapide !</span>}
+            <div className="mt-5 flex flex-wrap gap-2">
+              {ex.premier && <span className="chip border-transparent bg-surface text-or"><Icon name="trophy" size={13} />1er du jour</span>}
+              {ex.sansFaute && <span className="chip border-transparent bg-surface text-ok"><Icon name="target" size={13} />Sans faute</span>}
+              {ex.plusRapide && <span className="chip border-transparent bg-surface text-accent-fort"><Icon name="clock" size={13} />Le plus rapide</span>}
             </div>
           )}
           {res && (
-            <div className="mx-auto mt-4 max-w-sm space-y-2 rounded-2xl bg-white/15 p-4">
-              <div className="flex items-center justify-center gap-3">
-                <LigueBlason ligue={ligue.ligue} size={44} />
-                <div className="text-left">
-                  <p className="flex items-center gap-1.5 text-2xl font-bold tabular-nums">+{res.points} <GemmeIcone size={22} /></p>
-                  {res.retard > 0 && <p className="text-xs text-white/80">Rattrapage : −{Math.round((1 - facteurRetard(res.retard)) * 100)} % de gemmes</p>}
-                  <p className="text-sm text-white/90">Ligue {ligue.ligue.nom} · <TropheesCompteur n={mesTrophees} /></p>
-                </div>
+            <div className="mt-5 space-y-1.5">
+              <div className="h-2.5 overflow-hidden rounded-full bg-accent-ombre/60" role="progressbar" aria-label={`Progression vers la ligue suivante`} aria-valuenow={Math.round(ligue.progression * 100)} aria-valuemin={0} aria-valuemax={100}>
+                <div className="h-2.5 rounded-full bg-or-vif" style={{ width: `${Math.round(ligue.progression * 100)}%` }} />
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-black/20"><div className="h-2 rounded-full bg-white/60 backdrop-blur-md" style={{ width: `${Math.round(ligue.progression * 100)}%` }} /></div>
-              {ligue.suivante && <p className="text-xs font-semibold text-white/85">Encore {ligue.manque} trophées pour la ligue {ligue.suivante.nom}</p>}
-              {!jour?.fige && <p className="text-[11px] text-white/70">Provisoire : les gemmes bougent tant que d&apos;autres joueurs peuvent encore jouer ce quiz. Les trophées se gagnent à la fin de la saison.</p>}
+              {ligue.suivante && <p className="text-xs opacity-90">Encore <span className="num font-semibold">{ligue.manque}</span> trophées pour la ligue {ligue.suivante.nom}</p>}
+              {!jour?.fige && <p className="text-xs opacity-80">Provisoire : les gemmes bougent tant que d&apos;autres joueurs peuvent encore jouer ce quiz. Les trophées se gagnent à la fin de la saison.</p>}
             </div>
           )}
         </section>
@@ -88,7 +102,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
     return (
       <main className="page lg:max-w-3xl">
         {back}
-        <p className="card font-semibold">{retard < 0 ? `Ce quiz ouvrira le ${gd.date}.` : `Quiz non joué : on ne peut rattraper un quiz que pendant ${CONFIG.RATTRAPAGE_JOURS} jours.`}</p>
+        <p className="card text-texte-2">{retard < 0 ? `Ce quiz ouvrira le ${gd.date}.` : `Quiz non joué : on ne peut rattraper un quiz que pendant ${CONFIG.RATTRAPAGE_JOURS} jours.`}</p>
         {retard > 0 && items.length > 0 && <Correction items={items} />}
         {suivant}
       </main>
@@ -99,8 +113,9 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
     <main className="page lg:max-w-3xl">
       {back}
       {retard > 0 && (
-        <p className="card text-sm">
-          <b>Rattrapage du jour {gd.jour}</b> ({retard} jour{retard > 1 ? "s" : ""} de retard) : tu gagneras {Math.round(facteurRetard(retard) * 100)} % des gemmes habituelles.
+        <p className="card flex items-start gap-2.5 border-energie/40 bg-energie-doux text-sm">
+          <Icon name="calendar" size={18} className="mt-0.5 shrink-0 text-energie" />
+          <span><b>Rattrapage du jour {gd.jour}</b> (<span className="num">{retard}</span> jour{retard > 1 ? "s" : ""} de retard) : tu gagneras <span className="num font-semibold">{Math.round(facteurRetard(retard) * 100)} %</span> des gemmes habituelles.</span>
         </p>
       )}
       <QuizPlayer gameDayId={dayId} initial={initial} />

@@ -1,10 +1,11 @@
 import { LIGUES } from "@/config/constants";
 import type { Ligue, LigueInfo, Vitrine as VitrineData } from "@/lib/trophees";
+import Icon from "./Icon";
 
 const fmt = (n: number) => new Intl.NumberFormat("fr-FR").format(n);
 const indexDe = (l: Ligue) => Math.max(0, LIGUES.findIndex((x) => x.nom === l.nom));
 
-/* ------------------------------------------------------------------ icônes trophée et gemme */
+/* ------------------------------------------------------------------ icône trophée */
 
 /** Coupe dorée (SVG), utilisée pour compter les trophées. */
 export function TropheeIcone({ size = 18, className = "" }: { size?: number; className?: string }) {
@@ -12,65 +13,66 @@ export function TropheeIcone({ size = 18, className = "" }: { size?: number; cla
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden className={`inline-block shrink-0 ${className}`}>
       <defs>
         <linearGradient id="tr-or" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#fbe7a1" /><stop offset=".5" stopColor="#f0c14b" /><stop offset="1" stopColor="#c99328" />
+          <stop offset="0" stopColor="#fff1a8" /><stop offset=".45" stopColor="#ffc93c" /><stop offset="1" stopColor="#c27c00" />
         </linearGradient>
       </defs>
-      <path d="M14 10h-8v6c0 8 6 14 14 15M50 10h8v6c0 8-6 14-14 15" fill="none" stroke="#c99328" strokeWidth="4" strokeLinecap="round" />
-      <path d="M14 6h36v12c0 12-8 20-18 20S14 30 14 18z" fill="url(#tr-or)" />
-      <path d="M27 37h10l2 9H25z" fill="url(#tr-or)" />
-      <rect x="18" y="46" width="28" height="10" rx="3" fill="url(#tr-or)" />
+      <path d="M14 10h-8v6c0 8 6 14 14 15M50 10h8v6c0 8-6 14-14 15" fill="none" stroke="#c27c00" strokeWidth="4" strokeLinecap="round" />
+      <path d="M14 6h36v12c0 12-8 20-18 20S14 30 14 18z" fill="url(#tr-or)" stroke="#9a6200" strokeWidth="2" />
+      <path d="M27 37h10l2 9H25z" fill="url(#tr-or)" stroke="#9a6200" strokeWidth="2" />
+      <rect x="18" y="46" width="28" height="10" rx="3" fill="url(#tr-or)" stroke="#9a6200" strokeWidth="2" />
       <path d="M20 10h6v10c0 5 2 8 4 10-6-1-10-6-10-12z" fill="#fff" opacity=".45" />
     </svg>
   );
 }
 
-/** Gemme bleue taillée (SVG), monnaie gagnée à chaque quiz. */
+/** « 🏆 1 240 » avec la coupe dessinée. */
+export function TropheesCompteur({ n, className = "" }: { n: number; className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1 font-num font-bold tabular-nums ${className}`}>
+      <TropheeIcone />{fmt(n)}
+    </span>
+  );
+}
+
+/** Gemme bleue taillée (SVG), monnaie gagnée à chaque quiz du jour. */
 export function GemmeIcone({ size = 16, className = "" }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden className={`inline-block shrink-0 ${className}`}>
       <defs>
         <linearGradient id="gm-a" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#a5d8ff" /><stop offset="1" stopColor="#3b82f6" />
+          <stop offset="0" stopColor="#a0c1fe" /><stop offset="1" stopColor="#2463df" />
         </linearGradient>
       </defs>
-      <path d="M14 22l10-12h16l10 12-18 32z" fill="url(#gm-a)" />
+      <path d="M14 22l10-12h16l10 12-18 32z" fill="url(#gm-a)" stroke="#0a4ac5" strokeWidth="2" strokeLinejoin="round" />
       <path d="M14 22h36M24 10l8 12 8-12M32 22v32" fill="none" stroke="#fff" strokeOpacity=".55" strokeWidth="2" strokeLinejoin="round" />
       <path d="M24 10h8l-8 12h-10z" fill="#fff" opacity=".35" />
     </svg>
   );
 }
 
-/** Nombre de trophées avec la coupe. */
-export function TropheesCompteur({ n, className = "" }: { n: number; className?: string }) {
-  return (
-    <span className={`inline-flex items-center gap-1 font-semibold tabular-nums ${className}`}>
-      <TropheeIcone />{fmt(n)}
-    </span>
-  );
-}
-
 /** Nombre de gemmes avec la gemme. */
 export function GemmesCompteur({ n, className = "", plus = false }: { n: number; className?: string; plus?: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1 font-semibold tabular-nums ${className}`}>
+    <span className={`inline-flex items-center gap-1 font-num font-bold tabular-nums ${className}`}>
       {plus && "+"}{fmt(n)}<GemmeIcone size={14} />
     </span>
   );
 }
 
-/** Pastille « +45 gemmes » (gains d'un quiz), avec la mention du retard s'il y en a. */
+/** Pastille « +45 » gemmes gagnées à un quiz, avec la mention « rattrapé » s'il a été joué en retard. */
 export function GainGemmes({ n, retard = 0 }: { n: number; retard?: number }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-accent-50 px-2 py-0.5 text-xs font-semibold text-accent-700 tabular-nums">
-      +{fmt(n)}<GemmeIcone size={13} />{retard > 0 && <span className="font-normal text-slate-500">· rattrapé</span>}
+    <span className="inline-flex items-center gap-1 rounded-full bg-accent-doux px-2 py-0.5 font-num text-xs font-bold text-accent-fort tabular-nums">
+      +{fmt(n)}<GemmeIcone size={13} />{retard > 0 && <span className="font-sans font-medium text-texte-3">· rattrapé</span>}
     </span>
   );
 }
 
-/** Pastille « +120 trophées » (fin de saison). */
+/** Pastille « +120 » trophées de fin de saison ; grisée tant que la saison n'est pas finie (trophées en jeu). */
 export function GainTrophees({ n, provisoire = false }: { n: number; provisoire?: boolean }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${provisoire ? "bg-slate-100 text-slate-500" : "bg-amber-50 text-amber-700"}`}>
+    <span title={provisoire ? "En jeu : acquis à la fin de la saison" : "Trophées gagnés"}
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-num text-xs font-bold tabular-nums ${provisoire ? "bg-surface-2 text-texte-3" : "bg-or-doux text-or"}`}>
       +{fmt(n)}<TropheeIcone size={13} />
     </span>
   );
@@ -124,7 +126,7 @@ export function LigueBlason({ ligue, size = 48, verrouille = false }: { ligue: L
           <stop offset="0" stopColor={ligue.clair} /><stop offset=".55" stopColor={ligue.clair} stopOpacity=".85" /><stop offset="1" stopColor={ligue.fonce} />
         </linearGradient>
         <linearGradient id={`${g}-i`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={ligue.fonce} /><stop offset="1" stopColor="#140a2e" stopOpacity=".9" />
+          <stop offset="0" stopColor={ligue.fonce} /><stop offset="1" stopColor="#181c21" stopOpacity=".9" />
         </linearGradient>
         <linearGradient id={`${g}-c`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#fff3b0" /><stop offset="1" stopColor="#d99a00" />
@@ -145,7 +147,7 @@ export function LigueBlason({ ligue, size = 48, verrouille = false }: { ligue: L
 /** Pastille de ligue pour les classements : petit blason + nom. */
 export function LigueBadge({ ligue }: { ligue: Ligue }) {
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-bold text-slate-700">
+    <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: `light-dark(${ligue.fonce}, ${ligue.clair})` }}>
       <LigueBlason ligue={ligue} size={18} />{ligue.nom}
     </span>
   );
@@ -155,28 +157,30 @@ export function LigueBadge({ ligue }: { ligue: Ligue }) {
 export function LigueCard({ info, trophees, serie }: { info: LigueInfo; trophees: number; serie: number }) {
   const { ligue, suivante, progression, manque, index } = info;
   return (
-    <section className="card">
-      <div className="flex items-center gap-4">
+    <section className="card relative overflow-hidden" style={{ borderColor: `${ligue.clair}55` }}>
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-25" style={{ background: `radial-gradient(60% 100% at 20% 0%, ${ligue.clair}, transparent)` }} />
+      <div className="relative flex items-center gap-4">
         <LigueBlason ligue={ligue} size={72} />
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Ligue</p>
-          <p className="text-3xl font-bold tracking-tight">{ligue.nom}</p>
-          <TropheesCompteur n={trophees} className="mt-1 text-lg text-slate-700" />
+        <div className="min-w-0">
+          <p className="eyebrow">Ma ligue</p>
+          <p className="font-titre text-3xl" style={{ color: `light-dark(${ligue.fonce}, ${ligue.clair})` }}>{ligue.nom}</p>
+          <p className="mt-1 inline-flex items-center gap-1.5 font-num text-xl font-bold tabular-nums text-or">
+            <TropheeIcone size={20} />{fmt(trophees)}
+          </p>
         </div>
         {serie > 0 && (
-          <div className="shrink-0 text-center">
-            <p className="text-2xl font-bold tabular-nums">{serie}</p>
-            <p className="text-xs text-slate-500">jour{serie > 1 ? "s" : ""} d&apos;affilée</p>
-          </div>
+          <span className="ml-auto inline-flex items-center gap-1 self-start rounded-full bg-energie-doux px-2.5 py-1 font-num text-sm font-bold text-energie" title="Jours joués d'affilée">
+            <Icon name="flame" size={15} />{serie}
+          </span>
         )}
       </div>
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-        <div className="h-2 rounded-full transition-all duration-700" style={{ width: `${Math.round(progression * 100)}%`, background: `linear-gradient(90deg, ${ligue.clair}, ${ligue.fonce})` }} />
+      <div className="relative mt-4 h-2 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progression * 100)} aria-label="Progression vers la ligue suivante">
+        <div className="h-2 rounded-full transition-[width] duration-500" style={{ width: `${Math.round(progression * 100)}%`, background: ligue.clair }} />
       </div>
-      <p className="mt-2 flex flex-wrap items-center gap-1 text-sm text-slate-600">
-        {suivante ? <>Encore <b className="tabular-nums">{fmt(manque)}</b> <TropheeIcone size={14} /> pour la ligue <b>{suivante.nom}</b></> : "Ligue maximale atteinte."}
+      <p className="relative mt-2 flex flex-wrap items-center gap-1 text-sm text-texte-2">
+        {suivante ? <>Encore <b className="num text-texte">{fmt(manque)}</b> <TropheeIcone size={14} /> pour la ligue <b className="text-texte">{suivante.nom}</b></> : "Ligue maximale atteinte !"}
       </p>
-      <div className="mt-3 flex items-end gap-1.5" aria-label={`Ligue ${index + 1} sur ${LIGUES.length}`}>
+      <div className="relative mt-3 flex items-end gap-1.5" aria-label={`Ligue ${index + 1} sur ${LIGUES.length}`}>
         {LIGUES.map((l, i) => (
           <span key={l.nom} title={`${l.nom} · ${fmt(l.min)} trophées`}><LigueBlason ligue={l} size={i === index ? 30 : 22} verrouille={i > index} /></span>
         ))}
@@ -187,16 +191,9 @@ export function LigueCard({ info, trophees, serie }: { info: LigueInfo; trophees
 
 /* ------------------------------------------------------------------ badges */
 
-/** Icône simple (trait) de chaque badge, en attendant de vrais visuels. */
-function BadgeIcone({ id, ok }: { id: string; ok: boolean }) {
-  const p = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  const c = `h-7 w-7 ${ok ? "text-accent-600" : "text-slate-300"}`;
-  if (id === "premier") return <svg viewBox="0 0 24 24" className={c} {...p}><circle cx="12" cy="9" r="6" /><path d="M9 14.5 7.5 22l4.5-2.5 4.5 2.5-1.5-7.5M12 6.5v5M10.8 7.4 12 6.5" /></svg>;
-  if (id === "sans-faute") return <svg viewBox="0 0 24 24" className={c} {...p}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.2" fill="currentColor" /></svg>;
-  if (id === "rapide") return <svg viewBox="0 0 24 24" className={c} {...p}><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2.5M10 2h4M12 2v3" /></svg>;
-  if (id.startsWith("serie")) return <svg viewBox="0 0 24 24" className={c} {...p}><rect x="3.5" y="5" width="17" height="15" rx="3" /><path d="M3.5 10h17M8 3v4M16 3v4M8.5 15l2 2 4-4" /></svg>;
-  return <svg viewBox="0 0 24 24" className={c} {...p}><path d="M5 4.5h10a3 3 0 0 1 3 3V20H8a3 3 0 0 1-3-3z" /><path d="M5 17a3 3 0 0 1 3-3h10M9 8.5h5" /></svg>;
-}
+/** Icône de chaque badge (trait). */
+const BADGE_ICONE = (id: string) =>
+  id === "premier" ? "trophy" : id === "sans-faute" ? "target" : id === "rapide" ? "clock" : id.startsWith("serie") ? "flame" : "book";
 
 /** Badges à débloquer : gagnés en couleur, à débloquer en gris. */
 export function Vitrine({ data, titre = "Mes badges" }: { data: VitrineData; titre?: string }) {
@@ -205,17 +202,18 @@ export function Vitrine({ data, titre = "Mes badges" }: { data: VitrineData; tit
     <section className="card space-y-3">
       <div className="flex items-baseline justify-between">
         <h2 className="h2">{titre}</h2>
-        <span className="muted">{gagnes}/{data.trophees.length} débloqués</span>
+        <span className="num text-sm text-texte-3">{gagnes}/{data.trophees.length}</span>
       </div>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-4">
+      <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4">
         {data.trophees.map((t) => {
           const ok = t.nombre > 0;
           return (
             <li key={t.id} title={t.description}
-              className={`relative flex flex-col items-center gap-1 rounded-2xl p-3 text-center transition ${ok ? "bg-accent-50" : "bg-slate-50"}`}>
-              <BadgeIcone id={t.id} ok={ok} />
-              {ok && t.cumulable && <span className="absolute top-1.5 right-1.5 rounded-full bg-accent-500 px-1.5 text-[11px] font-semibold text-white">×{t.nombre}</span>}
-              <span className={`text-xs leading-tight font-semibold ${ok ? "text-slate-800" : "text-slate-400"}`}>{t.nom}</span>
+              className={`relative flex flex-col items-center rounded-[12px] border-2 p-2.5 text-center ${ok ? "border-or/30 bg-or-doux" : "border-ligne bg-surface-2"}`}>
+              <Icon name={BADGE_ICONE(t.id)} size={24} className={ok ? "text-or" : "text-texte-3 opacity-50"} />
+              {ok && t.cumulable && <span className="absolute top-1 right-1 rounded-full bg-or px-1.5 font-num text-[11px] font-bold text-fond">×{t.nombre}</span>}
+              <span className={`mt-1 text-[11px] leading-tight font-medium ${ok ? "text-texte" : "text-texte-3"}`}>{t.nom}</span>
+              <span className="sr-only">{ok ? "débloqué" : "à débloquer"}</span>
             </li>
           );
         })}
@@ -224,8 +222,13 @@ export function Vitrine({ data, titre = "Mes badges" }: { data: VitrineData; tit
   );
 }
 
-/** Mentions des exploits d'un jour (classement du jour). */
+/** Pastilles des exploits d'un jour (classement du jour). */
 export function Exploits({ premier, sansFaute, plusRapide }: { premier: boolean; sansFaute: boolean; plusRapide: boolean }) {
-  const l = [premier && "1er", sansFaute && "sans faute", plusRapide && "le + rapide"].filter(Boolean) as string[];
-  return <>{l.map((x) => <span key={x} className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{x}</span>)}</>;
+  return (
+    <span className="inline-flex items-center gap-1 text-or">
+      {premier && <span title="1er du jour"><Icon name="trophy" size={15} label="1er du jour" /></span>}
+      {sansFaute && <span title="Sans faute"><Icon name="target" size={15} label="Sans faute" /></span>}
+      {plusRapide && <span title="Le plus rapide"><Icon name="clock" size={15} label="Le plus rapide" /></span>}
+    </span>
+  );
 }

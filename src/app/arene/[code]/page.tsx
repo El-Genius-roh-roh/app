@@ -11,9 +11,11 @@ export default async function Partie({ params }: { params: Promise<{ code: strin
   const r = await joinRoom(u.id, code);
   if (r.status !== 200) {
     return (
-      <main className="mx-auto max-w-md p-6 space-y-3">
-        <p className="text-red-600">{String(r.body.error)}</p>
-        <Link href="/arene" className="text-accent-600">← Retour à l&apos;Arène</Link>
+      <main className="page">
+        <div className="card space-y-3">
+          <p className="font-semibold text-ko" role="alert">{String(r.body.error)}</p>
+          <Link href="/arene" className="btn-white">Retour à l&apos;Arène</Link>
+        </div>
       </main>
     );
   }

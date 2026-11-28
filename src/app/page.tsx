@@ -1,36 +1,147 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import Avatar from "@/components/Avatar";
 import { q } from "@/lib/db";
-import { APP_NAME } from "@/config/constants";
+import { sqlToday } from "@/lib/clock";
+import { CONFIG } from "@/config/constants";
+import Icon from "@/components/Icon";
 import AutoRefresh from "@/components/AutoRefresh";
 
+type Jour = { day_id: string; subject_id: string; matiere: string; groupe: string; jour: number; statut: string | null; erreurs: number | null; rang: number | null };
 
 export default async function Accueil() {
   const u = await requireUser();
-  const groupes = await q<{ id: string; nom: string }>(
-    `select g.id,g.nom from groups g join group_members m on m.group_id=g.id where m.user_id=$1 order by g.created_at`, [u.id]);
+  const groupes = await q<{ id: string; nom: string; membres: number; matieres: number }>(
+    `select g.id, g.nom,
+            (select count(*)::int from group_members x where x.group_id=g.id) as membres,
+            (select count(*)::int from subjects s where s.group_id=g.id) as matieres
+       from groups g join group_members m on m.group_id=g.id where m.user_id=$1 order by g.created_at`, [u.id]);
+  // le quiz du jour de chaque matière de mes groupes, avec mon état (à jouer / en cours / fait)
+  const jours = await q<Jour>(
+    `select gd.id as day_id, s.id as subject_id, s.nom as matiere, g.nom as groupe, gd.jour_dans_saison as jour,
+            a.statut, a.erreurs, r.rang
+       from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
+       join game_days gd on gd.subject_id=s.id and gd.date = ${sqlToday("s.id")}
+       left join attempts a on a.game_day_id=gd.id and a.user_id=$1
+       left join daily_results r on r.game_day_id=gd.id and r.user_id=$1
+      order by (a.statut is not null and a.statut <> 'en_cours'), g.created_at, s.created_at`, [u.id]);
+  const fait = (j: Jour) => !!j.statut && j.statut !== "en_cours";
+  const restants = jours.filter((j) => !fait(j));
+  const prochain = restants[0];
+  const N = CONFIG.QUESTIONS_PAR_JOUR;
+
   return (
     <main className="page">
       <AutoRefresh every={30000} />
-      <header className="flex items-center justify-between">
-        <h1 className="title">{APP_NAME}</h1>
-        <Link href="/profil" className="flex items-center gap-2 rounded-full bg-white py-1 pr-3 pl-1 text-sm font-medium text-slate-700 shadow-sm transition hover:-translate-y-px hover:shadow-md"><Avatar id={u.id} pseudo={u.pseudo ?? "?"} v={u.avatar_v} size={30} />{u.pseudo}</Link>
+      <header className="entree">
+        <p className="eyebrow">Salut {u.pseudo}</p>
+        <h1 className="title mt-1">
+          {jours.length === 0 ? "Prêt à réviser ?" : restants.length === 0 ? "Tout est joué. Bravo !" : restants.length === 1 ? "Un quiz t'attend" : `${restants.length} quiz t'attendent`}
+        </h1>
       </header>
-      <h2 className="h2">Mes groupes</h2>
-      {groupes.length === 0 && <p className="muted">Crée un groupe ou rejoins celui de tes amis.</p>}
-      <ul className="space-y-3 lg:grid lg:grid-cols-3 lg:gap-4 lg:space-y-0">
-        {groupes.map((g) => (
-          <li key={g.id}>
-            <Link href={`/groupes/${g.id}`} className="card-lien flex items-center justify-between py-4 text-lg font-semibold lg:min-h-28 lg:items-end lg:text-xl">
-              {g.nom}<span aria-hidden className="chevron">›</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
-      <div className="grid grid-cols-2 gap-3 lg:flex lg:max-w-md">
-        <Link href="/groupes/nouveau" className="btn-primary">＋ Créer</Link>
-        <Link href="/rejoindre" className="btn-ghost">Rejoindre</Link>
+
+      <div className="space-y-7 lg:grid lg:grid-cols-[1.4fr_1fr] lg:items-start lg:gap-10 lg:space-y-0">
+        <div className="space-y-7">
+          {/* le moment fort : le prochain quiz à jouer */}
+          {prochain && (
+            <section className="hero entree" aria-labelledby="t-prochain">
+              <div aria-hidden className="pointer-events-none absolute -top-10 -right-8 h-40 w-40 rounded-full bg-sur-accent/10" />
+              <div aria-hidden className="pointer-events-none absolute top-5 right-5 h-5 w-5 rounded-full bg-or-vif" />
+              <p className="font-num text-xs font-medium tracking-[0.08em] uppercase opacity-85">Quiz du jour · {prochain.groupe}</p>
+              <h2 id="t-prochain" className="mt-2 max-w-[85%] font-titre text-4xl leading-[1.02] font-extrabold break-words lg:text-5xl">{prochain.matiere}</h2>
+              <p className="mt-2 text-sm opacity-90"><span className="num">{N}</span> questions · jour <span className="num">{prochain.jour}</span> · un seul essai</p>
+              <Link href={`/quiz/${prochain.day_id}`}
+                className="btn-hero mt-6">
+                <Icon name="play" size={20} />{prochain.statut === "en_cours" ? "Reprendre le quiz" : "Jouer maintenant"}
+              </Link>
+            </section>
+          )}
+
+          <section className="space-y-3" aria-labelledby="t-jour">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="t-jour" className="h2">Aujourd&apos;hui</h2>
+              {jours.length > 0 && <span className="num text-sm text-texte-3">{jours.length - restants.length}/{jours.length} joués</span>}
+            </div>
+            {jours.length > 0 && (
+              <div className="flex gap-1.5" aria-hidden>
+                {jours.map((j) => <span key={j.day_id} className={`h-2 flex-1 rounded-full ${fait(j) ? "bg-ok" : "bg-ligne"}`} />)}
+              </div>
+            )}
+            {jours.length === 0 ? (
+              <div className="card space-y-1">
+                <p className="font-semibold">Aucun quiz prévu aujourd&apos;hui</p>
+                <p className="muted">Ajoute une matière dans un de tes groupes : son premier quiz arrive le lendemain.</p>
+              </div>
+            ) : jours.length > 1 && (
+              <ul className="liste">
+                {jours.filter((j) => j !== prochain).map((j) => {
+                  const ok = fait(j);
+                  return (
+                    <li key={j.day_id}>
+                      <Link href={ok ? `/matieres/${j.subject_id}` : `/quiz/${j.day_id}`} className="ligne group min-h-16 transition-colors hover:bg-surface-2">
+                        <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] ${ok ? "bg-ok-doux text-ok" : "bg-accent-doux text-accent-fort"}`}>
+                          <Icon name={ok ? "check" : "play"} size={19} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-bold">{j.matiere}</span>
+                          <span className="block truncate text-sm text-texte-3">{j.groupe} · jour {j.jour}</span>
+                        </span>
+                        {ok ? (
+                          <span className="text-right">
+                            <span className="num block text-lg font-semibold">{N - (j.erreurs ?? 0)}<span className="text-texte-3">/{N}</span></span>
+                            {j.rang && <span className="num block text-xs font-medium text-or">{j.rang === 1 ? "1er" : `${j.rang}e`} du jour</span>}
+                          </span>
+                        ) : (
+                          <span className="text-sm font-bold text-accent-fort">{j.statut === "en_cours" ? "Reprendre" : "Jouer"}</span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        <aside className="space-y-7">
+          <Link href="/arene" className="tuile group flex items-center gap-3.5 border-energie/30 bg-energie-doux">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-energie text-sur-energie"><Icon name="swords" size={22} /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-titre text-lg font-extrabold">Arène</span>
+              <span className="block text-sm text-texte-2">Défie tes amis en direct sur les quiz passés</span>
+            </span>
+            <Icon name="chevronRight" className="text-energie transition-transform group-hover:translate-x-0.5" />
+          </Link>
+
+          <section className="space-y-3" aria-labelledby="t-groupes">
+            <h2 id="t-groupes" className="h2">Mes groupes</h2>
+            {groupes.length === 0 && (
+              <div className="card space-y-1">
+                <p className="font-semibold">Pas encore de groupe</p>
+                <p className="muted">Crée le tien, ou rejoins celui de tes amis avec leur code d&apos;invitation.</p>
+              </div>
+            )}
+            <ul className="space-y-2.5">
+              {groupes.map((g) => (
+                <li key={g.id}>
+                  <Link href={`/groupes/${g.id}`} className="tuile group flex items-center gap-3.5">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-surface-2 font-titre text-lg font-extrabold text-texte-2" aria-hidden>
+                      {g.nom.trim().charAt(0).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-bold">{g.nom}</span>
+                      <span className="num block text-xs text-texte-3">{g.membres} membre{g.membres > 1 ? "s" : ""} · {g.matieres} matière{g.matieres > 1 ? "s" : ""}</span>
+                    </span>
+                    <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Link href="/groupes/nouveau" className="btn-primary"><Icon name="plus" size={18} />Créer</Link>
+              <Link href="/rejoindre" className="btn-white">Rejoindre</Link>
+            </div>
+          </section>
+        </aside>
       </div>
     </main>
   );

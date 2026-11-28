@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { url } from "@/lib/url";
 import Tex from "./Tex";
+import Icon from "./Icon";
 
 type Q = { id: string; type: "qcm" | "vrai_faux"; enonce: string; choices: string[] };
 type State = { attemptId: string; index: number; total: number; question: Q; elapsedMs: number };
@@ -11,11 +12,13 @@ const fmt = (ms: number) => {
   const s = Math.floor(ms / 1000);
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 };
+const LETTRES = ["A", "B", "C", "D", "E", "F"];
 
 export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; initial: State | null }) {
   const router = useRouter();
   const [st, setSt] = useState<State | null>(initial);
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [now, setNow] = useState(initial?.elapsedMs ?? 0);
   const t0 = useRef(0);
@@ -30,6 +33,21 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [st?.attemptId]);
 
+  // touches 1-4 (ou A-D, V/F) pour répondre au clavier
+  useEffect(() => {
+    if (!st) return;
+    const h = (e: KeyboardEvent) => {
+      if (busy || e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      let i = Number(k) - 1;
+      if (Number.isNaN(i) || i < 0) i = "abcdef".indexOf(k);
+      if (st.question.type === "vrai_faux" && (k === "v" || k === "f")) i = k === "v" ? 0 : 1;
+      if (i >= 0 && i < st.question.choices.length) answer(i);
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  });
+
   async function start() {
     setBusy(true); setErr(null);
     const r = await fetch(url(`/api/quiz/${gameDayId}/start`), { method: "POST" });
@@ -41,13 +59,13 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
 
   async function answer(choice: number) {
     if (!st || busy) return;
-    setBusy(true); setErr(null);
+    setBusy(true); setErr(null); setPicked(choice);
     const r = await fetch(url(`/api/quiz/${st.attemptId}/answer`), {
       method: "POST", headers: { "content-type": "application/json" },
       body: JSON.stringify({ questionId: st.question.id, choice }),
     });
     const j = await r.json();
-    setBusy(false);
+    setBusy(false); setPicked(null);
     if (j.done) { router.refresh(); return; }
     if (!r.ok) { setErr(j.error ?? "Erreur"); return; }
     setSt((p) => (p ? { ...p, index: j.index, question: j.question } : p));
@@ -55,37 +73,54 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
 
   if (!st) {
     return (
-      <div className="hero space-y-4 text-center">
-        <p className="text-2xl font-bold">10 questions, un seul essai</p>
+      <div className="hero entree space-y-5">
+        <div className="space-y-3">
+          <p className="eyebrow">Quiz du jour</p>
+          <p className="font-titre text-4xl leading-[1.02] font-extrabold">10 questions,<br />un seul essai</p>
+          <ul className="space-y-2 text-[15px]">
+            <li className="flex items-center gap-2.5"><Icon name="clock" size={18} className="opacity-80" />Le chrono démarre à la première question.</li>
+            <li className="flex items-center gap-2.5"><Icon name="target" size={18} className="opacity-80" />Classement : d&apos;abord les erreurs, puis le temps.</li>
+            <li className="flex items-center gap-2.5"><Icon name="arrowRight" size={18} className="opacity-80" />Pas de retour en arrière.</li>
+          </ul>
+        </div>
         <button onClick={start} disabled={busy} className="btn-hero">
-          {busy ? "Chargement…" : "C'est parti"}
+          {busy ? <><span className="h-5 w-5 animate-spin rounded-full border-[3px] border-accent/25 border-t-accent" aria-hidden />Préparation du quiz…</> : <><Icon name="play" size={20} />C&apos;est parti</>}
         </button>
-        {err && <p className="rounded-2xl bg-white/90 p-2 text-sm font-bold text-rose-600">{err}</p>}
+        {err && <p className="rounded-xl bg-surface px-3 py-2 text-sm font-semibold text-ko" role="alert">{err}</p>}
       </div>
     );
   }
-  const pct = (st.index / st.total) * 100;
-  // lettre de chaque choix (QCM), dans une pastille de couleur douce
-  const PASTILLES = ["bg-accent-100 text-accent-700", "bg-orange-100 text-orange-700", "bg-emerald-100 text-emerald-700", "bg-rose-100 text-rose-700"];
+  const vf = st.question.type === "vrai_faux";
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <span className="chip bg-white text-slate-700 shadow-sm">{st.index + 1} / {st.total}</span>
-        <span className="chip bg-white font-mono text-base text-slate-700 tabular-nums shadow-sm">{fmt(now)}</span>
+      <div className="flex items-center justify-between gap-3">
+        <span className="num text-sm text-texte-2">Question <b className="text-lg text-texte">{st.index + 1}</b>/{st.total}</span>
+        <span className="num inline-flex items-center gap-1.5 rounded-full border-2 border-ligne bg-surface px-3 py-1 text-lg font-semibold" aria-label={`Temps écoulé ${fmt(now)}`}>
+          <Icon name="clock" size={16} className="text-accent" />{fmt(now)}
+        </span>
       </div>
-      <div className="h-1.5 rounded-full bg-black/5"><div className="h-1.5 rounded-full bg-accent-500 transition-all duration-500 ease-(--ease-ios)" style={{ width: `${pct}%` }} /></div>
-      <h2 className="card text-xl leading-snug font-semibold break-words"><Tex>{st.question.enonce}</Tex></h2>
-      <div className={st.question.type === "vrai_faux" ? "grid grid-cols-2 gap-3" : "space-y-3"}>
-        {st.question.choices.map((c, i) => (
-          <button key={i} disabled={busy} onClick={() => answer(i)}
-            className={`flex w-full items-center gap-3 rounded-[18px] bg-white p-4 text-left text-lg shadow-[0_1px_2px_rgb(0_0_0/0.05),0_8px_20px_-14px_rgb(0_0_0/0.3)] transition duration-200 ease-(--ease-ios) hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgb(0_0_0/0.06),0_14px_28px_-16px_rgb(0_0_0/0.35)] active:scale-[0.98] disabled:opacity-60
-              ${st.question.type === "vrai_faux" ? `justify-center py-6 text-xl font-semibold ${i === 0 ? "text-emerald-600" : "text-rose-600"}` : ""}`}>
-            {st.question.type !== "vrai_faux" && <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${PASTILLES[i % 4]}`}>{"ABCD"[i] ?? i + 1}</span>}
-            <Tex className="block min-w-0 break-words">{c}</Tex>
-          </button>
+      {/* progression en segments, un par question */}
+      <div className="flex gap-1" aria-hidden>
+        {Array.from({ length: st.total }, (_, i) => (
+          <span key={i} className={`h-2.5 flex-1 rounded-full transition-colors ${i < st.index ? "bg-accent" : i === st.index ? "bg-accent/40" : "bg-ligne"}`} />
         ))}
       </div>
-      {err && <p className="text-sm font-bold text-rose-600">{err}</p>}
+      <h2 key={st.question.id} className="entree py-2 font-sans text-[22px] leading-snug font-bold tracking-normal break-words lg:text-3xl"><Tex>{st.question.enonce}</Tex></h2>
+      <div className={vf ? "grid grid-cols-2 gap-3" : "grid gap-2.5"}>
+        {st.question.choices.map((c, i) => {
+          const sel = picked === i;
+          return (
+            <button key={st.question.id + i} disabled={busy} onClick={() => answer(i)}
+              className={`group flex min-h-15 w-full items-center gap-3 rounded-[16px] border-2 px-4 py-3 text-left text-base font-medium transition-[border-color,background-color,transform,box-shadow] duration-100 active:translate-y-[3px] active:shadow-none disabled:cursor-wait
+                ${sel ? "translate-y-[3px] border-accent bg-accent-doux shadow-none" : "border-ligne bg-surface shadow-[0_3px_0_var(--color-ligne)] hover:border-accent hover:shadow-[0_3px_0_var(--color-accent)]"} ${vf ? "justify-center py-7 text-xl font-bold" : ""}`}>
+              {!vf && <span className={`num flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border-2 text-sm font-semibold ${sel ? "border-accent bg-accent text-sur-accent" : "border-ligne text-texte-3 group-hover:border-accent group-hover:text-accent-fort"}`}>{LETTRES[i]}</span>}
+              <Tex className="block min-w-0 break-words">{c}</Tex>
+            </button>
+          );
+        })}
+      </div>
+      <p className="hidden text-center text-xs text-texte-3 lg:block">Astuce : touches {vf ? "V / F" : "1 à 4"} pour répondre</p>
+      {err && <p className="text-sm text-ko" role="alert">{err}</p>}
     </div>
   );
 }
