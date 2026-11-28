@@ -43,17 +43,9 @@ if [ -n "$1" ]; then
   ORIGIN="${1#*://}"; ORIGIN="${ORIGIN%%/*}"
   export NEXT_PUBLIC_BASE_PATH=""
   OUVRIR="https://$ORIGIN/"
-  # Adresse publique + mode démo : sans e-mail, n'importe qui pourrait se connecter au compte d'un autre.
-  # On réserve donc l'accès à ceux qui connaissent un code (conservé entre deux lancements).
-  if [ -z "$CODE_ACCES" ]; then
-    CODE_FILE="$HOME/.config/app-code-acces"
-    if [ ! -s "$CODE_FILE" ]; then
-      mkdir -p "$(dirname "$CODE_FILE")"
-      head -c 32 /dev/urandom | base64 | tr -dc 'A-HJ-NP-Z2-9' | head -c 6 > "$CODE_FILE"
-      chmod 600 "$CODE_FILE"
-    fi
-    export CODE_ACCES="$(cat "$CODE_FILE")"
-  fi
+  # Démo publique SANS code d'accès (choix de l'équipe, D52) : on se connecte avec son e-mail seulement.
+  # Attention : sans vrai e-mail, n'importe qui ayant le lien peut se connecter avec l'adresse d'un autre.
+  # Pour remettre un code : CODE_ACCES=MONCODE bash lancer-app.sh <adresse>
 else
   # Accès privé via le proxy de VS Code.
   ORIGIN="${VSCODE_PROXY_URI#*://}"; ORIGIN="${ORIGIN%%/*}"
