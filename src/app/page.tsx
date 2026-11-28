@@ -2,10 +2,13 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { sqlToday } from "@/lib/clock";
-import { CONFIG, FLASHCARDS } from "@/config/constants";
+import { CONFIG, FLASHCARDS, SOLO } from "@/config/constants";
 import { facteurRetard } from "@/lib/scoring";
 import Icon from "@/components/Icon";
 import AutoRefresh from "@/components/AutoRefresh";
+import { Defis, MesSucces, MonClassement } from "@/components/Tableau";
+import { tableauDeBord } from "@/lib/tableau";
+import { sqlNbCartes } from "@/lib/notions-extraction";
 
 type Jour = { day_id: string; subject_id: string; matiere: string; groupe: string; jour: number; statut: string | null; erreurs: number | null; rang: number | null };
 
@@ -40,10 +43,12 @@ export default async function Accueil() {
   // jeux solo : cartes disponibles par matière (questions vérifiées des jours passés, comme les flashcards et le Memory)
   const matieres = await q<{ id: string; nom: string; groupe: string; cartes: number }>(
     `select s.id, s.nom, g.nom as groupe,
-            (select count(distinct lower(btrim(qq.enonce)))::int from questions qq join game_days gd on gd.id=qq.game_day_id
-              where qq.subject_id=s.id and qq.verifiee and gd.date < ${sqlToday("s.id")}) as cartes
+            ${sqlNbCartes("s.id", sqlToday("s.id"))} as cartes
        from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
       order by g.created_at, s.created_at`, [u.id]);
+  // tableau de bord personnel (D38) : défis du jour, mon classement, mes succès
+  const conseillee = [...matieres].filter((m) => m.cartes >= FLASHCARDS.MIN).sort((a, b) => b.cartes - a.cartes)[0]?.id ?? null;
+  const tb = await tableauDeBord(u.id, { faits: jours.length - restants.length, total: jours.length, href: prochain ? `/quiz/${prochain.day_id}` : "/" }, conseillee);
 
   return (
     <main className="page">
@@ -71,6 +76,9 @@ export default async function Accueil() {
               </Link>
             </section>
           )}
+
+          <Defis defis={tb.defis} />
+          <MonClassement classements={tb.classements} />
 
           <section className="space-y-3" aria-labelledby="t-jour">
             <div className="flex items-baseline justify-between gap-3">
@@ -140,14 +148,19 @@ export default async function Accueil() {
             </section>
           )}
 
-          {/* sans chrono ni classement : on apprend à son rythme sur les quiz déjà passés */}
+        </div>
+
+        <aside className="space-y-7">
+          <MesSucces succes={tb.succes} />
+
+          {/* sans chrono : on apprend à son rythme ; chaque session compte pour le score de la semaine (D37) */}
           {matieres.length > 0 && (
             <section className="space-y-3" aria-labelledby="t-solo">
               <div className="space-y-0.5">
                 <h2 id="t-solo" className="h2">Flashcards et jeux solo</h2>
-                <p className="text-sm text-texte-3">Sans chrono ni classement, sur les questions des quiz déjà passés.</p>
+                <p className="text-sm text-texte-3">Sans chrono, sur les notions du cours et les questions des quiz déjà passés. Chaque session terminée rapporte +{SOLO.GEMMES_PAR_SESSION} gemmes pour ta semaine ({SOLO.MAX_PAR_JOUR} max. par jour).</p>
               </div>
-              <ul className="grid gap-2.5 sm:grid-cols-2">
+              <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
                 {matieres.map((m) => {
                   const pret = m.cartes >= FLASHCARDS.MIN;
                   return (
@@ -169,7 +182,7 @@ export default async function Accueil() {
                           </Link>
                         </div>
                       ) : (
-                        <p className="rounded-[12px] bg-surface-2 px-3 py-2.5 text-sm text-texte-3">Disponible après les premiers quiz de la matière.</p>
+                        <p className="rounded-[12px] bg-surface-2 px-3 py-2.5 text-sm text-texte-3">Disponible dès qu’un cours est importé ou après les premiers quiz.</p>
                       )}
                     </li>
                   );
@@ -177,9 +190,6 @@ export default async function Accueil() {
               </ul>
             </section>
           )}
-        </div>
-
-        <aside className="space-y-7">
           <section className="space-y-3" aria-labelledby="t-groupes">
             <h2 id="t-groupes" className="h2">Mes groupes</h2>
             {groupes.length === 0 && (

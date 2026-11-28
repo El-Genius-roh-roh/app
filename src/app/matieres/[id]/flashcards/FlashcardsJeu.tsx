@@ -5,6 +5,7 @@ import { FLASHCARDS } from "@/config/constants";
 import { acquises, classer, nouvelleSession, paquet, repondre, type Boites, type Flashcard, type Session } from "@/lib/flashcards";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
+import RecompenseSolo from "@/components/RecompenseSolo";
 
 /** Flashcards d'une matière : file de cartes, boîtes de Leitner gardées dans le navigateur (aucun classement). */
 export default function FlashcardsJeu({ subjectId, source }: { subjectId: string; source: Flashcard[] }) {
@@ -78,6 +79,7 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
           <p className="font-titre text-3xl font-extrabold lg:text-4xl"><span className="num">{premierCoup}</span> sur <span className="num">{total}</span> du premier coup</p>
           <div className="flex flex-wrap gap-2 text-sm">
             <span className="chip border-transparent bg-surface text-texte"><Icon name="check" size={14} className="text-ok" /><span className="num">{acq}/{source.length}</span> cartes acquises</span>
+            <RecompenseSolo type="flashcards" subjectId={subjectId} />
             {ratees.length > 0 && <span className="chip border-transparent bg-surface text-texte"><Icon name="rotate" size={14} /><span className="num">{ratees.length}</span> revue{ratees.length > 1 ? "s" : ""} plusieurs fois</span>}
           </div>
           <p className="text-[15px] opacity-90">Une carte est acquise quand tu l&apos;as sue trois fois de suite. Les autres repassent en priorité à la prochaine session.</p>
@@ -126,12 +128,12 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
 
       <div key={tour} className={`mem-carte pop flash-stack h-72 sm:h-80 ${swipe === "left" ? "flash-swipe-left" : swipe === "right" ? "flash-swipe-right" : ""}`} data-up={retournee}>
         <button type="button" onClick={retourner} disabled={retournee}
-          aria-label={retournee ? `Réponse : ${carte.verso}` : `Question : ${carte.recto}. Retourner la carte`}
+          aria-label={retournee ? `${carte.type === "notion" ? "Définition" : "Réponse"} : ${carte.verso}` : `${carte.type === "notion" ? "Notion" : "Question"} : ${carte.recto}. Retourner la carte`}
           className="mem-in block rounded-[18px] text-left">
           <span className="mem-face flex flex-col gap-3 rounded-[18px] border-accent bg-surface p-5 shadow-[inset_0_-5px_0_var(--color-accent-doux)]">
             <span className="flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-accent-fort uppercase">
-                <span aria-hidden className="h-2 w-2 rounded-[2px] bg-accent" />{carte.vf ? "Vrai ou faux ?" : "Question"}
+                <span aria-hidden className="h-2 w-2 rounded-[2px] bg-accent" />{carte.type === "notion" ? "Notion du cours" : carte.vf ? "Vrai ou faux ?" : "Question"}
               </span>
               <Icon name="cards" size={18} className="text-texte-3" />
             </span>
@@ -141,7 +143,7 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
           {retournee && (
             <span className="mem-face mem-avant flex flex-col gap-2 overflow-y-auto rounded-[18px] border-energie bg-surface p-5 shadow-[inset_0_-5px_0_var(--color-energie-doux)]">
               <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-energie uppercase">
-                <span aria-hidden className="h-2 w-2 rounded-full bg-energie" />Réponse
+                <span aria-hidden className="h-2 w-2 rounded-full bg-energie" />{carte.type === "notion" ? "Définition" : "Réponse"}
               </span>
               <span className="text-xl leading-snug font-extrabold sm:text-2xl"><Tex>{carte.verso}</Tex></span>
               {carte.explication && <span className="border-t-2 border-ligne pt-2 text-[15px] leading-relaxed text-texte-2"><Tex>{carte.explication}</Tex></span>}

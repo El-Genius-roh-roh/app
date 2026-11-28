@@ -3,6 +3,7 @@ import { q } from "./db";
 import { extractPdf } from "./pdf";
 import { analyzePages } from "./ai";
 import { rebuildSchedule } from "./schedule";
+import { extraireNotionsDocument } from "./notions-extraction";
 
 export const STORAGE = path.join(process.cwd(), "storage");
 
@@ -34,6 +35,8 @@ export async function processDocument(docId: string) {
 
     // les annales servent d'exemples de style dans le prompt envoyé au chat
     if (doc.categorie === "cours") await rebuildSchedule(doc.subject_id);
+    // notions du cours (D39) en tâche de fond : une erreur ici ne doit jamais mettre le document en erreur
+    if (doc.categorie === "cours") void extraireNotionsDocument(doc.id).catch((e) => console.error("notions", (e as Error).message));
   } catch (e) {
     console.error("processDocument", e);
     await q("update documents set statut='erreur', erreur=$2 where id=$1", [docId, String((e as Error).message).slice(0, 300)]);

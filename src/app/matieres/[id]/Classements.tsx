@@ -1,9 +1,9 @@
 import Link from "next/link";
 import RankTable, { fmtMs, RankBadge } from "@/components/RankTable";
-import { defaultSeason, getDayRanking, getSaisonTrophees, getSeasonHistory, getSeasons, pickDay } from "@/lib/ranking";
+import { defaultSeason, getDayRanking, getSaisonClassement, getSeasonHistory, getSeasons, pickDay } from "@/lib/ranking";
 import ScoreChart from "@/components/ScoreChart";
 import { exploitsDuJour } from "@/lib/trophees";
-import { Exploits, GainGemmes, GainTrophees, GemmesCompteur } from "@/components/Trophees";
+import { Exploits, GainGemmes, GemmesCompteur } from "@/components/Trophees";
 import { CONFIG } from "@/config/constants";
 
 export default async function Classements({ subjectId, nom, groupId, userId, today, saisonParam }: { subjectId: string; nom: string; groupId: string; userId: string; today: string; saisonParam?: string }) {
@@ -12,13 +12,13 @@ export default async function Classements({ subjectId, nom, groupId, userId, tod
   const wanted = Number(saisonParam);
   const saison = seasons.some((s) => s.saison === wanted) ? wanted : defaultSeason(seasons, today);
   const info = seasons.find((s) => s.saison === saison)!;
-  // gemmes : classement de la saison ; trophées : gagnés à la fin de la saison selon ce classement (D30)
-  const st = await getSaisonTrophees(subjectId, nom, info);
+  // classement de la saison aux gemmes (les trophées se gagnent à la semaine, dans le groupe : D36)
+  const st = await getSaisonClassement(subjectId, nom, info);
   const dayId = await pickDay(subjectId, saison, today);
   const day = dayId ? await getDayRanking(dayId) : null;
   const history = await getSeasonHistory(subjectId, saison);
   const finies = seasons.filter((s) => s.termine && s.saison !== saison);
-  const podiums = await Promise.all(finies.map((s) => getSaisonTrophees(subjectId, nom, s)));
+  const podiums = await Promise.all(finies.map((s) => getSaisonClassement(subjectId, nom, s)));
   const jj = (d: string) => `${d.slice(8)}/${d.slice(5, 7)}`;
 
   return (
@@ -48,11 +48,8 @@ export default async function Classements({ subjectId, nom, groupId, userId, tod
         </div>
         <RankTable podium meId={userId} groupId={groupId} empty="Personne n'a encore joué cette saison."
           lines={st.classement.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
-            badge: <><GemmesCompteur n={l.points} className="text-sm text-accent-fort" /><GainTrophees n={l.trophees} provisoire={!info.termine} /></> }))} />
-        <p className="text-sm text-texte-3">
-          {info.termine ? "Trophées gagnés" : "Trophées en jeu si la saison s'arrêtait aujourd'hui"} : <span className="num">{st.nbJours}</span> par joueur classé derrière soi
-          (<span className="num">{st.nbJours}</span> jours de saison).
-        </p>
+            badge: <GemmesCompteur n={l.points} className="text-sm text-accent-fort" /> }))} />
+        <p className="text-sm text-texte-3">Les gemmes de chaque quiz comptent aussi dans le score de la semaine du groupe, qui rapporte les trophées.</p>
       </section>
 
       <section className="card space-y-3">
@@ -67,7 +64,7 @@ export default async function Classements({ subjectId, nom, groupId, userId, tod
             <div key={p.saison} className="rounded-xl border border-or/30 bg-or-doux p-3">
               <p className="eyebrow text-or">Saison {p.saison}</p>
               {p.classement.length === 0 ? <p className="muted">Personne n&apos;a joué.</p> : p.classement.slice(0, 3).map((l) => (
-                <p key={l.userId} className="flex min-h-9 items-center gap-2 font-medium"><RankBadge rang={l.rang} /> {l.pseudo} <GainTrophees n={l.trophees} /></p>
+                <p key={l.userId} className="flex min-h-9 items-center gap-2 font-medium"><RankBadge rang={l.rang} /> {l.pseudo} <GemmesCompteur n={l.points} className="text-sm text-accent-fort" /></p>
               ))}
             </div>
           ))}

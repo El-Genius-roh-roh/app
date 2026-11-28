@@ -6,13 +6,13 @@ import { memberRole } from "@/lib/groups";
 import { creerMatiere, renommerGroupe, supprimerGroupe } from "./actions";
 import ConfirmButton from "@/components/ConfirmButton";
 import { getGroupRanking, getGroupResults, getGroupTrophees } from "@/lib/ranking";
-import { ligueDe, vitrine } from "@/lib/trophees";
-import { todayGroupe, todayParis } from "@/lib/clock";
+import { ligueDe, lundiDe, plusJours, vitrine } from "@/lib/trophees";
+import { todayParis } from "@/lib/clock";
 import { GainTrophees, GemmesCompteur, LigueBadge, LigueCard, TropheesCompteur, Vitrine } from "@/components/Trophees";
-import RankTable, { RankBadge } from "@/components/RankTable";
+import RankTable from "@/components/RankTable";
 import { quizDisponibles } from "@/app/matieres/[id]/QuizCard";
 import AutoRefresh from "@/components/AutoRefresh";
-import { CONFIG } from "@/config/constants";
+import { CONFIG, SOLO, TROPHEES } from "@/config/constants";
 import Icon from "@/components/Icon";
 import CopyButton from "@/components/CopyButton";
 
@@ -148,62 +148,69 @@ async function Defi({ groupId, userId, matieres }: { groupId: string; userId: st
   );
 }
 
-/* ------------------------------------------------------------------ onglet « Compétitif » : trophées de fin de saison, ligue, badges */
+/* ------------------------------------------------------------------ onglet « Compétitif » : trophées de la semaine, ligue du mois, badges (D36, D37) */
 
 async function Competitif({ groupId, userId }: { groupId: string; userId: string }) {
   const tr = await getGroupTrophees(groupId);
-  const maVitrine = vitrine(await getGroupResults(groupId), userId, await todayGroupe(groupId));
-  const mesTrophees = tr.lignes.find((l) => l.userId === userId)?.trophees ?? 0;
-  const enCours = tr.saisons.filter((s) => !s.terminee);
-  const finies = tr.saisons.filter((s) => s.terminee).reverse();
+  const maVitrine = vitrine(await getGroupResults(groupId), userId, tr.today);
+  const moi = tr.lignes.find((l) => l.userId === userId);
+  const pseudo = new Map(tr.lignes.map((l) => [l.userId, l.pseudo]));
   const jj = (d: string) => `${d.slice(8)}/${d.slice(5, 7)}`;
+  const lundi = lundiDe(tr.today);
+  const semaine = tr.semaines.find((s) => s.lundi === lundi);
+  const lignesSemaine = tr.lignes.map((l) => semaine?.joueurs.find((j) => j.userId === l.userId)
+    ?? { userId: l.userId, gemmes: 0, solo: 0, score: 0, manques: 0, rang: null, gain: 0, perte: 0, total: l.trophees });
+  const classes = lignesSemaine.filter((j) => j.rang !== null).length;
+  const passees = tr.semaines.filter((s) => s.lundi !== lundi).reverse().slice(0, 8);
   return (
     <div className="space-y-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8 lg:space-y-0">
       <div className="space-y-6">
-        <LigueCard info={ligueDe(mesTrophees)} trophees={mesTrophees} serie={maVitrine.serieActuelle} />
+        <LigueCard etat={moi ?? { fige: 0, courant: 0, projection: 0 }} today={tr.today} serie={maVitrine.serieActuelle} />
+
+        <section className="space-y-3" aria-labelledby="t-sem">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="t-sem" className="eyebrow">Cette semaine · du <span className="num">{jj(lundi)}</span> au <span className="num">{jj(plusJours(lundi, 6))}</span></h2>
+            <span className="text-xs text-texte-3">réglée le <span className="num">{jj(plusJours(lundi, 7 + CONFIG.RATTRAPAGE_JOURS))}</span></span>
+          </div>
+          <RankTable meId={userId} groupId={groupId} lines={lignesSemaine.map((j) => ({
+            userId: j.userId, pseudo: pseudo.get(j.userId) ?? "?", rang: j.rang ?? classes + 1,
+            detail: `${j.gemmes} quiz + ${j.solo} solo${j.manques ? ` · ${j.manques} quiz manqué${j.manques > 1 ? "s" : ""}` : ""}`,
+            badge: <><GemmesCompteur n={j.score} className="text-sm text-accent-fort" />{j.gain - j.perte !== 0 && <GainTrophees n={j.gain - j.perte} provisoire />}</> }))} />
+          <p className="text-sm text-texte-3">
+            Le 1er de la semaine (gemmes des quiz du jour + gemmes solo) gagne <span className="num">+{TROPHEES.SEMAINE_GAINS[0]}</span> trophées.
+            Chaque quiz du jour manqué et non rattrapé en coûte <span className="num">{TROPHEES.PENALITE_QUIZ_MANQUE}</span>.
+            Flashcards, Memory et Arène contre des bots : <span className="num">+{SOLO.GEMMES_PAR_SESSION}</span> gemmes par session, <span className="num">{SOLO.MAX_PAR_JOUR}</span> max. par jour.
+          </p>
+        </section>
+
         <section className="space-y-3" aria-labelledby="t-tr">
           <h2 id="t-tr" className="eyebrow">Classement des trophées</h2>
           <RankTable podium meId={userId} groupId={groupId} lines={tr.lignes.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
-            badge: <><LigueBadge ligue={ligueDe(l.trophees).ligue} /><TropheesCompteur n={l.trophees} className="text-sm text-or" /></> }))} />
-          <p className="text-sm text-texte-3">Les trophées se gagnent à la fin de chaque saison : jours de la saison × joueurs classés derrière soi aux gemmes.</p>
+            badge: <><LigueBadge ligue={ligueDe(l.fige).ligue} /><TropheesCompteur n={l.trophees} className="text-sm text-or" /></> }))} />
+          <p className="text-sm text-texte-3">La ligue est recalculée à la fin de chaque mois d&apos;après les trophées : on peut monter comme descendre.</p>
         </section>
       </div>
       <div className="space-y-6">
         <Vitrine data={maVitrine} />
-        {enCours.length > 0 && (
-          <section className="space-y-3" aria-labelledby="t-enc">
-            <h2 id="t-enc" className="eyebrow">Saisons en cours</h2>
-            <ul className="grid gap-2">
-              {enCours.map((s) => {
-                const moi = s.classement.find((l) => l.userId === userId);
+        {passees.length > 0 && (
+          <section className="card space-y-2" aria-labelledby="t-hist">
+            <h2 id="t-hist" className="h2">Semaines précédentes</h2>
+            <ul className="divide-y divide-ligne">
+              {passees.map((s) => {
+                const j = s.joueurs.find((x) => x.userId === userId);
+                const premiers = s.joueurs.filter((x) => x.rang === 1).map((x) => pseudo.get(x.userId)).join(", ");
+                const delta = j ? j.gain - j.perte : 0;
                 return (
-                  <li key={`${s.subjectId}-${s.saison}`}>
-                    <Link href={`/matieres/${s.subjectId}`} className="tuile group flex items-center gap-3">
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-semibold">{s.matiere}{s.saison > 1 ? ` · saison ${s.saison}` : ""}</span>
-                        <span className="block text-xs text-texte-3">Fin le <span className="num">{jj(s.fin)}</span> · {moi ? <><span className="num">{moi.rang === 1 ? "1er" : `${moi.rang}e`}</span> sur <span className="num">{s.classement.length}</span></> : "pas encore joué"}</span>
-                      </span>
-                      {moi && <GainTrophees n={moi.trophees} provisoire />}
-                      <Icon name="chevronRight" size={16} className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
-                    </Link>
+                  <li key={s.lundi} className="flex min-h-12 items-center gap-3 py-2 text-sm">
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold">Du <span className="num">{jj(s.lundi)}</span> au <span className="num">{jj(s.dimanche)}</span></span>
+                      <span className="block truncate text-xs text-texte-3">{premiers ? <>1er : {premiers}</> : "Personne n'a marqué"}{j?.manques ? ` · ${j.manques} quiz manqué${j.manques > 1 ? "s" : ""}` : ""}</span>
+                    </span>
+                    {delta !== 0 ? <GainTrophees n={delta} provisoire={!s.reglee} /> : <span className="text-xs text-texte-3">±0</span>}
                   </li>
                 );
               })}
             </ul>
-            <p className="text-sm text-texte-3">En gris : trophées que tu gagnerais si la saison s&apos;arrêtait aujourd&apos;hui.</p>
-          </section>
-        )}
-        {finies.length > 0 && (
-          <section className="card space-y-2">
-            <h2 className="h2">Saisons terminées</h2>
-            {finies.map((s) => (
-              <div key={`${s.subjectId}-${s.saison}`} className="rounded-xl border border-or/30 bg-or-doux p-3">
-                <p className="eyebrow text-or">{s.matiere} · saison {s.saison}</p>
-                {s.classement.length === 0 ? <p className="muted">Personne n&apos;a joué.</p> : s.classement.slice(0, 3).map((l) => (
-                  <p key={l.userId} className="flex min-h-9 items-center gap-2 font-medium"><RankBadge rang={l.rang} /> {l.pseudo} <GainTrophees n={l.trophees} /></p>
-                ))}
-              </div>
-            ))}
           </section>
         )}
       </div>

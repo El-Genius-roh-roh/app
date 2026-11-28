@@ -5,21 +5,26 @@ import { MEMORY } from "@/config/constants";
 import { distribuer, meilleur, vontEnsemble, type Carte, type Paire, type Score } from "@/lib/memory";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
+import RecompenseSolo from "@/components/RecompenseSolo";
 
-const LIBELLE = { notion: "Question", definition: "Réponse" } as const;
+const LIBELLES_QCM = { notion: "Question", definition: "Réponse" } as const;
+// paires tirées des notions du cours (D39) : ids préfixés « n: »
+const LIBELLES_NOTIONS = { notion: "Notion", definition: "Définition" } as const;
+type Libelles = typeof LIBELLES_QCM | typeof LIBELLES_NOTIONS;
 const fmt = (ms: number) => { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
 
 /** Repère de type de carte : couleur + forme + texte (jamais la couleur seule). */
-function Type({ face, className = "" }: { face: Carte["face"]; className?: string }) {
+function Type({ face, libelles, className = "" }: { face: Carte["face"]; libelles: Libelles; className?: string }) {
   return (
     <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold tracking-wide uppercase ${face === "notion" ? "text-accent-fort" : "text-energie"} ${className}`}>
       <span aria-hidden className={`h-2 w-2 ${face === "notion" ? "rounded-[2px] bg-accent" : "rounded-full bg-energie"}`} />
-      {LIBELLE[face]}
+      {libelles[face]}
     </span>
   );
 }
 
 export default function MemoryGame({ subjectId, source, initial, n }: { subjectId: string; source: Paire[]; initial: Carte[]; n: number }) {
+  const LIBELLE: Libelles = source[0]?.id.startsWith("n:") ? LIBELLES_NOTIONS : LIBELLES_QCM;
   const [deck, setDeck] = useState(initial);
   const [ouvertes, setOuvertes] = useState<number[]>([]); // indices retournés (0, 1 ou 2)
   const [trouvees, setTrouvees] = useState<Set<string>>(new Set());
@@ -75,7 +80,7 @@ export default function MemoryGame({ subjectId, source, initial, n }: { subjectI
       } else setMessage(`Paire trouvée ! ${t.size} sur ${n}.`);
     } else {
       setRate(true);
-      setMessage(a.face === b.face ? `Deux cartes ${LIBELLE[a.face].toLowerCase()} : il faut une question et une réponse.` : "Ces deux cartes ne vont pas ensemble.");
+      setMessage(a.face === b.face ? `Deux cartes ${LIBELLE[a.face].toLowerCase()} : il faut une ${LIBELLE.notion.toLowerCase()} et une ${LIBELLE.definition.toLowerCase()}.` : "Ces deux cartes ne vont pas ensemble.");
       minuteur.current = setTimeout(refermer, MEMORY.DELAI_ERREUR_MS);
     }
   }
@@ -98,6 +103,7 @@ export default function MemoryGame({ subjectId, source, initial, n }: { subjectI
           <p className="font-titre text-3xl font-extrabold lg:text-4xl">{n} paires en <span className="num">{coups}</span> coups</p>
           <div className="flex flex-wrap gap-2 text-sm">
             <span className="chip border-transparent bg-surface text-texte"><Icon name="clock" size={14} /><span className="num">{fmt(ecoule)}</span></span>
+            <RecompenseSolo type="memory" subjectId={subjectId} />
             {nouveauRecord
               ? <span className="chip border-transparent bg-or-vif text-sur-or"><Icon name="trophy" size={14} />Nouveau record</span>
               : record && <span className="chip border-transparent bg-surface text-texte">Record : <span className="num">{record.coups}</span> coups · <span className="num">{fmt(record.ms)}</span></span>}
@@ -112,7 +118,7 @@ export default function MemoryGame({ subjectId, source, initial, n }: { subjectI
           <ul className="liste">
             {recap.map((p) => (
               <li key={p.id} className="ligne block space-y-1 py-3">
-                <Type face="notion" />
+                <Type face="notion" libelles={LIBELLE} />
                 <p className="font-medium"><Tex>{p.notion}</Tex></p>
                 <p className="flex items-start gap-1.5 font-semibold text-ok"><Icon name="arrowRight" size={15} className="mt-1 shrink-0" /><Tex>{p.definition}</Tex></p>
               </li>
@@ -154,7 +160,7 @@ export default function MemoryGame({ subjectId, source, initial, n }: { subjectI
                     <span aria-hidden className={`mem-face mem-avant flex flex-col gap-1 p-2 sm:p-2.5 ${
                       ok ? "border-ok bg-ok-doux" : ko ? "border-ko bg-ko-doux" : c.face === "notion" ? "border-accent bg-surface" : "border-energie bg-surface"}`}>
                       <span className="flex items-center justify-between">
-                        <Type face={c.face} />
+                        <Type face={c.face} libelles={LIBELLE} />
                         {ok && <Icon name="check" size={14} className="text-ok" />}
                       </span>
                       <span className={`line-clamp-5 text-[12.5px] leading-snug sm:text-[13.5px] ${c.face === "definition" ? "font-semibold" : ""}`}><Tex>{c.texte}</Tex></span>
@@ -174,7 +180,7 @@ export default function MemoryGame({ subjectId, source, initial, n }: { subjectI
             <p className="muted text-sm">{coups === 0 ? "Retourne une carte pour commencer. Le chrono démarre au premier clic." : "Retourne deux cartes : une question et sa réponse."}</p>
           ) : lues.map((c) => (
             <div key={c.cle} className="space-y-0.5">
-              <Type face={c.face} />
+              <Type face={c.face} libelles={LIBELLE} />
               <p className={c.face === "definition" ? "font-semibold" : "font-medium"}><Tex>{c.texte}</Tex></p>
             </div>
           ))}

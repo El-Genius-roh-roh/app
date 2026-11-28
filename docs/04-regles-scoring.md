@@ -101,7 +101,7 @@ Fanny n'a pas joué le jour 11 : 0 point, et elle n'est comptée comme battue pa
 
 Un seul joueur a joué : 0 battu, base 10, multiplicateur 1,00 → 10 points.
 
-## 8. Gemmes, rattrapage, trophées, ligues et badges (D29 à D31, remplacent D24)
+## 8. Gemmes, rattrapage, trophées, ligues et badges (D29, D31, D36, D37 ; remplacent D24 et D30)
 
 ### Gemmes (chaque quiz du jour)
 
@@ -121,31 +121,49 @@ Chaque jour de retard retire **10 %** des gemmes (`PENALITE_RETARD_PAR_JOUR`) : 
 
 Les résultats d'un quiz restent provisoires (d'autres joueurs peuvent encore le rattraper) et ne sont figés qu'une fois le délai de rattrapage passé.
 
-### Trophées (fin de saison, D30)
+### Trophées de la semaine (D36, remplace D30)
 
-À la fin d'une saison d'une matière, d'après le classement de saison aux gemmes (joueurs ayant joué au moins un quiz de la saison) :
+Chaque semaine (du lundi au dimanche, heure de Paris), dans chaque groupe :
 
 ```
-trophées = nombre_de_jours_de_la_saison × joueurs_classés_derrière
+score_semaine = gemmes des quiz du jour de la semaine (toutes matières) + gemmes solo de la semaine (D37)
+trophées      = + SEMAINE_GAINS[rang − 1]  (1er : +20 ; ex æquo : même gain ; score nul : pas classé)
+                − 10 × quiz du jour manqués   (PENALITE_QUIZ_MANQUE)
 ```
 
-Ex. saison de 30 jours, groupe de 5 : 120, 90, 60, 30, 0. Saison de 10 jours, groupe de 3 : 20, 10, 0. Les ex æquo ne se comptent pas. On ne perd jamais de trophées.
+- Un **quiz manqué** est un quiz du jour d'une matière suivie, daté après l'arrivée du joueur dans le groupe, jamais terminé et qui n'est plus rattrapable (plus de 3 jours de retard). Un rattrapage compte dans la semaine d'origine du quiz.
+- Une semaine est **réglée** quand son dernier quiz n'est plus rattrapable : le jeudi suivant (dimanche + 3 jours < aujourd'hui). Avant, son bilan est **provisoire** (affiché en gris).
+- Le total de trophées ne descend **jamais sous 0** ; le plancher s'applique semaine après semaine.
 
-Pendant la saison, l'application affiche (en gris) les trophées « en jeu » : ce que chacun gagnerait si la saison s'arrêtait aujourd'hui.
+Exemple (groupe A, B, C) :
+- Semaine 1 : A 120 gemmes, B 80 + 15 solo, C ne joue pas et manque 2 quiz → A +20 (20), B 0 (0), C −20 → **0** (plancher).
+- Semaine 2 : A 70, B 60 + 15 solo = 75, C 75 → B et C ex æquo 1ers : +20 chacun. Totaux : A 20, B 20, C 20.
 
-### Ligues
+### Gemmes solo (D37)
 
-Le total de trophées dans le groupe (somme des saisons terminées, toutes matières) donne la ligue :
+Chaque session solo **terminée** rapporte **5 gemmes solo** (`SOLO.GEMMES_PAR_SESSION`), plafonnées à **15 par jour** et par groupe (`SOLO.MAX_PAR_JOUR`) :
+- une session de **flashcards** ou un **Memory** terminé dans une matière (au moins 3 cartes / 4 paires disponibles) ;
+- une partie d'**Arène contre des bots** (non classée, au moins une réponse donnée), enregistrée par le serveur.
+
+Elles comptent uniquement dans le score de la semaine : ni dans les classements des quiz du jour, ni dans ceux des saisons, et elles **n'annulent pas** la pénalité d'un quiz manqué. Le jeu de plateau n'en rapporte pas.
+
+### Ligues (D36)
+
+La ligue dépend du total de trophées dans le groupe :
 
 | Ligue | Bronze | Argent | Or | Platine | Diamant | Maître |
 |-------|--------|--------|----|---------|---------|--------|
 | À partir de (trophées) | 0 | 100 | 250 | 500 | 800 | 1 200 |
 
+Elle n'est recalculée **qu'à la fin de chaque mois** : la ligue du mois en cours est celle des trophées à la fin du mois précédent. On peut **monter comme descendre**. Une semaine compte pour le mois de son dimanche. L'écran indique ce qui se passera à la fin du mois (« tu montes en Or », « tu restes », « tu descends en Bronze »).
+
+Exemple : 5 semaines gagnées jusqu'au 25 octobre (100 trophées) → **Argent** pour tout novembre, même après 2 quiz manqués début novembre (80). Au 1er décembre, 80 trophées → **Bronze**.
+
 ### Écrans (D31)
 
 Page d'un groupe, deux onglets :
 - **Défi du jour** : matières (quiz du jour fait ou à faire, quiz à rattraper) et **classement général** aux gemmes, en grand.
-- **Compétitif** : ma ligue, classement des trophées, badges, saisons en cours (trophées en jeu) et saisons terminées.
+- **Compétitif** : ma ligue (et le verdict de fin de mois), la semaine en cours (score, gain ou perte provisoire), classement des trophées, badges, semaines précédentes.
 
 ### Badges
 

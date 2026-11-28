@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { acquises, BOITE_MAX, cartes, classer, nouvelleSession, paquet, repondre, type FlashSource } from "./flashcards";
+import { acquises, BOITE_MAX, cartes, cartesNotions, classer, nouvelleSession, paquet, repondre, type FlashSource } from "./flashcards";
 
 const q = (id: string, enonce: string, choix: string[], correct_index: number, type = "qcm"): FlashSource =>
   ({ id, type, enonce, choix, correct_index, explication: `expl ${id}` });
@@ -8,8 +8,8 @@ describe("flashcards", () => {
   it("transforme QCM et vrai/faux en cartes recto/verso", () => {
     const c = cartes([q("a", "Capitale ?", ["Lyon", "Paris"], 1), q("b", "La Terre est ronde.", ["Vrai", "Faux"], 0, "vrai_faux")]);
     expect(c).toEqual([
-      { id: "a", recto: "Capitale ?", verso: "Paris", explication: "expl a", vf: false },
-      { id: "b", recto: "La Terre est ronde.", verso: "Vrai", explication: "expl b", vf: true },
+      { id: "a", recto: "Capitale ?", verso: "Paris", explication: "expl a", vf: false, type: "question" },
+      { id: "b", recto: "La Terre est ronde.", verso: "Vrai", explication: "expl b", vf: true, type: "question" },
     ]);
   });
 
@@ -44,6 +44,11 @@ describe("flashcards", () => {
     s = repondre(s, true);
     expect(s).toEqual({ file: [], sues: ["b", "a"], ratees: ["a"] });
     expect(repondre(s, true)).toBe(s);
+  });
+
+  it("notions du cours : concept au recto, définition au verso, ids préfixés", () => {
+    expect(cartesNotions([{ id: "1", terme: "Mitose", definition: "Division en deux cellules filles." }, { id: "2", terme: "mitose", definition: "doublon" }]))
+      .toEqual([{ id: "n:1", recto: "Mitose", verso: "Division en deux cellules filles.", explication: "", vf: false, type: "notion" }]);
   });
 
   it("compte les cartes acquises", () => {
