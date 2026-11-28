@@ -30,3 +30,8 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q23 | Plafond des gemmes solo (D37) ? | 5 par session, 15 par jour et par groupe (`SOLO`). Plafond appliqué au calcul : toutes les sessions sont gardées |
 | Q24 | Quelles activités solo comptent ? | Flashcards, Memory, Arène contre des bots (au moins une réponse). Pas le jeu de plateau (multijoueur, souvent avec des bots) |
 | Q19 | (obsolète depuis D36) | Les trophées ne dépendent plus des saisons ; Q19 et Q20 ne s’appliquent plus |
+| Q25 | Notions : IA ou détection simple ? | L’IA si `OPENAI_API_KEY` / `OPENAI_BASE_URL` sont définis, sinon (ou si elle échoue ou ne trouve rien) la détection simple. Toujours relisibles dans le glossaire |
+| Q26 | Comment éviter les définitions inventées par l’IA ? | On ne garde une notion que si son terme apparaît (sans accents ni casse) dans le texte de la page citée, avec une définition de 12 à 220 caractères différente du terme |
+| Q27 | Une nouvelle extraction écrase-t-elle les corrections ? | Non : elle ne remplace que les notions « ia » / « auto » du document ; les notions écrites ou corrigées à la main restent |
+| Q28 | Les notions dévoilent-elles le quiz du jour ? | Non : ce sont les définitions du cours, que les joueurs ont déjà (D13 : on sait à l’avance sur quelles diapos porte un jour). Seules les questions restent limitées aux jours passés |
+| Q29 | Memory : notions et questions mélangées ? | Non, une source par partie (notions s’il y en a au moins 4 paires, sinon les QCM) pour que les paires restent du même genre ; les flashcards, elles, mélangent les deux |

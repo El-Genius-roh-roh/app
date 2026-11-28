@@ -106,6 +106,17 @@ export const SUCCES = {
   MIN_QUIZ_TITRE: 3, // quiz joués pour prétendre au titre « l'éclair de la bande »
 };
 
+// Notions du cours (D39) : paires « concept ↔ définition » tirées des pages de cours (IA, sinon détection simple)
+export const NOTIONS = {
+  TERME_MAX: 60,
+  DEFINITION_MIN: 12,
+  DEFINITION_MAX: 220,
+  DEFINITION_IA: 140, // longueur demandée à l'IA
+  PAGES_PAR_APPEL: 8, // pages envoyées à l'IA par appel
+  PAGE_MAX_CARACTERES: 1500,
+  MEMORY_DEFINITION_MAX: 140, // au-delà, la carte du Memory est illisible sur téléphone
+};
+
 // Flashcards : recto = l'énoncé, verso = la bonne réponse et l'explication (questions vérifiées des jours passés)
 export const FLASHCARDS = {
   PAQUET: 12, // cartes par session ; les moins sues passent en premier

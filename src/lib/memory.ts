@@ -27,6 +27,11 @@ export function paires(pool: QuestionSource[], max = { notion: Infinity, definit
   return out;
 }
 
+/** Notions du cours (D39) → paires « notion ↔ définition », ids préfixés « n: ». Mêmes règles de longueur et d’unicité. */
+export function pairesNotions(notions: { id: string; terme: string; definition: string }[], max = { notion: Infinity, definition: Infinity }): Paire[] {
+  return paires(notions.map((x) => ({ id: `n:${x.id}`, type: "qcm", enonce: x.terme, choix: [x.definition], correct_index: 0 })), max);
+}
+
 function melange<T>(arr: T[], rand: () => number): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }

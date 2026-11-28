@@ -5,7 +5,7 @@ import { q } from "@/lib/db";
 import { getSubjectFor } from "@/lib/subjects";
 import { sqlToday } from "@/lib/clock";
 import { FLASHCARDS } from "@/config/constants";
-import { cartes, type FlashSource } from "@/lib/flashcards";
+import { cartes, cartesNotions, type FlashSource } from "@/lib/flashcards";
 import Icon from "@/components/Icon";
 import FlashcardsJeu from "./FlashcardsJeu";
 
@@ -23,7 +23,9 @@ export default async function Flashcards({ params }: { params: Promise<{ id: str
        from questions qq join game_days g on g.id=qq.game_day_id
       where qq.subject_id=$1 and qq.verifiee and g.date < ${sqlToday("g.subject_id")}
       order by g.date desc, qq.id`, [id]);
-  const source = cartes(pool);
+  // notions du cours d’abord (D39), puis les questions des quiz passés
+  const notions = await q<{ id: string; terme: string; definition: string }>("select id, terme, definition from notions where subject_id=$1 order by page nulls last, created_at", [id]);
+  const source = [...cartesNotions(notions), ...cartes(pool)];
 
   return (
     <main className="page">
@@ -36,7 +38,7 @@ export default async function Flashcards({ params }: { params: Promise<{ id: str
       {source.length < FLASHCARDS.MIN ? (
         <div className="card space-y-2">
           <p className="font-semibold">Pas encore assez de cartes</p>
-          <p className="muted">Les flashcards sont générées à partir des quiz déjà passés : il en faut au moins {FLASHCARDS.MIN} (il y en a {source.length}). Joue quelques quiz du jour et reviens.</p>
+          <p className="muted">Les flashcards sont générées à partir des notions du cours et des quiz déjà passés : il en faut au moins {FLASHCARDS.MIN} (il y en a {source.length}). Joue quelques quiz du jour et reviens.</p>
           <Link href={`/matieres/${id}`} className="btn-white">Retour à la matière</Link>
         </div>
       ) : (

@@ -124,12 +124,12 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
 
       <div key={tour} className="mem-carte pop h-72 sm:h-80" data-up={retournee}>
         <button type="button" onClick={retourner} disabled={retournee}
-          aria-label={retournee ? `Réponse : ${carte.verso}` : `Question : ${carte.recto}. Retourner la carte`}
+          aria-label={retournee ? `${carte.type === "notion" ? "Définition" : "Réponse"} : ${carte.verso}` : `${carte.type === "notion" ? "Notion" : "Question"} : ${carte.recto}. Retourner la carte`}
           className="mem-in block rounded-[18px] text-left">
           <span className="mem-face flex flex-col gap-3 rounded-[18px] border-accent bg-surface p-5 shadow-[inset_0_-5px_0_var(--color-accent-doux)]">
             <span className="flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-accent-fort uppercase">
-                <span aria-hidden className="h-2 w-2 rounded-[2px] bg-accent" />{carte.vf ? "Vrai ou faux ?" : "Question"}
+                <span aria-hidden className="h-2 w-2 rounded-[2px] bg-accent" />{carte.type === "notion" ? "Notion du cours" : carte.vf ? "Vrai ou faux ?" : "Question"}
               </span>
               <Icon name="cards" size={18} className="text-texte-3" />
             </span>
@@ -139,7 +139,7 @@ export default function FlashcardsJeu({ subjectId, source }: { subjectId: string
           {retournee && (
             <span className="mem-face mem-avant flex flex-col gap-2 overflow-y-auto rounded-[18px] border-energie bg-surface p-5 shadow-[inset_0_-5px_0_var(--color-energie-doux)]">
               <span className="inline-flex items-center gap-1.5 text-xs font-bold tracking-wide text-energie uppercase">
-                <span aria-hidden className="h-2 w-2 rounded-full bg-energie" />Réponse
+                <span aria-hidden className="h-2 w-2 rounded-full bg-energie" />{carte.type === "notion" ? "Définition" : "Réponse"}
               </span>
               <span className="text-xl leading-snug font-extrabold sm:text-2xl"><Tex>{carte.verso}</Tex></span>
               {carte.explication && <span className="border-t-2 border-ligne pt-2 text-[15px] leading-relaxed text-texte-2"><Tex>{carte.explication}</Tex></span>}

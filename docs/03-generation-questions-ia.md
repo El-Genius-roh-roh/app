@@ -119,3 +119,7 @@ Validations techniques en plus : JSON valide, 4 choix distincts (QCM), `correct_
 - **Vérification** : un second appel reçoit les questions **sans** les bonnes réponses et répond ; toute question dont la réponse diffère est écartée (puis remplacée par le générateur simulé si besoin).
 - Déclenchement : en arrière-plan à l'ouverture de la page d'une matière (3 prochains jours), avant le lancement d'un quiz encore vide, par le job `generate`, et par le bouton « Générer avec l'IA » (option : refaire les quiz pas encore commencés).
 - Variables : `OPENAI_API_KEY`, `OPENAI_BASE_URL` (fournies par Onyxia), `LLM_MODEL` (facultatif, défaut `qwen3-6-35b-moe`).
+
+## Notions du cours (D39)
+
+À l’import d’un cours (et via le bouton « Extraire les définitions » du glossaire), l’IA reçoit les pages par lots de 8 (1 500 caractères max. par page) et renvoie un tableau JSON `[{terme, definition, page}]` : les notions que ces pages **définissent**, avec une définition d’une phrase (140 caractères au plus), sans rien inventer. Chaque notion est **ancrée** : elle n’est gardée que si son terme figure dans le texte de la page citée. Sans IA (ou si elle échoue), une détection simple de motifs français prend le relais. Le code est dans `src/lib/notions.ts` (pur, testé) et `src/lib/notions-extraction.ts`.

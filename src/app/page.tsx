@@ -8,6 +8,7 @@ import Icon from "@/components/Icon";
 import AutoRefresh from "@/components/AutoRefresh";
 import { Defis, MesSucces, MonClassement } from "@/components/Tableau";
 import { tableauDeBord } from "@/lib/tableau";
+import { sqlNbCartes } from "@/lib/notions-extraction";
 
 type Jour = { day_id: string; subject_id: string; matiere: string; groupe: string; jour: number; statut: string | null; erreurs: number | null; rang: number | null };
 
@@ -42,8 +43,7 @@ export default async function Accueil() {
   // jeux solo : cartes disponibles par matière (questions vérifiées des jours passés, comme les flashcards et le Memory)
   const matieres = await q<{ id: string; nom: string; groupe: string; cartes: number }>(
     `select s.id, s.nom, g.nom as groupe,
-            (select count(distinct lower(btrim(qq.enonce)))::int from questions qq join game_days gd on gd.id=qq.game_day_id
-              where qq.subject_id=s.id and qq.verifiee and gd.date < ${sqlToday("s.id")}) as cartes
+            ${sqlNbCartes("s.id", sqlToday("s.id"))} as cartes
        from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
       order by g.created_at, s.created_at`, [u.id]);
   // tableau de bord personnel (D38) : défis du jour, mon classement, mes succès
@@ -158,7 +158,7 @@ export default async function Accueil() {
             <section className="space-y-3" aria-labelledby="t-solo">
               <div className="space-y-0.5">
                 <h2 id="t-solo" className="h2">Flashcards et jeux solo</h2>
-                <p className="text-sm text-texte-3">Sans chrono, sur les questions des quiz déjà passés. Chaque session terminée rapporte +{SOLO.GEMMES_PAR_SESSION} gemmes pour ta semaine ({SOLO.MAX_PAR_JOUR} max. par jour).</p>
+                <p className="text-sm text-texte-3">Sans chrono, sur les notions du cours et les questions des quiz déjà passés. Chaque session terminée rapporte +{SOLO.GEMMES_PAR_SESSION} gemmes pour ta semaine ({SOLO.MAX_PAR_JOUR} max. par jour).</p>
               </div>
               <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
                 {matieres.map((m) => {
@@ -182,7 +182,7 @@ export default async function Accueil() {
                           </Link>
                         </div>
                       ) : (
-                        <p className="rounded-[12px] bg-surface-2 px-3 py-2.5 text-sm text-texte-3">Disponible après les premiers quiz de la matière.</p>
+                        <p className="rounded-[12px] bg-surface-2 px-3 py-2.5 text-sm text-texte-3">Disponible dès qu’un cours est importé ou après les premiers quiz.</p>
                       )}
                     </li>
                   );

@@ -5,6 +5,7 @@ import { getSubjectFor } from "@/lib/subjects";
 import { sqlToday, todayParis } from "@/lib/clock";
 import { FLASHCARDS, MEMORY } from "@/config/constants";
 import { enregistrerSolo } from "@/lib/solo";
+import { sqlNbCartes } from "@/lib/notions-extraction";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,7 @@ export async function POST(req: Request) {
   const ctx = await getSubjectFor(subjectId, u.id);
   if (!ctx) return NextResponse.json({ error: "Matière introuvable." }, { status: 404 });
   // même source que les jeux : questions vérifiées des jours passés ; pas de gemmes sans assez de cartes
-  const [{ n }] = await q<{ n: number }>(
-    `select count(distinct lower(btrim(qq.enonce)))::int as n from questions qq join game_days g on g.id=qq.game_day_id
-      where qq.subject_id=$1 and qq.verifiee and g.date < ${sqlToday("g.subject_id")}`, [subjectId]);
+  const [{ n }] = await q<{ n: number }>(`select ${sqlNbCartes("$1::uuid", sqlToday("$1::uuid"))} as n`, [subjectId]);
   if (n < (type === "flashcards" ? FLASHCARDS.MIN : MEMORY.MIN_PAIRES)) return NextResponse.json({ error: "Pas assez de cartes." }, { status: 409 });
   const r = await enregistrerSolo({ userId: u.id, groupId: ctx.subject.group_id, subjectId, type, date: await todayParis(subjectId) });
   return NextResponse.json(r);
