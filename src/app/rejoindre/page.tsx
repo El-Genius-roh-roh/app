@@ -20,7 +20,7 @@ export default async function Page() {
       <form action={aller} className="card space-y-3">
         <label htmlFor="code" className="block text-sm font-bold">Code d&apos;invitation</label>
         <input id="code" name="code" required maxLength={6} placeholder="ABC123" autoComplete="off" autoCapitalize="characters"
-          className="input num text-center text-2xl font-semibold tracking-[0.4em] uppercase" />
+          className="input code text-center text-2xl font-semibold tracking-[0.4em] uppercase" />
         <button className="btn-primary">Voir le groupe<Icon name="arrowRight" size={18} /></button>
       </form>
     </main>

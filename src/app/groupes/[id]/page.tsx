@@ -38,7 +38,7 @@ export default async function Groupe({ params, searchParams }: { params: Promise
           <h1 className="title break-words">{g.nom}</h1>
         </div>
         <div className="chip px-3 py-1.5 text-sm" title="À donner à tes amis pour qu'ils rejoignent le groupe">
-          <Icon name="share" size={15} />Code <span className="tracking-[0.18em] text-texte">{g.code_invitation}</span>
+          <Icon name="share" size={15} />Code <span className="code tracking-[0.18em] text-texte">{g.code_invitation}</span>
           <CopyButton text={g.code_invitation} label="Copier le code d'invitation" />
         </div>
       </header>

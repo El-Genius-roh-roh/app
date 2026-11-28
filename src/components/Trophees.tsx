@@ -205,7 +205,7 @@ export function LigueCard({ etat, today, serie }: { etat: EtatTrophees; today: s
         {suivante ? <>Encore <b className="num text-texte">{fmt(manque)}</b> <TropheeIcone size={14} /> pour la ligue <b className="text-texte">{suivante.nom}</b></> : "Ligue maximale atteinte !"}
       </p>
       <p className="relative mt-1 flex flex-wrap items-center gap-1 text-sm text-texte-2">
-        <Icon name="calendar" size={15} className="text-texte-3" />Fin du mois (<span className="num">{fin.slice(8)}/{fin.slice(5, 7)}</span>) : {verdict}
+        <Icon name="calendar" size={15} className="text-texte-3" /><span>Fin du mois (<span className="num">{fin.slice(8)}/{fin.slice(5, 7)}</span>) : {verdict}</span>
       </p>
       <div className="relative mt-3 flex items-end gap-1.5" aria-label={`Ligue ${index + 1} sur ${LIGUES.length}`}>
         {LIGUES.map((l, i) => (

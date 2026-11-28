@@ -167,7 +167,7 @@ export default function ArenaRoom({ code }: { code: string }) {
       <Shell>
         <section className="hero entree text-center">
           <p className="eyebrow">Code de la partie</p>
-          <p className="num mt-2 text-6xl font-semibold tracking-[0.25em]">{v.code}</p>
+          <p className="code mt-2 text-6xl font-semibold tracking-[0.25em]">{v.code}</p>
           <CopyButton text={v.code} label="Copier le code" className="absolute top-3 right-3 text-sur-accent/70 hover:!bg-sur-accent/15 hover:!text-sur-accent" />
           <p className="mt-3 flex flex-wrap items-center justify-center gap-2 text-sm">
             <span>{v.modeTitre} · <span className="num">{v.nrounds}</span> manches</span>

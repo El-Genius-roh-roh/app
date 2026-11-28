@@ -88,7 +88,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
             {process.env.CODE_ACCES && (
               <label className="block space-y-1.5">
                 <span className="text-sm font-medium text-texte-2">Code d&apos;accès</span>
-                <input name="code" required autoComplete="off" className="input num tracking-[0.2em] uppercase" aria-invalid={err === "code" || undefined} />
+                <input name="code" required autoComplete="off" className="input code tracking-[0.2em] uppercase" aria-invalid={err === "code" || undefined} />
               </label>
             )}
             {err && <p className="text-sm font-medium text-ko" role="alert">{ERREURS[err] ?? "Erreur."}</p>}

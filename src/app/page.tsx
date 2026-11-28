@@ -67,7 +67,7 @@ export default async function Accueil() {
             <section className="hero entree" aria-labelledby="t-prochain">
               <div aria-hidden className="pointer-events-none absolute -top-10 -right-8 h-40 w-40 rounded-full bg-sur-accent/10" />
               <div aria-hidden className="pointer-events-none absolute top-5 right-5 h-5 w-5 rounded-full bg-or-vif" />
-              <p className="font-num text-xs font-medium tracking-[0.08em] uppercase opacity-85">Quiz du jour · {prochain.groupe}</p>
+              <p className="text-[13px] font-semibold opacity-85">Quiz du jour · {prochain.groupe}</p>
               <h2 id="t-prochain" className="mt-2 max-w-[85%] font-titre text-4xl leading-[1.02] font-extrabold break-words lg:text-5xl">{prochain.matiere}</h2>
               <p className="mt-2 text-sm opacity-90"><span className="num">{N}</span> questions · jour <span className="num">{prochain.jour}</span> · un seul essai</p>
               <Link href={`/quiz/${prochain.day_id}`}

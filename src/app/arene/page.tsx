@@ -39,7 +39,7 @@ export default async function Arene() {
         <form action="/arene/rejoindre" className="mt-5 flex max-w-sm gap-2">
           <label htmlFor="code-arene" className="sr-only">Code de la partie</label>
           <input id="code-arene" name="code" required maxLength={ARENA.CODE_LONGUEUR} placeholder="CODE" autoComplete="off"
-            className="num min-h-12 w-full rounded-[14px] border-2 border-transparent bg-surface px-3.5 text-lg tracking-[0.3em] text-texte uppercase outline-none placeholder:text-texte-3 focus:border-sur-or" />
+            className="code min-h-12 w-full rounded-[14px] border-2 border-transparent bg-surface px-3.5 text-lg tracking-[0.3em] text-texte uppercase outline-none placeholder:text-texte-3 focus:border-sur-or" />
           <button className="inline-flex min-h-12 shrink-0 items-center gap-1.5 rounded-[14px] bg-surface px-4 font-extrabold text-energie shadow-[0_4px_0_color-mix(in_oklab,var(--color-energie)_55%,black)] active:translate-y-[3px] active:shadow-none">
             Rejoindre<Icon name="arrowRight" size={17} />
           </button>
@@ -63,7 +63,7 @@ export default async function Arene() {
             {rooms.map((r) => (
               <li key={r.code}>
                 <Link href={r.href} className="tuile group flex items-center gap-3.5">
-                  <span className="num rounded-[10px] bg-energie-doux px-2.5 py-1.5 text-lg font-semibold tracking-[0.2em] text-energie">{r.code}</span>
+                  <span className="code rounded-[10px] bg-energie-doux px-2.5 py-1.5 text-lg font-semibold tracking-[0.2em] text-energie">{r.code}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-bold">{r.titre}</span>
                     <span className="block truncate text-sm text-texte-3">{r.hote} · {r.joueurs} joueur{Number(r.joueurs) > 1 ? "s" : ""}</span>

@@ -134,7 +134,7 @@ export default function PlateauRoom({ code }: { code: string }) {
       <Shell>
         <section className="hero entree text-center">
           <p className="eyebrow">Jeu de plateau · code</p>
-          <p className="num mt-2 text-6xl font-semibold tracking-[0.25em]">{v.code}</p>
+          <p className="code mt-2 text-6xl font-semibold tracking-[0.25em]">{v.code}</p>
           <CopyButton text={v.code} label="Copier le code" className="absolute top-3 right-3 text-sur-accent/70 hover:!bg-sur-accent/15 hover:!text-sur-accent" />
           <p className="mt-3 text-sm opacity-90">À saisir dans « Rejoindre », sur la page Arène.</p>
         </section>
