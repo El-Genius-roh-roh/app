@@ -102,6 +102,7 @@ export async function createRoom(userId: string, groupId: string, mode: string, 
   await q(`delete from arena_rooms where updated_at < now() - ($1 || ' hours')::interval`, [String(ARENA.PURGE_APRES_H)]);
   for (let i = 0; i < 5; i++) {
     const code = genCode();
+    if ((await q("select 1 from plateau_rooms where code=$1", [code])).length) continue; // un code ne désigne qu'une seule partie
     const s = newState(code, groupId, { id: userId, name: await pseudo(userId) }, mode as Mode, n);
     const ins = await q("insert into arena_rooms(code,group_id,host_id,state) values ($1,$2,$3,$4) on conflict do nothing returning code",
       [code, groupId, userId, JSON.stringify(s)]);
