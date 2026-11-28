@@ -4,8 +4,9 @@ import { usePathname } from "next/navigation";
 import Icon from "./Icon";
 
 const ONGLETS = [
-  { href: "/", icon: "home", label: "Accueil", actif: (p: string) => p === "/" || p.startsWith("/groupes") || p.startsWith("/matieres") || p.startsWith("/quiz") },
-  { href: "/arene", icon: "swords", label: "Arène", actif: (p: string) => p.startsWith("/arene") },
+  // deux espaces : Réviser (seul, sans classement en direct : quiz, flashcards, jeux solo) et Arène (compétition entre amis)
+  { href: "/", icon: "book", label: "Réviser", actif: (p: string) => p === "/" || p.startsWith("/groupes") || p.startsWith("/matieres") || p.startsWith("/quiz") || p.startsWith("/rejoindre") },
+  { href: "/arene", icon: "swords", label: "Arène", actif: (p: string) => p.startsWith("/arene") || p.startsWith("/plateau") },
   { href: "/profil", icon: "user", label: "Profil", actif: (p: string) => p.startsWith("/profil") },
 ] as const;
 

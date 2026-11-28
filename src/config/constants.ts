@@ -89,6 +89,12 @@ export const ARENA = {
   CODE_LONGUEUR: 4,
   BOTS: ["Gauss", "Fisher", "Bayes", "Turing", "Pearson", "Markov", "Laplace", "Student"],
 } as const;
+// Flashcards : recto = l'énoncé, verso = la bonne réponse et l'explication (questions vérifiées des jours passés)
+export const FLASHCARDS = {
+  PAQUET: 12, // cartes par session ; les moins sues passent en premier
+  MIN: 3, // en dessous, les flashcards ne sont pas proposées
+};
+
 // Memory : retrouver, face cachée, chaque question et sa bonne réponse (questions vérifiées des jours passés)
 export const MEMORY = {
   PAIRES: 6, // 12 cartes

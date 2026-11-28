@@ -33,7 +33,7 @@ export default async function Arene() {
     <main className="page">
       <section className="hero hero-energie entree">
         <div aria-hidden className="pointer-events-none absolute -top-12 -right-10 h-44 w-44 rounded-full bg-sur-energie/10" />
-        <p className="eyebrow">Multijoueur en direct</p>
+        <p className="eyebrow">Compétition · multijoueur en direct</p>
         <h1 className="mt-1 flex items-center gap-3 font-titre text-4xl font-extrabold lg:text-5xl"><Icon name="swords" size={34} />Arène</h1>
         <p className="mt-2 max-w-xl text-[15px] opacity-95">Des duels sur les quiz des jours passés. Le plus juste et le plus rapide gagne des points de cote.</p>
         <form action="/arene/rejoindre" className="mt-5 flex max-w-sm gap-2">
@@ -79,7 +79,12 @@ export default async function Arene() {
       <div className="space-y-7 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8 lg:space-y-0">
         {data.map((g) => (
           <section key={g.id} className="space-y-4" aria-labelledby={`t-g-${g.id}`}>
-            <h2 id={`t-g-${g.id}`} className="h2">{g.nom}</h2>
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id={`t-g-${g.id}`} className="h2 min-w-0 truncate">{g.nom}</h2>
+              <Link href={`/groupes/${g.id}?onglet=competitif`} className="inline-flex shrink-0 items-center gap-1 text-sm font-bold text-energie hover:underline">
+                <Icon name="trophy" size={15} />Ligue et trophées
+              </Link>
+            </div>
             <div className="card">
               <ArenaCreate groupId={g.id} modes={Object.entries(MODES).map(([id, m]) => ({ id, ...m }))} dispo={g.dispo} />
             </div>

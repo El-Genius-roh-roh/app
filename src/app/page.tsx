@@ -2,7 +2,8 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { sqlToday } from "@/lib/clock";
-import { CONFIG } from "@/config/constants";
+import { CONFIG, FLASHCARDS } from "@/config/constants";
+import { facteurRetard } from "@/lib/scoring";
 import Icon from "@/components/Icon";
 import AutoRefresh from "@/components/AutoRefresh";
 
@@ -28,12 +29,27 @@ export default async function Accueil() {
   const restants = jours.filter((j) => !fait(j));
   const prochain = restants[0];
   const N = CONFIG.QUESTIONS_PAR_JOUR;
+  // quiz manqués encore rattrapables (gemmes réduites de 10 % par jour de retard)
+  const rattrapages = await q<{ day_id: string; matiere: string; jour: number; retard: number; statut: string | null }>(
+    `select gd.id as day_id, s.nom as matiere, gd.jour_dans_saison as jour, (${sqlToday("s.id")} - gd.date)::int as retard, a.statut
+       from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
+       join game_days gd on gd.subject_id=s.id and gd.date < ${sqlToday("s.id")} and gd.date >= ${sqlToday("s.id")} - $2::int
+       left join attempts a on a.game_day_id=gd.id and a.user_id=$1
+      where a.statut is null or a.statut = 'en_cours'
+      order by gd.date, g.created_at, s.created_at`, [u.id, CONFIG.RATTRAPAGE_JOURS]);
+  // jeux solo : cartes disponibles par matière (questions vérifiées des jours passés, comme les flashcards et le Memory)
+  const matieres = await q<{ id: string; nom: string; groupe: string; cartes: number }>(
+    `select s.id, s.nom, g.nom as groupe,
+            (select count(distinct lower(btrim(qq.enonce)))::int from questions qq join game_days gd on gd.id=qq.game_day_id
+              where qq.subject_id=s.id and qq.verifiee and gd.date < ${sqlToday("s.id")}) as cartes
+       from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
+      order by g.created_at, s.created_at`, [u.id]);
 
   return (
     <main className="page">
       <AutoRefresh every={30000} />
       <header className="entree">
-        <p className="eyebrow">Salut {u.pseudo}</p>
+        <p className="eyebrow">Réviser · salut {u.pseudo}</p>
         <h1 className="title mt-1">
           {jours.length === 0 ? "Prêt à réviser ?" : restants.length === 0 ? "Tout est joué. Bravo !" : restants.length === 1 ? "Un quiz t'attend" : `${restants.length} quiz t'attendent`}
         </h1>
@@ -100,18 +116,70 @@ export default async function Accueil() {
               </ul>
             )}
           </section>
+
+          {rattrapages.length > 0 && (
+            <section className="space-y-3" aria-labelledby="t-rattrapage">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 id="t-rattrapage" className="h2">À rattraper</h2>
+                <span className="text-sm text-texte-3">encore {CONFIG.RATTRAPAGE_JOURS} jours max.</span>
+              </div>
+              <ul className="liste">
+                {rattrapages.map((r) => (
+                  <li key={r.day_id}>
+                    <Link href={`/quiz/${r.day_id}`} className="ligne group min-h-16 transition-colors hover:bg-surface-2">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-or-doux text-or"><Icon name="calendar" size={19} /></span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-bold">{r.matiere}</span>
+                        <span className="block truncate text-sm text-texte-3">Jour {r.jour} · {Math.round(facteurRetard(r.retard) * 100)}&nbsp;% des gemmes</span>
+                      </span>
+                      <span className="text-sm font-bold text-accent-fort">{r.statut === "en_cours" ? "Reprendre" : "Jouer"}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {/* sans chrono ni classement : on apprend à son rythme sur les quiz déjà passés */}
+          {matieres.length > 0 && (
+            <section className="space-y-3" aria-labelledby="t-solo">
+              <div className="space-y-0.5">
+                <h2 id="t-solo" className="h2">Flashcards et jeux solo</h2>
+                <p className="text-sm text-texte-3">Sans chrono ni classement, sur les questions des quiz déjà passés.</p>
+              </div>
+              <ul className="grid gap-2.5 sm:grid-cols-2">
+                {matieres.map((m) => {
+                  const pret = m.cartes >= FLASHCARDS.MIN;
+                  return (
+                    <li key={m.id} className="card space-y-3 p-3.5 lg:p-4">
+                      <Link href={`/matieres/${m.id}`} className="group flex items-center gap-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-bold group-hover:text-accent-fort">{m.nom}</span>
+                          <span className="block truncate text-xs text-texte-3">{m.groupe} · <span className="num">{m.cartes}</span> carte{m.cartes > 1 ? "s" : ""}</span>
+                        </span>
+                        <Icon name="chevronRight" size={18} className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
+                      </Link>
+                      {pret ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Link href={`/matieres/${m.id}/flashcards`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-accent-doux px-2 text-sm font-bold text-accent-fort transition-transform hover:-translate-y-px active:translate-y-px">
+                            <Icon name="cards" size={17} />Flashcards
+                          </Link>
+                          <Link href={`/matieres/${m.id}/memory`} className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[12px] bg-or-doux px-2 text-sm font-bold text-or transition-transform hover:-translate-y-px active:translate-y-px">
+                            <Icon name="target" size={17} />Memory
+                          </Link>
+                        </div>
+                      ) : (
+                        <p className="rounded-[12px] bg-surface-2 px-3 py-2.5 text-sm text-texte-3">Disponible après les premiers quiz de la matière.</p>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
         </div>
 
         <aside className="space-y-7">
-          <Link href="/arene" className="tuile group flex items-center gap-3.5 border-energie/30 bg-energie-doux">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-energie text-sur-energie"><Icon name="swords" size={22} /></span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-titre text-lg font-extrabold">Arène</span>
-              <span className="block text-sm text-texte-2">Défie tes amis en direct sur les quiz passés</span>
-            </span>
-            <Icon name="chevronRight" className="text-energie transition-transform group-hover:translate-x-0.5" />
-          </Link>
-
           <section className="space-y-3" aria-labelledby="t-groupes">
             <h2 id="t-groupes" className="h2">Mes groupes</h2>
             {groupes.length === 0 && (
