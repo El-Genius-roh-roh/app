@@ -4,6 +4,8 @@ import "./globals.css";
 import { APP_NAME } from "@/config/constants";
 import { BASE } from "@/lib/url";
 import { Inter } from "next/font/google";
+import NavBar from "@/components/NavBar";
+import { ToastProvider } from "@/components/Toast";
 
 // Police façon iOS : San Francisco (police système) sur Mac/iPhone ; ailleurs, Inter, très proche.
 const inter = Inter({ subsets: ["latin"], variable: "--nf-inter", display: "swap" });
@@ -13,8 +15,13 @@ export const viewport: Viewport = { themeColor: "#f2f2f7", width: "device-width"
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={inter.variable}>
-      <body className="font-sans antialiased">{children}</body>
+    <html lang="fr" className={inter.variable} suppressHydrationWarning>
+      <body className="font-sans antialiased">
+        <ToastProvider>
+          <NavBar />
+          {children}
+        </ToastProvider>
+      </body>
     </html>
   );
 }

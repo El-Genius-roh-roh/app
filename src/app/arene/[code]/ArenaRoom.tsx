@@ -1,7 +1,9 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Bot, Check, LogOut, Play, X } from "lucide-react";
 import { url } from "@/lib/url";
+import CopyButton from "@/components/CopyButton";
 import Tex from "@/components/Tex";
 
 type P = {
@@ -102,27 +104,37 @@ export default function ArenaRoom({ code }: { code: string }) {
       <Shell>
         <div className="text-center">
           <p className="text-sm uppercase tracking-widest opacity-80">Code de la partie</p>
-          <p className="text-6xl font-bold tracking-[0.3em]">{v.code}</p>
+          <div className="mt-1 flex items-center justify-center gap-3">
+            <p className="text-6xl font-bold tracking-[0.3em]">{v.code}</p>
+            <CopyButton text={v.code} toastMessage={`Code ${v.code} copié !`} className="bg-white/20 text-white hover:bg-white/30" />
+          </div>
           <p className="mt-1 text-sm opacity-80">{v.modeTitre} · {v.nrounds} manches · {v.classee ? "partie classée" : "entraînement (non classé)"}</p>
         </div>
         <ul className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {v.players.map((p, i) => (
             <li key={p.id} className="flex items-center gap-2 rounded-xl bg-white/15 p-2">
-              <span className={`flex h-8 w-8 items-center justify-center rounded-full font-bold ${COLORS[i % COLORS.length]}`}>{p.name[0]}</span>
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold ${COLORS[i % COLORS.length]}`}>
+                {p.bot ? <Bot className="h-4 w-4" /> : p.name[0]}
+              </span>
               <span className="truncate">{p.name}{p.host && " (hôte)"}</span>
             </li>
           ))}
         </ul>
         {meHost ? (
           <div className="space-y-2">
-            <button onClick={() => act("bot")} className="w-full rounded-xl bg-white/20 p-3">+ Ajouter un bot</button>
-            <button onClick={() => act("start")} className="w-full rounded-xl bg-emerald-400 p-4 text-lg font-bold text-emerald-950 shadow-lg">
+            <button onClick={() => act("bot")} className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/20 p-3 font-semibold transition hover:bg-white/30">
+              <Bot className="h-4 w-4" /> Ajouter un bot
+            </button>
+            <button onClick={() => act("start")} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-400 p-4 text-lg font-bold text-emerald-950 shadow-lg transition hover:bg-emerald-300">
+              <Play className="h-5 w-5 fill-current" />
               Lancer la partie ({v.players.length} joueur{v.players.length > 1 ? "s" : ""})
             </button>
             {humans < 2 && <p className="text-center text-xs opacity-80">Partage le code à tes amis pour une partie classée, ou ajoute des bots pour t&apos;entraîner (non classé).</p>}
           </div>
         ) : <p className="animate-pulse text-center">En attente du lancement par l&apos;hôte…</p>}
-        <button onClick={() => act("leave").then(() => (location.href = url("/arene")))} className="text-sm underline opacity-80">Quitter</button>
+        <button onClick={() => act("leave").then(() => (location.href = url("/arene")))} className="inline-flex items-center gap-1.5 text-sm underline opacity-80 hover:opacity-100">
+          <LogOut className="h-4 w-4" /> Quitter
+        </button>
         {err && <p className="text-center text-sm text-red-200">{err}</p>}
       </Shell>
     );
@@ -202,7 +214,7 @@ export default function ArenaRoom({ code }: { code: string }) {
               className={`${cls} flex min-h-16 items-center gap-3 rounded-2xl p-4 text-left text-white shadow-lg transition active:scale-95 ${r.kind === "vf" ? "justify-center text-2xl" : ""}`}>
               {r.kind !== "vf" && <span className="text-xl opacity-80">{SHAPES[i]}</span>}
               <Tex className="min-w-0 break-words">{c}</Tex>
-              {!question && isKey && <span className="ml-auto">✓</span>}
+              {!question && isKey && <Check className="ml-auto h-5 w-5 shrink-0" />}
             </button>
           );
         })}
@@ -233,7 +245,7 @@ function Ranking({ players, me, changes }: { players: P[]; me: string; changes?:
         <li key={p.id} className={`flex items-center gap-2 rounded-lg px-3 py-1.5 ${p.id === me ? "bg-white/60 backdrop-blur-md text-gray-900 font-bold" : "bg-white/10"} ${p.left ? "opacity-50" : ""}`}>
           <span className="w-6">{p.rank}</span>
           <span className="flex-1 truncate">{p.name}{p.left && " (parti)"}</span>
-          {p.round && <span className="text-xs">{p.round.ok ? `+${p.round.pts}` : "✗"}</span>}
+          {p.round && <span className="text-xs">{p.round.ok ? `+${p.round.pts}` : <X className="inline h-3.5 w-3.5 text-rose-300" />}</span>}
           {changes && changes[p.id] !== undefined && (
             <span className={`text-xs ${changes[p.id] >= 0 ? "text-emerald-500" : "text-rose-400"}`}>{changes[p.id] >= 0 ? "▲" : "▼"}{Math.abs(changes[p.id])}</span>
           )}

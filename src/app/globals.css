@@ -1,9 +1,8 @@
 @import "tailwindcss";
 
 /*
- * Thème « iOS » : police système d'Apple (San Francisco), cartes blanches sur un fond crème chaud (pêche, abricot, rose),
- * un accent bleu-violet vif mais adouci (lisible sans agresser les yeux), couleurs secondaires douces.
- * Certains boutons (principaux, orange, bandeau, onglet actif) ont l'effet « verre liquide » : voir .liquide.
+ * Thème « iOS » : police système d'Apple (San Francisco), cartes blanches sur un fond crème chaud (clair)
+ * ou ardoise profonde (sombre), accent bleu-violet vif mais adouci, effet « verre liquide » (.liquide).
  */
 @theme {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", var(--nf-inter), "Helvetica Neue", system-ui, sans-serif;
@@ -33,17 +32,72 @@
   --ease-ressort: cubic-bezier(0.34, 1.4, 0.64, 1);
 }
 
+:root {
+  --bg-page: #fbf5ee;
+  --bg-card: #ffffff;
+  --bg-subtle: #f8fafc;
+  --bg-subtle-hover: #f1f5f9;
+  --bg-segmented: #efe6dc;
+  --bg-glass: rgb(255 255 255 / 0.82);
+  --text-main: #1c1c1e;
+  --text-muted: #64748b;
+  --border-subtle: rgb(0 0 0 / 0.08);
+  --blob-1: rgb(253 186 140 / 0.42);
+  --blob-2: rgb(250 200 120 / 0.38);
+  --blob-3: rgb(244 150 160 / 0.30);
+  --blob-4: rgb(236 170 200 / 0.26);
+}
+
+:root[data-theme="dark"] {
+  --bg-page: #0f1117;
+  --bg-card: #191c26;
+  --bg-subtle: #222634;
+  --bg-subtle-hover: #2a2f40;
+  --bg-segmented: #222634;
+  --bg-glass: rgb(25 28 38 / 0.82);
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border-subtle: rgb(255 255 255 / 0.10);
+  --blob-1: rgb(106 109 234 / 0.22);
+  --blob-2: rgb(235 141 58 / 0.14);
+  --blob-3: rgb(217 139 192 / 0.16);
+  --blob-4: rgb(63 157 208 / 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-page: #0f1117;
+    --bg-card: #191c26;
+    --bg-subtle: #222634;
+    --bg-subtle-hover: #2a2f40;
+    --bg-segmented: #222634;
+    --bg-glass: rgb(25 28 38 / 0.82);
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --border-subtle: rgb(255 255 255 / 0.10);
+    --blob-1: rgb(106 109 234 / 0.22);
+    --blob-2: rgb(235 141 58 / 0.14);
+    --blob-3: rgb(217 139 192 / 0.16);
+    --blob-4: rgb(63 157 208 / 0.14);
+  }
+}
+
 @layer base {
   h1, h2, h3 { font-family: var(--font-titre); font-weight: 700; letter-spacing: -0.02em; }
   a, button, summary, [role="button"], input[type="file"]::file-selector-button { cursor: pointer; }
   button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 2px;
+  }
 }
 
 body {
   min-height: 100dvh;
-  color: #1c1c1e;
-  background: #fbf5ee;
+  color: var(--text-main);
+  background: var(--bg-page);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s var(--ease-ios), color 0.25s var(--ease-ios);
 }
 /* Taches de couleur pastel fixes derrière la page : de la couleur sans éblouir, et de quoi « réfracter » à travers le verre. */
 body::before {
@@ -53,16 +107,56 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(42% 36% at 0% 0%, rgb(253 186 140 / 0.42), transparent 70%),
-    radial-gradient(38% 32% at 100% 8%, rgb(250 200 120 / 0.38), transparent 70%),
-    radial-gradient(46% 38% at 88% 88%, rgb(244 150 160 / 0.30), transparent 70%),
-    radial-gradient(40% 35% at 2% 92%, rgb(236 170 200 / 0.26), transparent 70%);
+    radial-gradient(42% 36% at 0% 0%, var(--blob-1), transparent 70%),
+    radial-gradient(38% 32% at 100% 8%, var(--blob-2), transparent 70%),
+    radial-gradient(46% 38% at 88% 88%, var(--blob-3), transparent 70%),
+    radial-gradient(40% 35% at 2% 92%, var(--blob-4), transparent 70%);
+}
+
+/* Adaptation douce des utilitaires clairs en mode sombre */
+:root[data-theme="dark"] .bg-white { background-color: var(--bg-card); }
+:root[data-theme="dark"] .bg-slate-50 { background-color: var(--bg-subtle); }
+:root[data-theme="dark"] .hover\:bg-slate-100:hover { background-color: var(--bg-subtle-hover); }
+:root[data-theme="dark"] .text-slate-900,
+:root[data-theme="dark"] .text-slate-800,
+:root[data-theme="dark"] .text-slate-700 { color: var(--text-main); }
+:root[data-theme="dark"] .text-slate-600,
+:root[data-theme="dark"] .text-slate-500 { color: var(--text-muted); }
+:root[data-theme="dark"] .bg-accent-50 { background-color: rgb(106 109 234 / 0.16); }
+:root[data-theme="dark"] .hover\:bg-accent-100:hover { background-color: rgb(106 109 234 / 0.24); }
+:root[data-theme="dark"] .text-accent-600,
+:root[data-theme="dark"] .text-accent-700 { color: var(--color-accent-300); }
+:root[data-theme="dark"] .ring-accent-200 { --tw-ring-color: rgb(133 137 242 / 0.35); }
+:root[data-theme="dark"] .border-black\/10 { border-color: var(--border-subtle); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bg-white { background-color: var(--bg-card); }
+  :root:not([data-theme="light"]) .bg-slate-50 { background-color: var(--bg-subtle); }
+  :root:not([data-theme="light"]) .hover\:bg-slate-100:hover { background-color: var(--bg-subtle-hover); }
+  :root:not([data-theme="light"]) .text-slate-900,
+  :root:not([data-theme="light"]) .text-slate-800,
+  :root:not([data-theme="light"]) .text-slate-700 { color: var(--text-main); }
+  :root:not([data-theme="light"]) .text-slate-600,
+  :root:not([data-theme="light"]) .text-slate-500 { color: var(--text-muted); }
+  :root:not([data-theme="light"]) .bg-accent-50 { background-color: rgb(106 109 234 / 0.16); }
+  :root:not([data-theme="light"]) .hover\:bg-accent-100:hover { background-color: rgb(106 109 234 / 0.24); }
+  :root:not([data-theme="light"]) .text-accent-600,
+  :root:not([data-theme="light"]) .text-accent-700 { color: var(--color-accent-300); }
+  :root:not([data-theme="light"]) .ring-accent-200 { --tw-ring-color: rgb(133 137 242 / 0.35); }
+  :root:not([data-theme="light"]) .border-black\/10 { border-color: var(--border-subtle); }
 }
 
 @layer components {
-  .page { @apply mx-auto max-w-md space-y-5 px-4 pt-5 pb-12 lg:max-w-6xl lg:space-y-6 lg:px-8 lg:pt-8; }
-  .card { @apply rounded-[22px] bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-14px_rgb(0_0_0/0.18)] lg:p-5; }
-  .verre { @apply bg-white/80 backdrop-blur-xl shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-14px_rgb(0_0_0/0.18)]; }
+  .page { @apply mx-auto max-w-md space-y-5 px-4 pt-5 pb-28 lg:max-w-6xl lg:space-y-6 lg:px-8 lg:pt-8 lg:pb-14; }
+  .card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    @apply rounded-[22px] p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-14px_rgb(0_0_0/0.18)] lg:p-5;
+  }
+  .verre {
+    background-color: var(--bg-glass);
+    border: 1px solid var(--border-subtle);
+    @apply backdrop-blur-xl shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-14px_rgb(0_0_0/0.18)];
+  }
   /* bandeau du haut : dégradé pervenche → mauve → rose, lumineux mais doux */
   .hero { @apply rounded-[26px] p-5 text-white shadow-[0_14px_34px_-18px_rgb(88_88_210/0.7)] lg:p-8; background: linear-gradient(135deg, #6a7ff0 0%, #8f7ce6 50%, #d98bc0 100%); }
   .title { @apply text-[1.9rem] leading-tight font-bold tracking-tight lg:text-4xl; }
@@ -82,27 +176,34 @@ body::before {
   /* bouton principal posé sur le bandeau bleu */
   .btn-hero { @apply text-lg; color: #fff; --teinte: rgb(255 255 255 / 0.22); --teinte-survol: rgb(255 255 255 / 0.32); --ombre: rgb(40 30 110 / 0.45); text-shadow: 0 1px 2px rgb(40 30 110 / 0.35); }
 
-  .input { @apply w-full rounded-xl border border-black/10 bg-white px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-accent-400 focus:ring-4 focus:ring-accent-100; }
+  .input {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
+    @apply w-full rounded-xl px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-accent-400 focus:ring-4 focus:ring-accent-100;
+  }
   .chip { @apply rounded-full px-3 py-1 text-xs font-semibold; }
   .lien { @apply font-medium text-accent-600 underline decoration-accent-200 decoration-2 underline-offset-2 transition hover:decoration-accent-500; }
-  .muted { @apply text-sm text-slate-500; }
+  .muted { color: var(--text-muted); @apply text-sm; }
 
   /* ligne cliquable façon liste iOS */
-  .card-lien { @apply rounded-[18px] bg-white px-4 py-3 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_18px_-14px_rgb(0_0_0/0.2)] transition duration-200 ease-(--ease-ios) hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgb(0_0_0/0.05),0_12px_26px_-14px_rgb(0_0_0/0.28)] active:scale-[0.985]; }
+  .card-lien {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    @apply rounded-[18px] px-4 py-3 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_18px_-14px_rgb(0_0_0/0.2)] transition duration-200 ease-(--ease-ios) hover:-translate-y-0.5 hover:shadow-[0_2px_4px_rgb(0_0_0/0.05),0_12px_26px_-14px_rgb(0_0_0/0.28)] active:scale-[0.985];
+  }
   .chevron { @apply text-xl leading-none text-slate-300 transition duration-200 ease-(--ease-ios); }
   .card-lien:hover .chevron, .group:hover .chevron { @apply translate-x-0.5 text-slate-400; }
 
   /* contrôle segmenté iOS (onglets) : liens ou boutons, l'élément actif porte aria-current="page" */
-  .segmented { @apply flex gap-1 rounded-xl bg-[#efe6dc] p-1; }
-  .segmented > * { @apply flex-1 rounded-[9px] px-3 py-1.5 text-center text-sm font-medium text-slate-600 transition duration-200 ease-(--ease-ios) hover:text-slate-900; }
+  .segmented { background-color: var(--bg-segmented); @apply flex gap-1 rounded-xl p-1; }
+  .segmented > * { color: var(--text-muted); @apply flex-1 rounded-[9px] px-3 py-1.5 text-center text-sm font-medium transition duration-200 ease-(--ease-ios); }
+  .segmented > *:hover { color: var(--text-main); }
   .segmented > [aria-current="page"] { @apply text-accent-700; --teinte: rgb(255 255 255 / 0.7); --teinte-survol: rgb(255 255 255 / 0.8); --ombre: rgb(88 88 210 / 0.35); }
 
   /*
    * « Verre liquide » (façon iOS 26) sur certains boutons : fond teinté translucide qui floute et sature ce qui est
    * derrière, liseré lumineux, reflet en haut et ombre interne en bas. Teinte : --teinte / --teinte-survol / --ombre.
-   * Écrit SANS imbrication CSS (`&:hover {…}`) : le serveur tourne en `next dev`, qui envoie le CSS tel quel, et un
-   * navigateur sans imbrication perdait la teinte et le texte blanc. Le bouton ne bouge plus au survol (le flou
-   * tremblait) et le reflet ne glisse plus (il laissait une bande nette sur le côté).
    */
   .liquide, .btn-primary, .btn-orange, .btn-hero, .segmented > [aria-current="page"] {
     position: relative;
@@ -131,6 +232,10 @@ body::before {
 /* entrée de page (app/template.tsx) : léger fondu + glissement vers le haut */
 @keyframes entree-page { from { opacity: 0; transform: translateY(10px) scale(0.995); } to { opacity: 1; transform: none; } }
 .entree-page { animation: entree-page 0.38s var(--ease-ios) backwards; }
+
+/* transition fluide entre questions de quiz */
+@keyframes glisse-question { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+.glisse-question { animation: glisse-question 0.26s var(--ease-ios) backwards; }
 
 /* les cartes d'une page apparaissent l'une après l'autre */
 @keyframes apparition { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

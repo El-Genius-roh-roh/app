@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowUp, BookOpen, FileText, ListChecks, MessageSquare, Settings, Trash2 } from "lucide-react";
 import { etatGenerationIA, llmConfigured, preparerEnArrierePlan } from "@/lib/quiz/ai";
 import IaPanel from "./IaPanel";
 import { notFound } from "next/navigation";
@@ -7,6 +8,7 @@ import { q } from "@/lib/db";
 import { getSubjectFor } from "@/lib/subjects";
 import { importer, supprimer, monter, genererQuiz, jourSuivant, renommerMatiere, supprimerMatiere } from "./actions";
 import ConfirmButton from "@/components/ConfirmButton";
+import DropZone from "@/components/DropZone";
 import NextButton from "@/components/NextButton";
 import { todayParis } from "@/lib/clock";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -34,35 +36,37 @@ export default async function Matiere({ params, searchParams }: { params: Promis
   const soeurs = await q<{ id: string; nom: string }>("select id,nom from subjects where group_id=$1 order by created_at", [s.group_id]);
   const suivante = soeurs.length > 1 ? soeurs[(soeurs.findIndex((m) => m.id === id) + 1) % soeurs.length] : null;
 
-  const DocBox = ({ categorie, titre, icone, couleur }: { categorie: "cours" | "annale"; titre: string; icone: string; couleur: string }) => {
+  const DocBox = ({ categorie, titre, icone, couleur }: { categorie: "cours" | "annale"; titre: string; icone: React.ReactNode; couleur: string }) => {
     const list = docs.filter((d) => d.categorie === categorie);
     return (
       <section className="card space-y-3">
-        <h2 className={`h2 ${couleur}`}>{icone} {titre}</h2>
+        <h2 className={`h2 flex items-center gap-2 ${couleur}`}>{icone}{titre}</h2>
         {list.length === 0 && <p className="muted">Aucun PDF.</p>}
         <ul className="space-y-2">
           {list.map((d) => (
             <li key={d.id} className="flex items-center gap-2 rounded-2xl bg-slate-50 px-3 py-2 text-sm">
               <span title={d.erreur ?? STATUT_TXT[d.statut]} aria-label={STATUT_TXT[d.statut]} className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUT[d.statut]}`} />
-              <a href={url(`/api/documents/${d.id}/file`)} target="_blank" className="flex-1 truncate">{d.nom}</a>
+              <a href={url(`/api/documents/${d.id}/file`)} target="_blank" className="flex-1 truncate font-medium hover:underline">{d.nom}</a>
               {canManage && categorie === "cours" && d.ordre > 1 && (
-                <form action={monter}><input type="hidden" name="subject" value={id} /><input type="hidden" name="doc" value={d.id} /><button title="Monter" className=" text-accent-600">↑</button></form>
+                <form action={monter}>
+                  <input type="hidden" name="subject" value={id} /><input type="hidden" name="doc" value={d.id} />
+                  <button title="Monter" aria-label={`Monter ${d.nom}`} className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-accent-600 transition hover:bg-accent-100">
+                    <ArrowUp className="h-4 w-4" />
+                  </button>
+                </form>
               )}
               {canManage && (
-                <form action={supprimer}><input type="hidden" name="subject" value={id} /><input type="hidden" name="doc" value={d.id} /><button title="Supprimer" className=" text-rose-500">✕</button></form>
+                <form action={supprimer}>
+                  <input type="hidden" name="subject" value={id} /><input type="hidden" name="doc" value={d.id} />
+                  <button title="Supprimer" aria-label={`Supprimer ${d.nom}`} className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-rose-500 transition hover:bg-rose-100">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </form>
               )}
             </li>
           ))}
         </ul>
-        {canManage && (
-          <form action={importer} className="space-y-2">
-            <input type="hidden" name="subject" value={id} />
-            <input type="hidden" name="categorie" value={categorie} />
-            <input type="file" name="fichier" accept="application/pdf" multiple required
-              className="w-full rounded-2xl border-2 border-dashed border-accent-200 p-3 text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-accent-100 file:px-3 file:py-1.5 file:font-bold file:text-accent-700" />
-            <button className="btn-ghost py-2">Importer</button>
-          </form>
-        )}
+        {canManage && <DropZone action={importer} subjectId={id} categorie={categorie} />}
       </section>
     );
   };
@@ -84,12 +88,12 @@ export default async function Matiere({ params, searchParams }: { params: Promis
           {canManage && llmConfigured() && <IaPanel subjectId={id} etat={etatIA} secondes={etatIA?.enCours ? Math.round((Date.now() - etatIA.debut) / 1000) : 0} />}
           {canManage && (
             <div className="grid gap-3 sm:grid-cols-2">
-              <Link href={`/matieres/${id}/chat`} className="btn-orange">Générer avec le chat</Link>
-              <Link href={`/matieres/${id}/questions`} className="btn-white">Créer / modifier les questions</Link>
+              <Link href={`/matieres/${id}/chat`} className="btn-orange"><MessageSquare className="h-4 w-4" /> Générer avec le chat</Link>
+              <Link href={`/matieres/${id}/questions`} className="btn-white"><ListChecks className="h-4 w-4" /> Gérer les questions</Link>
             </div>
           )}
-          <DocBox categorie="cours" titre="Cours" icone="" couleur="text-sky-600" />
-          <DocBox categorie="annale" titre="Annales" icone="" couleur="text-orange-600" />
+          <DocBox categorie="cours" titre="Cours" icone={<BookOpen className="h-5 w-5" />} couleur="text-sky-600" />
+          <DocBox categorie="annale" titre="Annales" icone={<FileText className="h-5 w-5" />} couleur="text-orange-600" />
         </div>
       </div>
 
@@ -104,7 +108,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
       )}
       {canManage && (
         <details className="card">
-          <summary className="text-accent-700">Modifier ou supprimer la matière</summary>
+          <summary className="inline-flex items-center gap-2 font-semibold text-accent-700"><Settings className="h-4 w-4" /> Paramètres de la matière</summary>
           <div className="mt-3 space-y-3">
             <form action={renommerMatiere} className="flex gap-2">
               <input type="hidden" name="subject" value={id} />

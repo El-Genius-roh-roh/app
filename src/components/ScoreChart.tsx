@@ -126,7 +126,7 @@ export default function ScoreChart({ data, meId, maxQuestions }: { data: SeasonH
             const last = s.values.reduce<number>((a, v, i) => (v !== null ? i : a), -1);
             if (last < 0) return null;
             return (
-              <text key={s.userId} x={xr(last) + 8} y={y(s.values[last]!)} dy="0.32em" fontSize="12" fontWeight="700" fill="#334155">
+              <text key={s.userId} x={xr(last) + 8} y={y(s.values[last]!)} dy="0.32em" fontSize="12" fontWeight="700" className="fill-slate-700">
                 {s.pseudo.length > 9 ? s.pseudo.slice(0, 8) + "…" : s.pseudo}
               </text>
             );

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ChevronRight, Settings } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { memberRole } from "@/lib/groups";
 import { creerMatiere, renommerGroupe, supprimerGroupe } from "./actions";
 import ConfirmButton from "@/components/ConfirmButton";
+import CopyButton from "@/components/CopyButton";
 import NextButton from "@/components/NextButton";
 import { getGroupRanking, getGroupResults, getGroupTrophees } from "@/lib/ranking";
 import { ligueDe, vitrine } from "@/lib/trophees";
@@ -33,7 +35,12 @@ export default async function Groupe({ params, searchParams }: { params: Promise
       <Link href="/" className="back">Accueil</Link>
       <header className="hero">
         <h1 className="title">{g.nom}</h1>
-        <p className="mt-2 text-sm text-white/90">Code d&apos;invitation <span className="ml-1 rounded-lg bg-white/20 px-2 py-0.5 font-mono text-base tracking-widest">{g.code_invitation}</span></p>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/90">
+          <span>Code d&apos;invitation</span>
+          <span className="rounded-lg bg-white/20 px-2.5 py-0.5 font-mono text-base font-semibold tracking-widest">{g.code_invitation}</span>
+          <CopyButton text={g.code_invitation} toastMessage={`Code ${g.code_invitation} copié !`}
+            className="bg-white/20 text-white hover:bg-white/30" />
+        </div>
       </header>
 
       <nav className="segmented max-w-md" aria-label="Onglets du groupe">
@@ -61,7 +68,7 @@ export default async function Groupe({ params, searchParams }: { params: Promise
 
       {onglet === "defi" && role === "admin" && (
         <details className="card">
-          <summary className="text-accent-600">Modifier ou supprimer le groupe</summary>
+          <summary className="inline-flex items-center gap-2 font-semibold text-accent-600"><Settings className="h-4 w-4" /> Paramètres du groupe</summary>
           <div className="mt-3 space-y-3">
             <form action={renommerGroupe} className="flex gap-2">
               <input type="hidden" name="group" value={id} />
@@ -108,7 +115,7 @@ async function Defi({ groupId, userId, matieres }: { groupId: string; userId: st
                       {rattrapages.length > 0 && ` · ${rattrapages.length} à rattraper`}
                     </span>
                   </span>
-                  <span aria-hidden className="chevron">›</span>
+                  <ChevronRight className="chevron h-5 w-5" aria-hidden />
                 </Link>
               </li>
             );
@@ -121,7 +128,7 @@ async function Defi({ groupId, userId, matieres }: { groupId: string; userId: st
           <h2 className="text-2xl font-bold tracking-tight lg:text-3xl">Classement général</h2>
           <span className="muted">gemmes, toutes matières</span>
         </div>
-        <RankTable meId={userId} groupId={groupId} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
+        <RankTable podium meId={userId} groupId={groupId} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
           detail: `${l.jours} quiz joué${l.jours > 1 ? "s" : ""}`, badge: <GemmesCompteur n={l.points} className="text-base text-slate-800" /> }))} />
       </section>
     </div>
@@ -142,7 +149,7 @@ async function Competitif({ groupId, userId }: { groupId: string; userId: string
         <LigueCard info={ligueDe(mesTrophees)} trophees={mesTrophees} serie={maVitrine.serieActuelle} />
         <section className="card space-y-3">
           <h2 className="h2">Classement des trophées</h2>
-          <RankTable meId={userId} groupId={groupId} lines={tr.lignes.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
+          <RankTable podium meId={userId} groupId={groupId} lines={tr.lignes.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
             badge: <><LigueBadge ligue={ligueDe(l.trophees).ligue} /><TropheesCompteur n={l.trophees} className="ml-1 text-sm text-slate-700" /></> }))} />
           <p className="muted">Les trophées se gagnent à la fin de chaque saison : jours de la saison × joueurs classés derrière soi aux gemmes.</p>
         </section>
