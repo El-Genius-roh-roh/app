@@ -35,10 +35,22 @@ export function numeroDuJour(date: string): number {
   return Math.floor(Date.UTC(a, m - 1, j) / 86_400_000);
 }
 
-/** Jeu du jour d'une date de jeu : le roulement avance d'un cran chaque jour. */
-export function formatDuJour(date: string): Format {
+/** Décalage du roulement propre à une matière (hachage stable de son identifiant). */
+function decalage(subjectId: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < subjectId.length; i++) { h ^= subjectId.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+/**
+ * Jeu du jour d'une matière à une date de jeu : le roulement avance d'un cran chaque jour, décalé selon la matière
+ * (D50) pour que, le même jour, toutes les matières n'aient pas le même jeu. Avant DEFI.DECALAGE_DEPUIS, roulement
+ * commun à toutes les matières (les jeux déjà joués gardent leur jeu).
+ */
+export function formatDuJour(date: string, subjectId: string): Format {
   const r = DEFI.FORMATS;
-  return r[((numeroDuJour(date) % r.length) + r.length) % r.length];
+  const d = date >= DEFI.DECALAGE_DEPUIS ? decalage(subjectId) % r.length : 0;
+  return r[(((numeroDuJour(date) + d) % r.length) + r.length) % r.length];
 }
 
 /** Relier a besoin d'au moins deux QCM, le Memory de DEFI.MEMORY_MIN_PAIRES paires : sinon on retombe sur le QCM. */

@@ -36,7 +36,7 @@ export async function getGroupRanking(groupId: string): Promise<CumulLine[]> {
   return classementCumule(rows);
 }
 
-export type DayLine = { userId: string; pseudo: string; rang: number; erreurs: number; dureeMs: number; battus: number; points: number; retard: number };
+export type DayLine = { userId: string; pseudo: string; rang: number; erreurs: number; dureeMs: number; battus: number; points: number; retard: number; encouragement: boolean };
 export type DayRanking = { dayId: string; date: string; saison: number; jour: number; fige: boolean; lines: DayLine[]; absents: string[] };
 
 export async function getDayRanking(dayId: string): Promise<DayRanking | null> {
@@ -45,7 +45,7 @@ export async function getDayRanking(dayId: string): Promise<DayRanking | null> {
        from game_days g join subjects s on s.id=g.subject_id where g.id=$1`, [dayId]);
   if (!g) return null;
   const lines = await q<DayLine>(
-    `select r.user_id as "userId", p.pseudo, r.rang, r.erreurs, r.duree_ms::float8 as "dureeMs", r.joueurs_battus as battus, r.points, r.retard_jours as retard
+    `select r.user_id as "userId", p.pseudo, r.rang, r.erreurs, r.duree_ms::float8 as "dureeMs", r.joueurs_battus as battus, r.points, r.retard_jours as retard, r.encouragement
        from daily_results r join profiles p on p.id=r.user_id where r.game_day_id=$1 order by r.rang, r.erreurs, r.duree_ms, p.pseudo`, [dayId]);
   const absents = (await q<{ pseudo: string }>(
     `select p.pseudo from group_members gm join profiles p on p.id=gm.user_id

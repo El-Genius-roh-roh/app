@@ -1,7 +1,10 @@
 import { CONFIG } from "@/config/constants";
 
-/** `retard` : jours de retard (rattrapage, 0 à CONFIG.RATTRAPAGE_JOURS) — ne change pas le rang, seulement les gemmes. */
-export type Result = { userId: string; erreurs: number; dureeMs: number; retard?: number };
+/**
+ * `retard` : jours de retard (rattrapage, 0 à CONFIG.RATTRAPAGE_JOURS) — ne change pas le rang, seulement les gemmes.
+ * `encouragement` : le joueur est dans le dernier quart du classement de la saison (D51) — gemmes majorées.
+ */
+export type Result = { userId: string; erreurs: number; dureeMs: number; retard?: number; encouragement?: boolean };
 export type Ranked = Result & { rang: number; battus: number; base: number; points: number };
 
 export function multiplicateur(jour: number): number {
@@ -26,7 +29,8 @@ export function facteurRetard(retard = 0): number {
 
 /**
  * Classement du jour : erreurs puis temps (ou temps seul, selon le jeu du jour) ; rang « 1, 2, 2, 4 ».
- * Gemmes (champ `points`) : (participation + 10 par joueur derrière) × multiplicateur du jour × pénalité de retard.
+ * Gemmes (champ `points`) : (participation + 10 par joueur derrière) × multiplicateur du jour × pénalité de retard
+ * × (1 + BONUS_DERNIER_QUART) pour le dernier quart du classement de la saison.
  */
 export function classementDuJour(results: Result[], jour: number, critere: Critere = "erreurs"): Ranked[] {
   const m = multiplicateur(jour);
@@ -38,7 +42,8 @@ export function classementDuJour(results: Result[], jour: number, critere: Crite
       const rang = 1 + results.filter((o) => bat(o, r)).length;
       const battus = results.filter((o) => bat(r, o)).length;
       const base = CONFIG.POINTS_PARTICIPATION + CONFIG.POINTS_PAR_JOUEUR_BATTU * battus;
-      return { ...r, rang, battus, base, points: arrondi(base * m * facteurRetard(r.retard)) };
+      const bonus = r.encouragement ? 1 + CONFIG.BONUS_DERNIER_QUART : 1;
+      return { ...r, rang, battus, base, points: arrondi(base * m * facteurRetard(r.retard) * bonus) };
     });
 }
 
@@ -55,4 +60,19 @@ export function classementCumule<T extends Cumul>(rows: T[]): CumulRanked<T>[] {
   return [...rows]
     .sort((a, b) => b.points - a.points || a.erreurs - b.erreurs || a.dureeMs - b.dureeMs)
     .map((r) => ({ ...r, rang: 1 + rows.filter((o) => meilleur(o, r)).length }));
+}
+
+/**
+ * Dernier quart du classement de la saison (D51) : les joueurs qui ont moins d'un quart des joueurs classés derrière eux
+ * (quart arrondi au-dessus : 2 à 4 joueurs classés → le dernier ; 5 à 8 → les 2 derniers…). Des ex æquo à la dernière
+ * place en profitent tous ; personne si tout le monde est à égalité en tête. Il faut au moins 2 joueurs classés.
+ * `classement` = joueurs qui ont déjà joué dans la saison, avant ce jour.
+ */
+export function dernierQuart(classement: { userId: string; rang: number }[]): Set<string> {
+  const n = classement.length;
+  if (n < 2) return new Set();
+  const quart = Math.ceil(n / 4);
+  return new Set(classement
+    .filter((r) => r.rang > 1 && classement.filter((o) => o.rang > r.rang).length < quart)
+    .map((r) => r.userId));
 }

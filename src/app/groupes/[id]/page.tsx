@@ -124,7 +124,7 @@ async function Defi({ groupId, userId, matieres }: { groupId: string; userId: st
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold">{m.nom}</span>
                     <span className="block text-xs text-texte-3">
-                      {!jour ? "Pas de jeu aujourd'hui" : fait ? <>Fait · <span className="num">{resultatTexte(formatDuJour(jour.date), jour.erreurs ?? 0, CONFIG.QUESTIONS_PAR_JOUR)}</span></> : <>Jour <span className="num">{jour.jour}</span></>}
+                      {!jour ? "Pas de jeu aujourd'hui" : fait ? <>Fait · <span className="num">{resultatTexte(formatDuJour(jour.date, m.id), jour.erreurs ?? 0, CONFIG.QUESTIONS_PAR_JOUR)}</span></> : <>Jour <span className="num">{jour.jour}</span></>}
                       {rattrapages.length > 0 && <span className="font-semibold text-energie"> · {rattrapages.length} à rattraper</span>}
                     </span>
                   </span>

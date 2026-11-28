@@ -7,10 +7,10 @@ import { critereDe, formatDuJour, formatJouable, memePaire, numeroDuJour, paquet
 describe("format du défi du jour", () => {
   it("le même toute la journée, un autre le lendemain, et tous y passent", () => {
     const n = DEFI.FORMATS.length;
-    const jours = Array.from({ length: n }, (_, i) => formatDuJour(addDays("2026-11-28", i)));
+    const jours = Array.from({ length: n }, (_, i) => formatDuJour(addDays("2026-11-30", i), "matiere-a"));
     expect(new Set(jours).size).toBe(n);
-    expect(formatDuJour("2026-11-28")).toBe(formatDuJour("2026-11-28"));
-    expect(formatDuJour(addDays("2026-11-28", n))).toBe(jours[0]);
+    expect(formatDuJour("2026-11-30", "matiere-a")).toBe(formatDuJour("2026-11-30", "matiere-a"));
+    expect(formatDuJour(addDays("2026-11-30", n), "matiere-a")).toBe(jours[0]);
   });
   it("numéro du jour continu au changement d'année", () => {
     expect(numeroDuJour("2027-01-01") - numeroDuJour("2026-12-31")).toBe(1);
@@ -46,7 +46,7 @@ describe("Relier", () => {
 describe("jeu du jour (D46)", () => {
   it("roulement QCM, Memory, Mort subite, Relier", () => {
     expect([...DEFI.FORMATS].sort()).toEqual(["memory", "mort_subite", "qcm", "relier"]);
-    const vus = new Set(Array.from({ length: 4 }, (_, i) => formatDuJour(addDays("2026-11-28", i))));
+    const vus = new Set(Array.from({ length: 4 }, (_, i) => formatDuJour(addDays("2026-11-30", i), "matiere-a")));
     expect(vus.size).toBe(4);
   });
   it("Memory sans assez de paires retombe sur le QCM", () => {
@@ -81,5 +81,16 @@ describe("Memory du jour", () => {
     expect(memePaire(p, 0, 1)).toBeNull();
     expect(memePaire(p, 0, 0)).toBeNull();
     expect(memePaire(p, 0, 9)).toBeNull();
+  });
+});
+
+describe("roulement décalé par matière (D50)", () => {
+  it("le même jour, les matières n'ont pas toutes le même jeu", () => {
+    const jeux = new Set(Array.from({ length: 12 }, (_, i) => formatDuJour("2026-12-01", `matiere-${i}`)));
+    expect(jeux.size).toBeGreaterThan(1);
+  });
+  it("avant la date de décalage, roulement commun (les jeux déjà joués ne changent pas)", () => {
+    expect(formatDuJour("2026-11-28", "x")).toBe("memory");
+    expect(formatDuJour("2026-11-28", "y")).toBe("memory");
   });
 });

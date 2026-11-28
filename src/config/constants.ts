@@ -12,6 +12,7 @@ export const CONFIG = {
   BONUS_MULTIPLICATEUR_PAR_JOUR: 0.05,
   RATTRAPAGE_JOURS: 3, // un quiz manqué peut être rattrapé pendant 3 jours (D29)
   PENALITE_RETARD_PAR_JOUR: 0.1, // −10 % de gemmes par jour de retard
+  BONUS_DERNIER_QUART: 0.2, // +20 % de gemmes au jeu du jour pour le dernier quart du classement de la saison (D51)
   DUREE_MAX_TENTATIVE_MIN: 15,
   FUSEAU: "Europe/Paris",
   CODE_INVITATION_LONGUEUR: 6,
@@ -106,6 +107,7 @@ export const DEFI = {
   MEMORY_PAIRES: 8, // paires du Memory du jour (16 cartes), tirées des QCM du jour
   MEMORY_MIN_PAIRES: 4, // en dessous, le jour retombe sur le QCM
   MEMORY_DELAI_ERREUR_MS: 1500, // deux cartes qui ne vont pas ensemble restent visibles ce temps (ou jusqu'au clic suivant)
+  DECALAGE_DEPUIS: "2026-11-29", // à partir de cette date, le roulement est décalé selon la matière (D50)
 };
 
 // Relier : chaque notion (ou question) avec sa définition (ou réponse), en touchant l'une puis l'autre

@@ -6,7 +6,7 @@ import { pool, q } from "../db";
 import { sqlToday, todayParis } from "../clock";
 import { memberRole } from "../groups";
 import { hashString, shuffled, secureRand } from "../rng";
-import { classementDuJour } from "../scoring";
+import { classementCumule, classementDuJour, dernierQuart } from "../scoring";
 import { generateQuestions, validateTechnical, qkey, type GenQuestion, type SrcPage } from "./generate";
 import { verifyQuestion } from "./verify";
 import { carteDe, critereDe, formatDuJour, formatJouable, memePaire, paquetMemory, propositionVF, relierJuste, reserveRelier, vfJuste, type Format } from "./formats";
@@ -258,21 +258,30 @@ export async function finishAttempt(attemptId: string, statut: "terminee" | "clo
 
 /** Résultats du jour (provisoires tant que le jour n'est pas figé). */
 export async function recomputeDay(gameDayId: string) {
-  const [gd] = await q<{ jour_dans_saison: number; fige: boolean }>("select jour_dans_saison,fige from game_days where id=$1", [gameDayId]);
+  const [gd] = await q<{ jour_dans_saison: number; fige: boolean; subject_id: string; saison: number; date: string }>(
+    "select jour_dans_saison,fige,subject_id,saison,to_char(date,'YYYY-MM-DD') as date from game_days where id=$1", [gameDayId]);
   if (!gd) return;
   const rows = await q<{ userId: string; erreurs: number; dureeMs: number; retard: number }>(
     `select user_id as "userId", erreurs, duree_ms as "dureeMs", retard_jours as retard from attempts where game_day_id=$1 and statut in ('terminee','cloturee')`, [gameDayId]);
+  // encouragement (D51) : le dernier quart du classement de la saison AVANT ce jour gagne un peu plus de gemmes
+  // (il faut qu'au moins un jour précédent de la saison ait un classement)
+  const avant = await q<{ userId: string; points: number; erreurs: number; dureeMs: number }>(
+    `select r.user_id as "userId", sum(r.points)::int as points, sum(r.erreurs)::int as erreurs, sum(r.duree_ms)::float8 as "dureeMs"
+       from daily_results r join game_days g on g.id=r.game_day_id
+      where g.subject_id=$1 and g.saison=$2 and g.date < $3::date group by r.user_id`, [gd.subject_id, gd.saison, gd.date]);
+  const quart = dernierQuart(classementCumule(avant));
+  for (const r of rows) (r as { encouragement?: boolean }).encouragement = quart.has(r.userId);
   const mult = (await import("../scoring")).multiplicateur(gd.jour_dans_saison);
   // tous les joueurs d'un jour ont le même jeu (il dépend de la date) : son critère de classement s'applique
   const [f] = await q<{ format: Format }>("select format from attempts where game_day_id=$1 limit 1", [gameDayId]);
   for (const r of classementDuJour(rows, gd.jour_dans_saison, critereDe(f?.format ?? "qcm"))) {
     await q(
-      `insert into daily_results(game_day_id,user_id,rang,erreurs,duree_ms,joueurs_battus,points_base,multiplicateur,points,provisoire,retard_jours)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      `insert into daily_results(game_day_id,user_id,rang,erreurs,duree_ms,joueurs_battus,points_base,multiplicateur,points,provisoire,retard_jours,encouragement)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        on conflict (game_day_id,user_id) do update set rang=excluded.rang, erreurs=excluded.erreurs, duree_ms=excluded.duree_ms,
          joueurs_battus=excluded.joueurs_battus, points_base=excluded.points_base, multiplicateur=excluded.multiplicateur,
-         points=excluded.points, provisoire=excluded.provisoire, retard_jours=excluded.retard_jours`,
-      [gameDayId, r.userId, r.rang, r.erreurs, r.dureeMs, r.battus, r.base, mult, r.points, !gd.fige, r.retard ?? 0]);
+         points=excluded.points, provisoire=excluded.provisoire, retard_jours=excluded.retard_jours, encouragement=excluded.encouragement`,
+      [gameDayId, r.userId, r.rang, r.erreurs, r.dureeMs, r.battus, r.base, mult, r.points, !gd.fige, r.retard ?? 0, !!r.encouragement]);
   }
 }
 
@@ -334,7 +343,9 @@ export async function startAttempt(gameDayId: string, userId: string): Promise<S
     const parKind = [...lignes].sort((x, y) => Number(x.kind !== "new") - Number(y.kind !== "new"));
     const pairesJour = paires(parKind.map((r) => ({ id: r.id, type: r.type, enonce: r.enonce, choix: r.choix, correct_index: r.correct_index }))).slice(0, DEFI.MEMORY_PAIRES);
     // jeu du jour (D46) : il dépend de la date du jour joué (un rattrapage garde le jeu de son jour)
-    const format = formatJouable(formatDuJour(gd.date), qcm.length, pairesJour.length);
+    // un même jour, tous les joueurs ont le même jeu : celui du premier qui l'a commencé, s'il y en a un
+    const [deja] = await q<{ format: Format }>("select format from attempts where game_day_id=$1 order by started_at limit 1", [gameDayId]);
+    const format = deja ? deja.format : formatJouable(formatDuJour(gd.date, gd.subject_id), qcm.length, pairesJour.length);
     const choix: Record<string, number[]> = {};
     for (const id of ordre) {
       const t = types.get(id)!;

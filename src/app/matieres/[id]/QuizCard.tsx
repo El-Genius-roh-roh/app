@@ -60,8 +60,8 @@ export default async function QuizCard({ subjectId, userId, today }: { subjectId
     </div>
   );
   const fait = d.statut && d.statut !== "en_cours";
-  const f = FORMATS[formatDuJour(d.date)];
-  const sous = formatDuJour(d.date) === "memory" ? "retrouve les paires" : formatDuJour(d.date) === "mort_subite" ? "jusqu'à la première erreur" : `${CONFIG.QUESTIONS_PAR_JOUR} questions`;
+  const f = FORMATS[formatDuJour(d.date, subjectId)];
+  const sous = formatDuJour(d.date, subjectId) === "memory" ? "retrouve les paires" : formatDuJour(d.date, subjectId) === "mort_subite" ? "jusqu'à la première erreur" : `${CONFIG.QUESTIONS_PAR_JOUR} questions`;
   return (
     <div className="space-y-5">
       <div className="flex items-end justify-between gap-3">
@@ -72,7 +72,7 @@ export default async function QuizCard({ subjectId, userId, today }: { subjectId
         </div>
         {fait && (
           <div className="shrink-0 text-right">
-            <p className="num text-3xl leading-none font-semibold">{resultatTexte(formatDuJour(d.date), d.erreurs ?? 0, CONFIG.QUESTIONS_PAR_JOUR)}</p>
+            <p className="num text-3xl leading-none font-semibold">{resultatTexte(formatDuJour(d.date, subjectId), d.erreurs ?? 0, CONFIG.QUESTIONS_PAR_JOUR)}</p>
             {d.rang && <p className="mt-2 inline-block rounded-full bg-or-vif px-2.5 py-0.5 font-num text-xs font-semibold text-sur-or">{d.rang === 1 ? "1er" : `${d.rang}e`} du jour</p>}
           </div>
         )}

@@ -62,10 +62,11 @@ export function GemmesCompteur({ n, className = "", plus = false }: { n: number;
 }
 
 /** Pastille « +45 » gemmes gagnées à un quiz, avec la mention « rattrapé » s'il a été joué en retard. */
-export function GainGemmes({ n, retard = 0 }: { n: number; retard?: number }) {
+export function GainGemmes({ n, retard = 0, encouragement = false }: { n: number; retard?: number; encouragement?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-accent-doux px-2 py-0.5 font-num text-xs font-bold text-accent-fort tabular-nums">
-      +{fmt(n)}<GemmeIcone size={13} />{retard > 0 && <span className="font-sans font-medium text-texte-3">· rattrapé</span>}
+    <span className="inline-flex items-center gap-1 rounded-full bg-accent-doux px-2 py-0.5 font-num text-xs font-bold text-accent-fort tabular-nums"
+      title={encouragement ? "Bonus d'encouragement : dernier quart du classement de la saison" : undefined}>
+      +{fmt(n)}<GemmeIcone size={13} />{retard > 0 && <span className="font-sans font-medium text-texte-3">· rattrapé</span>}{encouragement && <span className="font-sans font-medium text-ok">· bonus</span>}
     </span>
   );
 }

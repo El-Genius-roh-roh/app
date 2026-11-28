@@ -51,3 +51,6 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q40 | Que deviennent les gemmes solo (D37) avec les trophées de fin de saison ? | Supprimées : seules les gemmes des jeux du jour comptent (classement de saison, donc trophées). Les sessions solo restent comptées pour les succès et les défis |
 | Q41 | Les trophées se perdent-ils ? Peut-on descendre de ligue ? | Non (comme D30) : les trophées sont acquis à la fin de chaque saison |
 | Q42 | Le classement des trophées d'un groupe compte-t-il les autres groupes ? | Non : il compte les trophées gagnés dans les matières du groupe. La ligue affichée à côté, elle, est la ligue unique du joueur (tous groupes) |
+| Q43 | Combien de bonus pour le dernier quart ? | +20 % des gemmes du jeu du jour (« un tout petit peu plus ») ; réglable dans `CONFIG.BONUS_DERNIER_QUART` |
+| Q44 | Dernier quart avec 2 ou 3 joueurs ? | Le quart est arrondi au-dessus : avec 2 à 4 joueurs classés, le dernier en profite |
+

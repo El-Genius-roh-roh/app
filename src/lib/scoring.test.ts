@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classementDuJour, facteurRetard, multiplicateur } from "./scoring";
+import { classementDuJour, dernierQuart, facteurRetard, multiplicateur } from "./scoring";
 
 describe("multiplicateur", () => {
   it("linéaire", () => {
@@ -100,5 +100,30 @@ describe("classement au temps (Memory du jour, D46)", () => {
     expect(r.find((x) => x.userId === "A")!.rang).toBe(1);
     expect(r.find((x) => x.userId === "B")!.rang).toBe(2);
     expect(r.find((x) => x.userId === "A")!.points).toBe(20);
+  });
+});
+
+describe("encouragement du dernier quart (D51)", () => {
+  const cl = (...rangs: number[]) => rangs.map((rang, i) => ({ userId: String.fromCharCode(65 + i), rang }));
+  it("dernier quart arrondi au-dessus", () => {
+    expect([...dernierQuart(cl(1, 2))]).toEqual(["B"]);
+    expect([...dernierQuart(cl(1, 2, 3, 4))]).toEqual(["D"]);
+    expect([...dernierQuart(cl(1, 2, 3, 4, 5))]).toEqual(["D", "E"]);
+    expect([...dernierQuart(cl(1, 2, 3, 4, 5, 6, 7, 8))]).toEqual(["G", "H"]);
+  });
+  it("personne avant le premier classement, ni seul", () => {
+    expect(dernierQuart([]).size).toBe(0);
+    expect(dernierQuart(cl(1)).size).toBe(0);
+  });
+  it("ex æquo à la limite : dedans si leur rang y est", () => {
+    expect([...dernierQuart(cl(1, 2, 3, 3))]).toEqual(["C", "D"]);
+    expect(dernierQuart(cl(1, 1)).size).toBe(0);
+  });
+  it("+20 % de gemmes, sans changer le rang", () => {
+    const r = classementDuJour([
+      { userId: "A", erreurs: 0, dureeMs: 1000 },
+      { userId: "B", erreurs: 1, dureeMs: 1000, encouragement: true },
+    ], 1);
+    expect(r.map((x) => [x.userId, x.rang, x.points])).toEqual([["A", 1, 20], ["B", 2, 12]]);
   });
 });

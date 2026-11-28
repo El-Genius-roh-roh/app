@@ -43,7 +43,7 @@ export default async function Accueil({ searchParams }: { searchParams: Promise<
   const restants = jours.filter((j) => !fait(j));
   const prochain = restants[0];
   const N = CONFIG.QUESTIONS_PAR_JOUR;
-  const fmtJ = (j: Jour) => j.format ?? formatDuJour(j.date);
+  const fmtJ = (j: Jour) => j.format ?? formatDuJour(j.date, j.subject_id);
   // quiz manqués encore rattrapables (gemmes réduites de 10 % par jour de retard)
   const rattrapages = await q<{ day_id: string; matiere: string; jour: number; retard: number; statut: string | null }>(
     `select gd.id as day_id, s.nom as matiere, gd.jour_dans_saison as jour, (${sqlToday("s.id")} - gd.date)::int as retard, a.statut

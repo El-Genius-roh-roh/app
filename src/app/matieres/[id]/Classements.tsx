@@ -36,10 +36,10 @@ export default async function Classements({ subjectId, nom, groupId, userId, tod
 
       {day && (
         <section className="space-y-3">
-          <h2 className="eyebrow">Classement du jour · {FORMATS[formatDuJour(day.date)].titre} {day.date !== today && <span className="normal-case tracking-normal">(jour {day.jour})</span>}</h2>
+          <h2 className="eyebrow">Classement du jour · {FORMATS[formatDuJour(day.date, subjectId)].titre} {day.date !== today && <span className="normal-case tracking-normal">(jour {day.jour})</span>}</h2>
           <RankTable meId={userId} groupId={groupId} empty="Personne n'a encore joué."
-            lines={day.lines.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, detail: `${resultatTexte(formatDuJour(day.date), l.erreurs, CONFIG.QUESTIONS_PAR_JOUR)} · ${fmtMs(l.dureeMs)}`,
-              badge: <><Exploits {...exploitsDuJour(day.lines.map((x) => ({ ...x, dayId: day.dayId, date: day.date })), l.userId)} /><GainGemmes n={l.points} retard={l.retard} /></> }))} />
+            lines={day.lines.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang, detail: `${resultatTexte(formatDuJour(day.date, subjectId), l.erreurs, CONFIG.QUESTIONS_PAR_JOUR)} · ${fmtMs(l.dureeMs)}`,
+              badge: <><Exploits {...exploitsDuJour(day.lines.map((x) => ({ ...x, dayId: day.dayId, date: day.date })), l.userId)} /><GainGemmes n={l.points} retard={l.retard} encouragement={l.encouragement} /></> }))} />
         </section>
       )}
 

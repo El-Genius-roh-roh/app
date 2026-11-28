@@ -105,7 +105,7 @@ Un seul joueur a joué : 0 battu, base 10, multiplicateur 1,00 → 10 points.
 
 ### Jeu du jour (D46)
 
-Chaque matière a **un jeu du jour**, toujours sur les questions du jour (découpage du cours du jour + quelques révisions, §1 du doc 03). Le jeu change chaque jour par roulement sur la date de jeu (`DEFI.FORMATS`) :
+Chaque matière a **un jeu du jour**, toujours sur les questions du jour (découpage du cours du jour + quelques révisions, §1 du doc 03). Le jeu change chaque jour par roulement (`DEFI.FORMATS`), **décalé selon la matière** (D50) : le même jour, deux matières n'ont pas forcément le même jeu. Tous les joueurs d'un même jour d'une matière ont le même jeu (celui du premier qui l'a commencé) :
 
 | Jeu | Déroulé | Classement du jour |
 |-----|---------|--------------------|
@@ -124,7 +124,13 @@ Les « points du jour » du §4 s'affichent sous le nom de **gemmes**. Ils ne so
 gemmes(j) = arrondi( (10 + 10 × joueurs_derrière(j)) × multiplicateur(jour) × (1 − 0,10 × retard) )
 ```
 
-`joueurs_derrière(j)` = joueurs battus au §2 selon le critère du jeu (égalité parfaite : ne compte pas). Le classement de saison (§5) et le classement général (§6) se font aux gemmes. Les activités solo (flashcards, Memory et Relier hors jeu du jour, Arène contre des bots) **ne rapportent pas de gemmes** (D47) : elles comptent pour les succès et les défis du tableau de bord.
+`joueurs_derrière(j)` = joueurs battus au §2 selon le critère du jeu (égalité parfaite : ne compte pas).
+
+**Encouragement (D51)** : un joueur dans le **dernier quart du classement de la saison** (classement aux gemmes des jours précédents de la saison, parmi ceux qui ont déjà joué) gagne **+20 %** de gemmes à son jeu du jour (`BONUS_DERNIER_QUART`), après la pénalité de retard. Il faut qu'au moins un jour précédent de la saison ait un classement. Dernier quart = moins d'un quart des joueurs classés (arrondi au-dessus) derrière soi, sans être à égalité en tête : 2 à 4 joueurs → le dernier ; 5 à 8 → les 2 derniers. Le rang du jour ne change pas.
+
+```
+gemmes(j) = arrondi( (10 + 10 × joueurs_derrière(j)) × multiplicateur × (1 − 0,10 × retard) × (1,2 si dernier quart) )
+``` Le classement de saison (§5) et le classement général (§6) se font aux gemmes. Les activités solo (flashcards, Memory et Relier hors jeu du jour, Arène contre des bots) **ne rapportent pas de gemmes** (D47) : elles comptent pour les succès et les défis du tableau de bord.
 
 ### Rattrapage (D29)
 

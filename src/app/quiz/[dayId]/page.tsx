@@ -42,7 +42,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
 
   if (finished) {
     const a = attempt as typeof attempt & { erreurs: number; duree_ms: number; format: Format };
-    const [res] = await q<{ points: number; rang: number; retard: number }>("select points, rang, retard_jours as retard from daily_results where game_day_id=$1 and user_id=$2", [dayId, u.id]);
+    const [res] = await q<{ points: number; rang: number; retard: number; encouragement: boolean }>("select points, rang, retard_jours as retard, encouragement from daily_results where game_day_id=$1 and user_id=$2", [dayId, u.id]);
     const format = a.format ?? "qcm";
     const score = resultatTexte(format, a.erreurs, items.length);
     const jour = await getDayRanking(dayId);
@@ -73,6 +73,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
                   <p className="num flex items-center gap-1.5 text-2xl leading-none font-semibold text-accent-fort" title="Gemmes gagnées">
                     +{res.points} <GemmeIcone size={20} />
                   </p>
+                  {res.encouragement && <p className="mt-1 text-xs font-semibold text-ok">Encouragement : +<span className="num">{Math.round(CONFIG.BONUS_DERNIER_QUART * 100)} %</span> de gemmes</p>}
                   {res.retard > 0 && <p className="mt-1 text-xs text-texte-3">Rattrapage : −<span className="num">{Math.round((1 - facteurRetard(res.retard)) * 100)} %</span> de gemmes</p>}
                   <p className="mt-1 text-xs text-texte-2">Ligue {ligue.ligue.nom} · <TropheesCompteur n={mesTrophees} className="text-or" /></p>
                 </div>
@@ -122,7 +123,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
           <span><b>Rattrapage du jour {gd.jour}</b> (<span className="num">{retard}</span> jour{retard > 1 ? "s" : ""} de retard) : tu gagneras <span className="num font-semibold">{Math.round(facteurRetard(retard) * 100)} %</span> des gemmes habituelles.</span>
         </p>
       )}
-      <QuizPlayer gameDayId={dayId} initial={initial} format={(attempt as { format?: Format } | null)?.format ?? formatDuJour(gd.date)} />
+      <QuizPlayer gameDayId={dayId} initial={initial} format={(attempt as { format?: Format } | null)?.format ?? formatDuJour(gd.date, gd.subject_id)} />
     </main>
   );
 }
