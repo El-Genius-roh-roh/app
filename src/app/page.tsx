@@ -64,6 +64,39 @@ export default async function Accueil() {
 
       <div className="space-y-7 lg:grid lg:grid-cols-[1.4fr_1fr] lg:items-start lg:gap-10 lg:space-y-0">
         <div className="space-y-7">
+          <section className="space-y-3" aria-labelledby="t-groupes">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="t-groupes" className="h2">Mes groupes</h2>
+              <span className="flex shrink-0 items-center gap-1 text-sm font-bold">
+                <Link href="/groupes/nouveau" className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-accent-fort hover:bg-accent-doux"><Icon name="plus" size={16} />Créer</Link>
+                <Link href="/rejoindre" className="inline-flex min-h-11 items-center rounded-lg px-2 text-texte-2 hover:bg-surface-2">Rejoindre</Link>
+              </span>
+            </div>
+            {groupes.length === 0 && (
+              <div className="card space-y-1">
+                <p className="font-semibold">Pas encore de groupe</p>
+                <p className="muted">Crée le tien, ou rejoins celui de tes amis avec leur code d&apos;invitation.</p>
+              </div>
+            )}
+            <ul className="grid gap-2.5 sm:grid-cols-2">
+              {groupes.map((g) => (
+                <li key={g.id}>
+                  <Link href={`/groupes/${g.id}`} className="tuile group flex items-center gap-3.5">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-surface-2 font-titre text-lg font-extrabold text-texte-2" aria-hidden>
+                      {g.nom.trim().charAt(0).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-bold">{g.nom}</span>
+                      <span className="num block text-xs text-texte-3">{g.membres} membre{g.membres > 1 ? "s" : ""} · {g.matieres} matière{g.matieres > 1 ? "s" : ""}</span>
+                    </span>
+                    <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <h2 className="h2">À faire dans tes matières</h2>
           {/* le moment fort : le prochain quiz à jouer */}
           {prochain && (
             <section className="hero entree" aria-labelledby="t-prochain">
@@ -79,8 +112,6 @@ export default async function Accueil() {
             </section>
           )}
 
-          <Defis defis={tb.defis} />
-          <MonClassement classements={tb.classements} />
 
           <section className="space-y-3" aria-labelledby="t-jour">
             <div className="flex items-baseline justify-between gap-3">
@@ -150,11 +181,6 @@ export default async function Accueil() {
             </section>
           )}
 
-        </div>
-
-        <aside className="space-y-7">
-          <MesSucces succes={tb.succes} />
-
           {/* sans chrono : on apprend à son rythme ; chaque session compte pour le score de la semaine (D37) */}
           {matieres.length > 0 && (
             <section className="space-y-3" aria-labelledby="t-solo">
@@ -162,7 +188,7 @@ export default async function Accueil() {
                 <h2 id="t-solo" className="h2">Flashcards et jeux solo</h2>
                 <p className="text-sm text-texte-3">Sans chrono, sur les notions du cours et les questions des quiz déjà passés. Chaque session terminée rapporte +{SOLO.GEMMES_PAR_SESSION} gemmes pour ta semaine ({SOLO.MAX_PAR_JOUR} max. par jour).</p>
               </div>
-              <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
+              <ul className="grid gap-2.5 sm:grid-cols-2">
                 {matieres.map((m) => {
                   const pret = m.cartes >= FLASHCARDS.MIN;
                   return (
@@ -192,35 +218,12 @@ export default async function Accueil() {
               </ul>
             </section>
           )}
-          <section className="space-y-3" aria-labelledby="t-groupes">
-            <h2 id="t-groupes" className="h2">Mes groupes</h2>
-            {groupes.length === 0 && (
-              <div className="card space-y-1">
-                <p className="font-semibold">Pas encore de groupe</p>
-                <p className="muted">Crée le tien, ou rejoins celui de tes amis avec leur code d&apos;invitation.</p>
-              </div>
-            )}
-            <ul className="space-y-2.5">
-              {groupes.map((g) => (
-                <li key={g.id}>
-                  <Link href={`/groupes/${g.id}`} className="tuile group flex items-center gap-3.5">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-surface-2 font-titre text-lg font-extrabold text-texte-2" aria-hidden>
-                      {g.nom.trim().charAt(0).toUpperCase()}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-bold">{g.nom}</span>
-                      <span className="num block text-xs text-texte-3">{g.membres} membre{g.membres > 1 ? "s" : ""} · {g.matieres} matière{g.matieres > 1 ? "s" : ""}</span>
-                    </span>
-                    <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            <div className="grid grid-cols-2 gap-2.5">
-              <Link href="/groupes/nouveau" className="btn-primary"><Icon name="plus" size={18} />Créer</Link>
-              <Link href="/rejoindre" className="btn-white">Rejoindre</Link>
-            </div>
-          </section>
+        </div>
+
+        <aside className="space-y-7">
+          <Defis defis={tb.defis} />
+          <MonClassement classements={tb.classements} />
+          <MesSucces succes={tb.succes} />
         </aside>
       </div>
     </main>
