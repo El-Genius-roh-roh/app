@@ -5,6 +5,7 @@ import ScoreChart from "@/components/ScoreChart";
 import { exploitsDuJour } from "@/lib/trophees";
 import { Exploits, GainGemmes, GainTrophees, GemmesCompteur } from "@/components/Trophees";
 import { CONFIG } from "@/config/constants";
+import Details from "@/components/Details";
 
 export default async function Classements({ subjectId, nom, groupId, userId, today, saisonParam }: { subjectId: string; nom: string; groupId: string; userId: string; today: string; saisonParam?: string }) {
   const seasons = await getSeasons(subjectId);
@@ -49,10 +50,10 @@ export default async function Classements({ subjectId, nom, groupId, userId, tod
         <RankTable podium meId={userId} groupId={groupId} empty="Personne n'a encore joué cette saison."
           lines={st.classement.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
             badge: <><GemmesCompteur n={l.points} className="text-sm text-accent-fort" /><GainTrophees n={l.trophees} provisoire={!info.termine} /></> }))} />
-        <p className="text-sm text-texte-3">
+        <Details>
           {info.termine ? "Trophées gagnés" : "Trophées en jeu si la saison s'arrêtait aujourd'hui"} : <span className="num">{st.nbJours}</span> par joueur classé derrière soi
           (<span className="num">{st.nbJours}</span> jours de saison).
-        </p>
+        </Details>
       </section>
 
       <section className="card space-y-3">

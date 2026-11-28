@@ -5,6 +5,7 @@ import { url } from "@/lib/url";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
 import CopyButton from "@/components/CopyButton";
+import Details from "@/components/Details";
 
 type J = { id: string; name: string; bot: boolean; left: boolean; pos: number; bonnes: number; tentees: number; host: boolean };
 type Vue = {
@@ -138,9 +139,11 @@ export default function PlateauRoom({ code }: { code: string }) {
           <CopyButton text={v.code} label="Copier le code" className="absolute top-3 right-3 text-sur-accent/70 hover:!bg-sur-accent/15 hover:!text-sur-accent" />
           <p className="mt-3 text-sm opacity-90">À saisir dans « Rejoindre », sur la page Arène.</p>
         </section>
-        <div className="card flex items-start gap-3 text-sm text-texte-2">
+        <div className="card flex items-center gap-3 py-3">
           <De n={5} size={40} />
-          <p>Chacun son tour, lance le dé. Pour avancer jusqu&apos;à la case visée, réponds juste à une question de <b className="text-texte">son thème</b> (une matière du groupe). Faux ou trop lent : tu restes sur place. Le premier à la case <span className="num">{v.arrivee}</span> gagne.</p>
+          <Details label="Règles du jeu">
+            Chacun son tour, lance le dé. Pour avancer jusqu&apos;à la case visée, réponds juste à une question de <b className="text-texte-2">son thème</b>. Faux ou trop lent : tu restes sur place. Le premier à la case <span className="num">{v.arrivee}</span> gagne.
+          </Details>
         </div>
         <section className="space-y-3" aria-labelledby="t-j">
           <h2 id="t-j" className="h2">Joueurs <span className="num text-texte-3">{v.joueurs.length}</span></h2>

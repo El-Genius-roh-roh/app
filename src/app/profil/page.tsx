@@ -4,6 +4,7 @@ import { getUser, clearSession } from "@/lib/auth";
 import { q } from "@/lib/db";
 import Avatar from "@/components/Avatar";
 import Icon from "@/components/Icon";
+import Details from "@/components/Details";
 import PhotoForm from "./PhotoForm";
 
 async function enregistrer(fd: FormData) {
@@ -33,9 +34,11 @@ export default async function Profil({ searchParams }: { searchParams: Promise<{
         <label htmlFor="pseudo" className="block text-sm font-bold">Pseudo</label>
         <input id="pseudo" name="pseudo" defaultValue={u.pseudo ?? ""} required minLength={2} maxLength={30} autoComplete="nickname"
           aria-invalid={err ? true : undefined} aria-describedby="pseudo-aide" className="input" />
-        <p id="pseudo-aide" className={`text-sm ${err ? "font-semibold text-ko" : "text-texte-3"}`} role={err ? "alert" : undefined}>
-          {err ? "Le pseudo doit faire au moins 2 caractères." : "Visible par les membres de tes groupes, de 2 à 30 caractères."}
-        </p>
+        {err ? (
+          <p id="pseudo-aide" className="text-sm font-semibold text-ko" role="alert">Le pseudo doit faire au moins 2 caractères.</p>
+        ) : (
+          <Details>Visible par les membres de tes groupes, de 2 à 30 caractères.</Details>
+        )}
         <button className="btn-primary">Enregistrer le pseudo</button>
       </form>
       <form action={quitter}>

@@ -3,6 +3,7 @@ import { useActionState } from "react";
 import { genererIA, type IaState } from "./actions";
 import type { EtatIA } from "@/lib/quiz/ai";
 import Icon from "@/components/Icon";
+import Details from "@/components/Details";
 
 /**
  * Bouton « Générer avec l'IA » : lance l'écriture des 3 prochains quiz en arrière-plan.
@@ -15,7 +16,7 @@ export default function IaPanel({ subjectId, etat, secondes }: { subjectId: stri
     <form action={action} className="card space-y-3" aria-busy={enCours}>
       <input type="hidden" name="subject" value={subjectId} />
       <h2 className="h2 flex items-center gap-2"><Icon name="sparkles" className="text-accent" />Questions par l&apos;IA</h2>
-      <p className="text-sm text-texte-2">L&apos;IA écrit les quiz des 3 prochains jours à partir des slides, puis vérifie chaque réponse. Comptez 1 à 2 minutes : vous pouvez quitter la page, ça continue.</p>
+      <Details>L&apos;IA écrit les quiz des 3 prochains jours à partir des slides, puis vérifie chaque réponse (1 à 2 min en arrière-plan).</Details>
       <label className="flex min-h-11 items-center gap-3 text-sm text-texte-2">
         <input type="checkbox" name="regenerer" value="1" className="h-5 w-5 accent-[var(--color-accent)]" />
         Refaire aussi les quiz déjà prêts (si personne ne les a commencés)

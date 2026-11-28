@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { url } from "@/lib/url";
 import Icon from "@/components/Icon";
+import Details from "@/components/Details";
 
 type M = { id: string; titre: string; desc: string };
 
@@ -37,7 +38,6 @@ export default function ArenaCreate({ groupId, modes, dispo }: { groupId: string
             <button key={m.id} type="button" onClick={() => setMode(m.id)} aria-pressed={mode === m.id} className={choix(mode === m.id)}>{m.titre}</button>
           ))}
         </div>
-        <p className="text-sm text-texte-3">{modes.find((m) => m.id === mode)?.desc}</p>
       </fieldset>
       <fieldset>
         <legend className="eyebrow mb-2">{mode === "course" ? "Manches au maximum" : "Manches"}</legend>
@@ -50,9 +50,12 @@ export default function ArenaCreate({ groupId, modes, dispo }: { groupId: string
       <button onClick={create} disabled={busy} className="btn-orange">
         {busy ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-sur-energie/30 border-t-sur-energie" aria-hidden />Création…</> : <><Icon name="plus" size={18} />Créer une partie</>}
       </button>
-      <p className="text-xs text-texte-3">
-        {dispo === 0 ? "Pas encore de question disponible : l'Arène pioche dans les quiz des jours passés." : <><span className="num">{dispo}</span> question{dispo > 1 ? "s" : ""} disponible{dispo > 1 ? "s" : ""} (quiz des jours passés).</>}
-      </p>
+      <Details>
+        <p>{modes.find((m) => m.id === mode)?.desc}</p>
+        <p className="mt-1">
+          {dispo === 0 ? "Pas encore de question disponible : l'Arène pioche dans les quiz des jours passés." : <><span className="num">{dispo}</span> question{dispo > 1 ? "s" : ""} disponible{dispo > 1 ? "s" : ""} (quiz des jours passés).</>}
+        </p>
+      </Details>
       {err && <p className="text-sm font-semibold text-ko" role="alert">{err}</p>}
     </div>
   );

@@ -98,10 +98,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
             <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-doux text-accent-fort shadow-[0_3px_0_var(--color-ligne)]">
               <Icon name="cards" size={22} />
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-bold">Flashcards</span>
-              <span className="block text-sm text-texte-3">Question au recto, réponse au verso</span>
-            </span>
+            <span className="min-w-0 flex-1 font-bold">Flashcards</span>
             <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link href={`/matieres/${id}/memory`} className="tuile group flex items-center gap-3.5">
@@ -109,10 +106,7 @@ export default async function Matiere({ params, searchParams }: { params: Promis
               <span className="rounded-[3px] bg-sur-accent/85" /><span className="rounded-full bg-or-vif" />
               <span className="rounded-full bg-sur-accent/45" /><span className="rounded-[3px] bg-sur-accent/85" />
             </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-bold">Memory</span>
-              <span className="block text-sm text-texte-3">Associe chaque question à sa réponse</span>
-            </span>
+            <span className="min-w-0 flex-1 font-bold">Memory</span>
             <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
           </Link>
           </div>

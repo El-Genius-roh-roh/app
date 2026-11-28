@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { url } from "@/lib/url";
 import Tex from "./Tex";
 import Icon from "./Icon";
+import Details from "./Details";
 
 type Q = { id: string; type: "qcm" | "vrai_faux"; enonce: string; choices: string[] };
 type State = { attemptId: string; index: number; total: number; question: Q; elapsedMs: number };
@@ -119,7 +120,7 @@ export default function QuizPlayer({ gameDayId, initial }: { gameDayId: string; 
           );
         })}
       </div>
-      <p className="hidden text-center text-xs text-texte-3 lg:block">Astuce : touches {vf ? "V / F" : "1 à 4"} pour répondre</p>
+      <Details label="Raccourcis" className="hidden text-center lg:block">Touches {vf ? "V / F" : "1 à 4"} pour répondre</Details>
       {err && <p className="text-sm text-ko" role="alert">{err}</p>}
     </div>
   );

@@ -5,6 +5,7 @@ import { url } from "@/lib/url";
 import Tex from "@/components/Tex";
 import Icon from "@/components/Icon";
 import CopyButton from "@/components/CopyButton";
+import Details from "@/components/Details";
 
 type P = {
   id: string; name: string; bot: boolean; left: boolean; host: boolean; score: number; streak: number; rank: number; pos: number;
@@ -177,10 +178,10 @@ export default function ArenaRoom({ code }: { code: string }) {
           </p>
         </section>
         {v.mode === "course" && (
-          <p className="card flex items-start gap-2.5 text-sm text-texte-2">
+          <div className="card flex items-center gap-3 py-3">
             <Voiture fond="#2463df" size={34} />
-            <span>Bonne réponse : ta voiture avance de 2 cases, 3 si tu es le plus rapide. Erreur : elle recule d&apos;une case. Pas de réponse : elle reste sur place. Le premier à <span className="num">{v.arrivee}</span> cases gagne.</span>
-          </p>
+            <Details label="Règles de la course">Bonne réponse : +2 cases (+3 si le plus rapide). Erreur : −1 case. Le premier à <span className="num">{v.arrivee}</span> cases gagne.</Details>
+          </div>
         )}
         <section className="space-y-3" aria-labelledby="t-joueurs">
           <h2 id="t-joueurs" className="h2">Joueurs <span className="num text-texte-3">{v.players.length}</span></h2>
@@ -204,7 +205,7 @@ export default function ArenaRoom({ code }: { code: string }) {
               <Icon name="play" size={20} />Lancer la partie
             </button>
             <button onClick={() => act("bot")} className="btn-white"><Icon name="bot" size={18} />Ajouter un bot</button>
-            {humans < 2 && <p className="text-center text-sm text-texte-3">Partage le code à tes amis pour une partie classée. Avec des bots, c&apos;est de l&apos;entraînement.</p>}
+            {humans < 2 && <Details className="text-center">Partage le code à tes amis pour une partie classée. Avec des bots, c&apos;est de l&apos;entraînement.</Details>}
           </div>
         ) : <p className="card flex items-center justify-center gap-2 text-texte-2"><span className="h-2.5 w-2.5 animate-pulse rounded-full bg-accent" aria-hidden />En attente du lancement par l&apos;hôte…</p>}
         <button onClick={() => act("leave").then(() => (location.href = url("/arene")))} className="back mx-auto flex"><Icon name="arrowLeft" size={16} />Quitter la partie</button>
@@ -319,10 +320,13 @@ export default function ArenaRoom({ code }: { code: string }) {
       </div>
 
       {question ? (
-        <p className="text-center text-sm text-texte-2">
-          {chosen !== null ? <span className="font-semibold text-accent-fort">Réponse envoyée · </span> : <span className="max-lg:hidden">Touches 1 à 4 · </span>}
-          <span className="num">{nAnswered}/{nActive}</span> ont répondu
-        </p>
+        <div className="space-y-2 text-center text-sm text-texte-2">
+          <p>
+            {chosen !== null && <span className="font-semibold text-accent-fort">Réponse envoyée · </span>}
+            <span className="num">{nAnswered}/{nActive}</span> ont répondu
+          </p>
+          {chosen === null && <Details label="Raccourcis" className="max-lg:hidden">Touches 1 à 4 (ou V / F) pour répondre.</Details>}
+        </div>
       ) : (
         <div className="space-y-3">
           <div className={`pop flex items-center justify-center gap-2 rounded-[18px] p-4 text-center text-lg font-extrabold ${mine?.ok ? "bg-ok text-sur-ok" : "bg-ko text-sur-ko"}`} role="status">

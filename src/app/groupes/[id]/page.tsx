@@ -15,6 +15,7 @@ import AutoRefresh from "@/components/AutoRefresh";
 import { CONFIG } from "@/config/constants";
 import Icon from "@/components/Icon";
 import CopyButton from "@/components/CopyButton";
+import Details from "@/components/Details";
 
 type Onglet = "defi" | "competitif";
 
@@ -139,7 +140,7 @@ async function Defi({ groupId, userId, matieres }: { groupId: string; userId: st
       <section className="space-y-3" aria-labelledby="t-gen">
         <div className="flex items-baseline justify-between gap-2">
           <h2 id="t-gen" className="eyebrow">Classement général</h2>
-          <span className="text-xs text-texte-3">gemmes, toutes matières</span>
+          <Details>Gemmes cumulées sur toutes les matières.</Details>
         </div>
         <RankTable podium meId={userId} groupId={groupId} lines={general.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
           detail: `${l.jours} quiz joué${l.jours > 1 ? "s" : ""}`, badge: <GemmesCompteur n={l.points} className="text-base text-accent-fort" /> }))} />
@@ -165,7 +166,7 @@ async function Competitif({ groupId, userId }: { groupId: string; userId: string
           <h2 id="t-tr" className="eyebrow">Classement des trophées</h2>
           <RankTable podium meId={userId} groupId={groupId} lines={tr.lignes.map((l) => ({ userId: l.userId, pseudo: l.pseudo, rang: l.rang,
             badge: <><LigueBadge ligue={ligueDe(l.trophees).ligue} /><TropheesCompteur n={l.trophees} className="text-sm text-or" /></> }))} />
-          <p className="text-sm text-texte-3">Les trophées se gagnent à la fin de chaque saison : jours de la saison × joueurs classés derrière soi aux gemmes.</p>
+          <Details>Les trophées se gagnent à la fin de chaque saison : jours de la saison × joueurs classés derrière soi aux gemmes.</Details>
         </section>
       </div>
       <div className="space-y-6">
@@ -190,7 +191,7 @@ async function Competitif({ groupId, userId }: { groupId: string; userId: string
                 );
               })}
             </ul>
-            <p className="text-sm text-texte-3">En gris : trophées que tu gagnerais si la saison s&apos;arrêtait aujourd&apos;hui.</p>
+            <Details>En gris : trophées que tu gagnerais si la saison s&apos;arrêtait aujourd&apos;hui.</Details>
           </section>
         )}
         {finies.length > 0 && (
