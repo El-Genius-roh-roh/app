@@ -48,6 +48,16 @@ export const LIGUES = [
   { nom: "Maître", min: 1200, clair: "#ffb4b4", fonce: "#8f1d2c", fond: "from-rose-400 to-red-800" },
 ] as const;
 
+// Jeu de plateau : chacun son tour lance le dé et répond à une question du thème (matière) de la case visée
+export const PLATEAU = {
+  CASES: 24, // case 0 = départ, case CASES = arrivée
+  FACES: 6,
+  LANCER_S: 15, // sans lancer dans ce délai, le dé est lancé automatiquement
+  REPONSE_S: 25, // sans réponse : compté faux, le joueur reste sur place
+  RESULTAT_S: 4, // affichage de la correction avant le tour suivant
+  MAX_JOUEURS: 6,
+};
+
 // Mode « Arène » (duels en direct, hors classements quotidiens : docs/04 n'est pas modifié).
 export const ARENA = {
   DUREE_QCM_S: 15,
