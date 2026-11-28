@@ -6,10 +6,10 @@ import { GemmeIcone } from "./Trophees";
 type Reponse = { gagne: number; aujourdhui: number; max: number };
 
 /**
- * Fin d'une session solo (flashcards, Memory) : l'enregistre une seule fois (D37) et affiche les gemmes solo gagnées.
+ * Fin d'une session solo (flashcards, Memory, Relier) : l'enregistre une seule fois (D37) et affiche les gemmes solo gagnées.
  * Monté sur l'écran de fin : une nouvelle session remonte le composant, donc un nouvel envoi.
  */
-export default function RecompenseSolo({ type, subjectId }: { type: "flashcards" | "memory"; subjectId: string }) {
+export default function RecompenseSolo({ type, subjectId }: { type: "flashcards" | "memory" | "relier"; subjectId: string }) {
   const [r, setR] = useState<Reponse | null>(null);
   const envoye = useRef(false);
   useEffect(() => {

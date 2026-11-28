@@ -4,6 +4,7 @@ import { realToday, todayGroupe } from "./clock";
 import { getGroupResults, getGroupTrophees, type TropheeLine } from "./ranking";
 import { lundiDe, vitrine, type BilanJoueur, type Resultat } from "./trophees";
 import { soloDuJour } from "./solo";
+import { jeuDuJour } from "./jeu-du-jour";
 import { defisDuJour, succes, titresDuGroupe, type Defi, type Succes } from "./succes";
 
 /** Note le jour de visite (succès « fidèle »). Au plus une écriture par joueur et par jour et par processus. */
@@ -68,7 +69,7 @@ export async function tableauDeBord(userId: string, quiz: { faits: number; total
            + (select count(*) from plateau_rooms where phase='final' and updated_at >= $2::date and state->'joueurs' @> $1::jsonb))::int as multi`,
     [moi, realToday()]);
 
-  const defis = defisDuJour({ quiz, solo: await soloDuJour(userId, [...dates]), multi, matiere });
+  const defis = defisDuJour({ quiz, solo: await soloDuJour(userId, [...dates]), multi, matiere, jeu: jeuDuJour(realToday()) });
   const liste = succes({
     today: realToday(), visites, vitrine: vitrine(resultats, userId, realToday()),
     solo: { flashcards: soloTotal.flashcards ?? 0, memory: soloTotal.memory ?? 0, arene: soloTotal.arene ?? 0 },

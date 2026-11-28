@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { q } from "@/lib/db";
 import { sqlToday } from "@/lib/clock";
-import { CONFIG, FLASHCARDS, SOLO } from "@/config/constants";
+import { CONFIG, FLASHCARDS, RELIER, SOLO } from "@/config/constants";
 import { facteurRetard } from "@/lib/scoring";
 import Icon from "@/components/Icon";
 import AutoRefresh from "@/components/AutoRefresh";
@@ -41,13 +41,15 @@ export default async function Accueil() {
       where a.statut is null or a.statut = 'en_cours'
       order by gd.date, g.created_at, s.created_at`, [u.id, CONFIG.RATTRAPAGE_JOURS]);
   // jeux solo : cartes disponibles par matière (questions vérifiées des jours passés, comme les flashcards et le Memory)
-  const matieres = await q<{ id: string; nom: string; groupe: string; cartes: number }>(
+  const matieres = await q<{ id: string; nom: string; groupe: string; cartes: number; notions: number }>(
     `select s.id, s.nom, g.nom as groupe,
-            ${sqlNbCartes("s.id", sqlToday("s.id"))} as cartes
+            ${sqlNbCartes("s.id", sqlToday("s.id"))} as cartes, (select count(*)::int from notions n where n.subject_id=s.id) as notions
        from subjects s join groups g on g.id=s.group_id join group_members m on m.group_id=g.id and m.user_id=$1
       order by g.created_at, s.created_at`, [u.id]);
   // tableau de bord personnel (D38) : défis du jour, mon classement, mes succès
-  const conseillee = [...matieres].filter((m) => m.cartes >= FLASHCARDS.MIN).sort((a, b) => b.cartes - a.cartes)[0]?.id ?? null;
+  // matière conseillée : de vraies notions du cours d'abord (assez pour Relier et le Memory), puis le plus de cartes
+  const conseillee = [...matieres].filter((m) => m.cartes >= FLASHCARDS.MIN)
+    .sort((a, b) => Number(b.notions >= RELIER.MIN_PAIRES) - Number(a.notions >= RELIER.MIN_PAIRES) || b.cartes - a.cartes)[0]?.id ?? null;
   const tb = await tableauDeBord(u.id, { faits: jours.length - restants.length, total: jours.length, href: prochain ? `/quiz/${prochain.day_id}` : "/" }, conseillee);
 
   return (

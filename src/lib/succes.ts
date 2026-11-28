@@ -1,6 +1,7 @@
 // Tableau de bord personnel (D38) : défis du jour et succès. Fonctions pures, testées dans succes.test.ts.
 import { SUCCES } from "@/config/constants";
 import { series, type Vitrine } from "./trophees";
+import { jeuFait, lienDuJeu, type Jeu } from "./jeu-du-jour";
 
 /* ------------------------------------------------------------------ défis du jour */
 
@@ -10,14 +11,16 @@ export type EntreeDefis = {
   /** Quiz du jour de mes matières : faits / prévus aujourd'hui. */
   quiz: { faits: number; total: number; href: string };
   /** Sessions solo terminées aujourd'hui, par type. */
-  solo: { flashcards: number; memory: number; arene: number };
+  solo: { flashcards: number; memory: number; arene: number; relier?: number };
   /** Parties multijoueur terminées aujourd'hui (Arène entre humains, jeu de plateau). */
   multi: number;
+  /** Mini-jeu du jour (D40). */
+  jeu: Jeu;
   /** Matière conseillée pour les flashcards et le Memory (celle qui a le plus de cartes), null s'il n'y en a pas. */
   matiere: string | null;
 };
 
-/** Défis du jour : le quiz (s'il y en a), une session de flashcards, un Memory, une partie d'Arène (seul ou à plusieurs). */
+/** Défis du jour : le quiz (s'il y en a), une session de flashcards, le mini-jeu du jour (D40), une partie d'Arène (seul ou à plusieurs). */
 export function defisDuJour(e: EntreeDefis): Defi[] {
   const d: Defi[] = [];
   if (e.quiz.total > 0) d.push({
@@ -27,9 +30,10 @@ export function defisDuJour(e: EntreeDefis): Defi[] {
   if (e.matiere) {
     d.push({ id: "flashcards", mode: "solo", titre: "Termine une session de flashcards", detail: "+5 gemmes pour ta semaine",
       fait: e.solo.flashcards > 0, href: `/matieres/${e.matiere}/flashcards` });
-    d.push({ id: "memory", mode: "solo", titre: "Termine un Memory", detail: "+5 gemmes pour ta semaine",
-      fait: e.solo.memory > 0, href: `/matieres/${e.matiere}/memory` });
   }
+  const lien = lienDuJeu(e.jeu, e.matiere);
+  if (lien) d.push({ id: "jeu", mode: e.jeu.lieu === "arene" ? "multi" : "solo", titre: `Mini-jeu du jour : ${e.jeu.titre}`,
+    detail: "+5 gemmes pour ta semaine", fait: jeuFait(e.jeu, e.solo, e.multi), href: lien });
   d.push({ id: "arene", mode: "multi", titre: "Joue une partie d'Arène", detail: "Contre tes amis ou contre des bots",
     fait: e.multi + e.solo.arene > 0, href: "/arene" });
   return d;

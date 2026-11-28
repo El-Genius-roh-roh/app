@@ -98,7 +98,24 @@ export const ARENA = {
 export const SOLO = {
   GEMMES_PAR_SESSION: 5,
   MAX_PAR_JOUR: 15,
-  TYPES: ["flashcards", "memory", "arene"] as const,
+  TYPES: ["flashcards", "memory", "arene", "relier"] as const,
+};
+
+// Mini-jeu du jour (D40) : un jeu différent chaque jour, le même pour tout le monde (rotation sur la date de Paris).
+// « relier » et « memory » se jouent seul sur une matière ; « blitz », « vf » et « course » sont des parties d'Arène
+// avec des bots (on peut aussi y inviter ses amis). L'Arène libre reste ouverte à côté.
+export const JEU_DU_JOUR = {
+  ROTATION: ["relier", "blitz", "memory", "vf", "course"] as const,
+  BOTS: 2, // bots ajoutés d'office aux parties d'Arène du jeu du jour
+};
+
+// Relier : chaque notion (ou question) avec sa définition (ou réponse), en touchant l'une puis l'autre
+export const RELIER = {
+  PAIRES: 5,
+  MIN_PAIRES: 4, // en dessous, la partie n'est pas proposée
+  TERME_MAX: 110,
+  DEFINITION_MAX: 140,
+  DELAI_ERREUR_MS: 700, // une mauvaise association clignote ce temps-là
 };
 
 // Tableau de bord personnel (D38) : succès à débloquer
