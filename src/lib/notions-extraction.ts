@@ -81,7 +81,7 @@ export function lancerExtraction(subjectId: string) {
 
 /**
  * Nombre de cartes jouables d'une matière, en SQL (D39) : notions du cours + énoncés distincts des questions vérifiées
- * des jours passés. Sert aux seuils (flashcards, Memory, gemmes solo) et au hub Réviser.
+ * des jours passés. Sert aux seuils (flashcards, Memory, Relier) et au hub Réviser.
  */
 export const sqlNbCartes = (subjectCol: string, today: string) => `(
   (select count(*) from notions n where n.subject_id=${subjectCol})

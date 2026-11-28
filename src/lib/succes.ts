@@ -21,16 +21,16 @@ export type EntreeDefis = {
 export function defisDuJour(e: EntreeDefis): Defi[] {
   const d: Defi[] = [];
   if (e.quiz.total > 0) d.push({
-    id: "quiz", mode: "quiz", titre: e.quiz.total > 1 ? "Joue tes défis du jour" : "Joue ton défi du jour",
+    id: "quiz", mode: "quiz", titre: e.quiz.total > 1 ? "Joue tes jeux du jour" : "Joue ton jeu du jour",
     detail: `${e.quiz.faits}/${e.quiz.total} joué${e.quiz.faits > 1 ? "s" : ""}`, fait: e.quiz.faits >= e.quiz.total, href: e.quiz.href,
   });
   if (e.matiere) {
-    d.push({ id: "flashcards", mode: "solo", titre: "Termine une session de flashcards", detail: "+5 gemmes pour ta semaine",
+    d.push({ id: "flashcards", mode: "solo", titre: "Termine une session de flashcards", detail: "Révise à ton rythme",
       fait: e.solo.flashcards > 0, href: `/matieres/${e.matiere}/flashcards` });
-    d.push({ id: "memory", mode: "solo", titre: "Termine un Memory", detail: "+5 gemmes pour ta semaine",
+    d.push({ id: "memory", mode: "solo", titre: "Termine un Memory", detail: "Sur les questions des jours passés",
       fait: e.solo.memory > 0, href: `/matieres/${e.matiere}/memory` });
   }
-  d.push({ id: "arene", mode: "multi", titre: "Joue une partie d'Arène", detail: "Contre tes amis ou contre des bots",
+  d.push({ id: "arene", mode: "multi", titre: "Joue une partie d'Arène", detail: e.quiz.faits >= e.quiz.total ? "Contre tes amis ou contre des bots" : "S'ouvre une fois tes jeux du jour joués",
     fait: e.multi + e.solo.arene > 0, href: "/arene" });
   return d;
 }
@@ -58,8 +58,8 @@ export type EntreeSucces = {
   solo: { flashcards: number; memory: number; arene: number };
   /** Parties d'Arène classées (entre humains). */
   areneParties: number;
-  /** Semaines gagnées (1er du groupe), semaines réglées seulement. */
-  semainesGagnees: number;
+  /** Saisons gagnées (1er d'une saison terminée d'une matière, au moins 2 joueurs classés). */
+  saisonsGagnees: number;
   /** Titres détenus dans au moins un groupe. */
   plusRapide: boolean;
   plusAssidu: boolean;
@@ -79,8 +79,8 @@ export function succes(e: EntreeSucces): Succes[] {
     // obtenu dès qu'une série a atteint n jours ; sinon la progression montre la série en cours
     ...SUCCES.FIDELE_JOURS.map((n, i) => ({ ...palier(`fidele-${n}`, i === 0 ? "Fidèle" : "Inséparable",
       `Ouvrir l'application ${n} jours d'affilée`, "calendar", v.max >= n ? n : v.actuelle, n) })),
-    { id: "champion", nom: "Champion de la semaine", description: "Finir 1er de son groupe sur une semaine", icone: "trophy",
-      obtenu: e.semainesGagnees > 0, nombre: e.semainesGagnees },
+    { id: "champion", nom: "Champion de saison", description: "Finir 1er d'une saison d'une matière", icone: "trophy",
+      obtenu: e.saisonsGagnees > 0, nombre: e.saisonsGagnees },
     { id: "eclair", nom: "L'éclair de la bande", description: `Temps moyen le plus court du groupe (au moins ${SUCCES.MIN_QUIZ_TITRE} quiz)`,
       icone: "clock", obtenu: e.plusRapide, titre: true },
     { id: "pilier", nom: "Le pilier du groupe", description: "Le plus de quiz du jour joués dans le groupe", icone: "users", obtenu: e.plusAssidu, titre: true },

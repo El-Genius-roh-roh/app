@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FORMATS, formatDuJour } from "@/lib/quiz/formats";
+import { FORMATS, formatDuJour, resultatTexte } from "@/lib/quiz/formats";
 import { q } from "@/lib/db";
 import { CONFIG } from "@/config/constants";
 import { facteurRetard } from "@/lib/scoring";
@@ -52,32 +52,33 @@ export default async function QuizCard({ subjectId, userId, today }: { subjectId
   if (!d) return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <p className="eyebrow">Défi du jour</p>
-        <p className="font-titre text-2xl font-extrabold">Pas de défi aujourd&apos;hui</p>
-        <p className="text-sm opacity-90">Ajoute des cours ou des questions : le prochain quiz se prépare tout seul.</p>
+        <p className="eyebrow">Jeu du jour</p>
+        <p className="font-titre text-2xl font-extrabold">Pas de jeu aujourd&apos;hui</p>
+        <p className="text-sm opacity-90">Ajoute des cours ou des questions : le prochain jeu se prépare tout seul.</p>
       </div>
       <Rattrapages liste={rattrapages} />
     </div>
   );
   const fait = d.statut && d.statut !== "en_cours";
-  const bonnes = CONFIG.QUESTIONS_PAR_JOUR - (d.erreurs ?? 0);
+  const f = FORMATS[formatDuJour(d.date)];
+  const sous = formatDuJour(d.date) === "memory" ? "retrouve les paires" : formatDuJour(d.date) === "mort_subite" ? "jusqu'à la première erreur" : `${CONFIG.QUESTIONS_PAR_JOUR} questions`;
   return (
     <div className="space-y-5">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">Défi du jour · {FORMATS[formatDuJour(d.date)].titre}</p>
-          <p className="mt-1.5 font-titre text-2xl leading-tight font-extrabold">{fait ? "Joué ! Ta correction t'attend." : `${FORMATS[formatDuJour(d.date)].titre} · ${CONFIG.QUESTIONS_PAR_JOUR} questions, un seul essai`}</p>
-          {!fait && <p className="mt-1 text-sm opacity-90">Le chrono démarre à la première question.</p>}
+          <p className="eyebrow">Jeu du jour · {f.titre}</p>
+          <p className="mt-1.5 font-titre text-2xl leading-tight font-extrabold">{fait ? "Joué ! Ta correction t'attend." : `${f.titre} · ${sous}, un seul essai`}</p>
+          {!fait && <p className="mt-1 text-sm opacity-90">{f.consigne}</p>}
         </div>
         {fait && (
           <div className="shrink-0 text-right">
-            <p className="num text-5xl leading-none font-semibold">{bonnes}<span className="text-2xl opacity-70">/{CONFIG.QUESTIONS_PAR_JOUR}</span></p>
+            <p className="num text-3xl leading-none font-semibold">{resultatTexte(formatDuJour(d.date), d.erreurs ?? 0, CONFIG.QUESTIONS_PAR_JOUR)}</p>
             {d.rang && <p className="mt-2 inline-block rounded-full bg-or-vif px-2.5 py-0.5 font-num text-xs font-semibold text-sur-or">{d.rang === 1 ? "1er" : `${d.rang}e`} du jour</p>}
           </div>
         )}
       </div>
       <Link href={`/quiz/${d.id}`} className="btn-hero">
-        {fait ? <>Voir ma correction<Icon name="arrowRight" size={20} /></> : <><Icon name="play" size={20} />{d.statut === "en_cours" ? "Reprendre le quiz" : "Jouer le quiz"}</>}
+        {fait ? <>Voir ma correction<Icon name="arrowRight" size={20} /></> : <><Icon name="play" size={20} />{d.statut === "en_cours" ? "Reprendre" : `Jouer : ${f.titre}`}</>}
       </Link>
       <Rattrapages liste={rattrapages} />
     </div>

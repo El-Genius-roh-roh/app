@@ -1,8 +1,8 @@
 // Tableau de bord personnel (D38) : ce que le joueur voit en ouvrant l'application (onglet Réviser).
 import { q } from "./db";
 import { realToday, todayGroupe } from "./clock";
-import { getGroupResults, getGroupTrophees, type TropheeLine } from "./ranking";
-import { lundiDe, vitrine, type BilanJoueur, type Resultat } from "./trophees";
+import { getGroupResults, getGroupTrophees, tropheesDuJoueur, type TropheeLine } from "./ranking";
+import { vitrine, type Resultat } from "./trophees";
 import { soloDuJour } from "./solo";
 import { defisDuJour, succes, titresDuGroupe, type Defi, type Succes } from "./succes";
 
@@ -15,8 +15,9 @@ export async function marquerVisite(userId: string) {
   vus.set(userId, jour);
 }
 
-export type ClassementGroupe = { groupId: string; nom: string; ligne: TropheeLine | null; semaine: BilanJoueur | null; classes: number; membres: number; today: string };
-export type TableauDeBord = { classements: ClassementGroupe[]; defis: Defi[]; succes: Succes[] };
+/** Ma place dans un groupe : trophées gagnés dans ses matières, et ceux en jeu dans ses saisons en cours. */
+export type ClassementGroupe = { groupId: string; nom: string; ligne: TropheeLine | null; enJeu: number; membres: number };
+export type TableauDeBord = { classements: ClassementGroupe[]; defis: Defi[]; succes: Succes[]; ligue: { total: number; enJeu: number } };
 
 /**
  * @param quiz quiz du jour de mes matières (faits / prévus) et lien vers le prochain
@@ -29,19 +30,14 @@ export async function tableauDeBord(userId: string, quiz: { faits: number; total
   const classements: ClassementGroupe[] = [];
   const resultats: Resultat[] = [];
   const dates = new Set([realToday()]);
-  let semainesGagnees = 0, plusRapide = false, plusAssidu = false;
+  let saisonsGagnees = 0, plusRapide = false, plusAssidu = false;
   for (const g of groupes) {
     const tr = await getGroupTrophees(g.id);
-    const today = await todayGroupe(g.id);
-    dates.add(today);
-    const lundi = lundiDe(today);
-    const semaine = tr.semaines.find((s) => s.lundi === lundi);
-    classements.push({
-      groupId: g.id, nom: g.nom, ligne: tr.lignes.find((l) => l.userId === userId) ?? null, today: tr.today,
-      semaine: semaine?.joueurs.find((j) => j.userId === userId) ?? null,
-      classes: semaine?.joueurs.filter((j) => j.rang !== null).length ?? 0, membres: tr.lignes.length,
-    });
-    semainesGagnees += tr.semaines.filter((s) => s.reglee && s.joueurs.some((j) => j.userId === userId && j.rang === 1)).length;
+    dates.add(await todayGroupe(g.id));
+    const enJeu = tr.saisons.filter((s) => !s.terminee).reduce((n, s) => n + (s.classement.find((l) => l.userId === userId)?.trophees ?? 0), 0);
+    classements.push({ groupId: g.id, nom: g.nom, ligne: tr.lignes.find((l) => l.userId === userId) ?? null, enJeu, membres: tr.lignes.length });
+    // saison gagnée : 1er d'une saison terminée, avec au moins un autre joueur classé
+    saisonsGagnees += tr.saisons.filter((s) => s.terminee && s.classement.length >= 2 && s.classement.some((l) => l.userId === userId && l.rang === 1)).length;
 
     const res = await getGroupResults(g.id);
     resultats.push(...res);
@@ -72,7 +68,7 @@ export async function tableauDeBord(userId: string, quiz: { faits: number; total
   const liste = succes({
     today: realToday(), visites, vitrine: vitrine(resultats, userId, realToday()),
     solo: { flashcards: soloTotal.flashcards ?? 0, memory: soloTotal.memory ?? 0, arene: soloTotal.arene ?? 0 },
-    areneParties: parties, semainesGagnees, plusRapide, plusAssidu,
+    areneParties: parties, saisonsGagnees, plusRapide, plusAssidu,
   });
-  return { classements, defis, succes: liste };
+  return { classements, defis, succes: liste, ligue: await tropheesDuJoueur(userId) };
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFI } from "@/config/constants";
 import { addDays } from "../clock";
 import { rng } from "../rng";
-import { formatDuJour, formatJouable, numeroDuJour, propositionVF, relierJuste, reserveRelier, vfJuste } from "./formats";
+import { critereDe, formatDuJour, formatJouable, memePaire, numeroDuJour, paquetMemory, propositionVF, relierJuste, reserveRelier, resultatTexte, vfJuste } from "./formats";
 
 describe("format du défi du jour", () => {
   it("le même toute la journée, un autre le lendemain, et tous y passent", () => {
@@ -40,5 +40,46 @@ describe("Relier", () => {
   });
   it("juste si le texte est le même (casse et espaces ignorés)", () => {
     expect([relierJuste("NP ", "np"), relierJuste("np(1-p)", "np")]).toEqual([true, false]);
+  });
+});
+
+describe("jeu du jour (D46)", () => {
+  it("roulement QCM, Memory, Mort subite, Relier", () => {
+    expect([...DEFI.FORMATS].sort()).toEqual(["memory", "mort_subite", "qcm", "relier"]);
+    const vus = new Set(Array.from({ length: 4 }, (_, i) => formatDuJour(addDays("2026-11-28", i))));
+    expect(vus.size).toBe(4);
+  });
+  it("Memory sans assez de paires retombe sur le QCM", () => {
+    expect(formatJouable("memory", 8, DEFI.MEMORY_MIN_PAIRES)).toBe("memory");
+    expect(formatJouable("memory", 8, DEFI.MEMORY_MIN_PAIRES - 1)).toBe("qcm");
+    expect(formatJouable("mort_subite", 0)).toBe("mort_subite");
+  });
+  it("Memory classé au temps, les autres aux erreurs puis au temps", () => {
+    expect(critereDe("memory")).toBe("temps");
+    expect(critereDe("qcm")).toBe("erreurs");
+    expect(critereDe("mort_subite")).toBe("erreurs");
+    expect(critereDe("relier")).toBe("erreurs");
+  });
+  it("score affiché selon le jeu", () => {
+    expect(resultatTexte("qcm", 2, 10)).toBe("8/10");
+    expect(resultatTexte("mort_subite", 4, 10)).toBe("série de 6");
+    expect(resultatTexte("memory", 3, 8)).toBe("3 ratés");
+    expect(resultatTexte("memory", 0, 8)).toBe("sans faute");
+  });
+});
+
+describe("Memory du jour", () => {
+  it("deux cartes par question, mélangées", () => {
+    const p = paquetMemory(["a", "b", "c"], rng(1));
+    expect(p).toHaveLength(6);
+    expect([...p].sort()).toEqual(["a:q", "a:r", "b:q", "b:r", "c:q", "c:r"]);
+  });
+  it("une paire = même question, une face énoncé et une face réponse", () => {
+    const p = ["a:q", "b:r", "a:r", "b:q"];
+    expect(memePaire(p, 0, 2)).toBe("a");
+    expect(memePaire(p, 1, 3)).toBe("b");
+    expect(memePaire(p, 0, 1)).toBeNull();
+    expect(memePaire(p, 0, 0)).toBeNull();
+    expect(memePaire(p, 0, 9)).toBeNull();
   });
 });

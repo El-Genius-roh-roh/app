@@ -6,9 +6,11 @@ import Tex from "./Tex";
 import Icon from "./Icon";
 import { FORMATS, type Format } from "@/lib/quiz/formats";
 import Details from "./Details";
+import MemoryDefi from "./MemoryDefi";
+import type { MemoryState } from "@/lib/quiz/service";
 
 type Q = { id: string; type: "qcm" | "vrai_faux"; mode: "qcm" | "vf" | "relier"; enonce: string; choices: string[]; proposition?: string; restantes?: string[] };
-type State = { attemptId: string; format: Format; index: number; total: number; question: Q; elapsedMs: number };
+type State = { attemptId: string; format: Format; index: number; total: number; question: Q; elapsedMs: number; memory?: MemoryState };
 
 const fmt = (ms: number) => {
   const s = Math.floor(ms / 1000);
@@ -16,7 +18,7 @@ const fmt = (ms: number) => {
 };
 const LETTRES = ["A", "B", "C", "D", "E", "F"];
 
-/** Défi du jour (D41) : même déroulé pour les trois formats (une question à la fois, validée par le serveur), affichage selon le mode. */
+/** Jeu du jour (D46) : QCM, Mort subite et Relier ont le même déroulé (une question à la fois, validée par le serveur) ; le Memory a son plateau. */
 export default function QuizPlayer({ gameDayId, initial, format }: { gameDayId: string; initial: State | null; format: Format }) {
   const router = useRouter();
   const [st, setSt] = useState<State | null>(initial);
@@ -38,7 +40,7 @@ export default function QuizPlayer({ gameDayId, initial, format }: { gameDayId: 
 
   // touches 1-4 (ou A-D, V/F) pour répondre au clavier
   useEffect(() => {
-    if (!st) return;
+    if (!st || st.format === "memory") return;
     const h = (e: KeyboardEvent) => {
       if (busy || e.metaKey || e.ctrlKey || e.altKey) return;
       const k = e.key.toLowerCase();
@@ -78,14 +80,14 @@ export default function QuizPlayer({ gameDayId, initial, format }: { gameDayId: 
     return (
       <div className="hero entree space-y-5">
         <div className="space-y-3">
-          <p className="eyebrow">Défi du jour · {FORMATS[format].titre}</p>
+          <p className="eyebrow">Jeu du jour · {FORMATS[format].titre}</p>
           <p className="flex items-center gap-3 font-titre text-4xl leading-[1.02] font-extrabold"><Icon name={FORMATS[format].icone} size={34} />{FORMATS[format].titre}</p>
           <p className="text-[15px] opacity-95">{FORMATS[format].consigne}</p>
           <ul className="space-y-2 text-[15px]">
-            <li className="flex items-center gap-2.5"><Icon name="flame" size={18} className="opacity-80" />Un seul essai. Raté, il coûte des trophées.</li>
-            <li className="flex items-center gap-2.5"><Icon name="clock" size={18} className="opacity-80" />Le chrono démarre à la première question.</li>
-            <li className="flex items-center gap-2.5"><Icon name="target" size={18} className="opacity-80" />Classement : d&apos;abord les erreurs, puis le temps.</li>
-            <li className="flex items-center gap-2.5"><Icon name="arrowRight" size={18} className="opacity-80" />Pas de retour en arrière.</li>
+            <li className="flex items-center gap-2.5"><Icon name="flame" size={18} className="opacity-80" />Un seul essai : il compte pour le classement du jour.</li>
+            <li className="flex items-center gap-2.5"><Icon name="clock" size={18} className="opacity-80" />Le chrono démarre dès que tu lances le jeu.</li>
+            <li className="flex items-center gap-2.5"><Icon name="target" size={18} className="opacity-80" />{FORMATS[format].classement}</li>
+            {format !== "memory" && <li className="flex items-center gap-2.5"><Icon name="arrowRight" size={18} className="opacity-80" />Pas de retour en arrière.</li>}
           </ul>
         </div>
         <button onClick={start} disabled={busy} className="btn-hero">
@@ -95,12 +97,14 @@ export default function QuizPlayer({ gameDayId, initial, format }: { gameDayId: 
       </div>
     );
   }
+  if (st.format === "memory" && st.memory) return <MemoryDefi initial={{ attemptId: st.attemptId, elapsedMs: st.elapsedMs, total: st.total, memory: st.memory }} />;
   const mode = st.question.mode;
   const vf = st.question.type === "vrai_faux" || mode === "vf";
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <span className="num text-sm text-texte-2">Question <b className="text-lg text-texte">{st.index + 1}</b>/{st.total}</span>
+        <span className="num text-sm text-texte-2">Question <b className="text-lg text-texte">{st.index + 1}</b>/{st.total}
+          {st.format === "mort_subite" && <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-energie-doux px-2 py-0.5 text-xs font-bold text-energie"><Icon name="flame" size={12} />Mort subite</span>}</span>
         <span className="num inline-flex items-center gap-1.5 rounded-full border-2 border-ligne bg-surface px-3 py-1 text-lg font-semibold" aria-label={`Temps écoulé ${fmt(now)}`}>
           <Icon name="clock" size={16} className="text-accent" />{fmt(now)}
         </span>

@@ -68,7 +68,7 @@ export default async function Joueur({ params }: { params: Promise<{ id: string;
 
       <div className="space-y-6 lg:grid lg:grid-cols-2 lg:items-start lg:gap-8 lg:space-y-0">
         <div className="space-y-6">
-          <LigueCard etat={ligne ?? { fige: 0, courant: 0, projection: 0 }} today={tr.today} serie={v.serieActuelle} />
+          <LigueCard trophees={ligne?.total ?? 0} serie={v.serieActuelle} lien={moi} />
           <div className="grid grid-cols-2 gap-3">
             <Stat icon="play" v={String(v.quizJoues)} l="quiz joués" />
             <Stat icon="target" v={moyenne === null ? "–" : `${moyenne.toFixed(1).replace(".", ",")}/${CONFIG.QUESTIONS_PAR_JOUR}`} l="note moyenne" />

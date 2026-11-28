@@ -1,10 +1,8 @@
 // Tableau de bord personnel (D38) : défis du jour, mon classement, mes succès.
 import Link from "next/link";
-import { TROPHEES } from "@/config/constants";
-import { finDuMois, ligueDe } from "@/lib/trophees";
 import type { Defi, Succes as SuccesData } from "@/lib/succes";
 import type { ClassementGroupe } from "@/lib/tableau";
-import { GainTrophees, GemmesCompteur, LigueBlason } from "./Trophees";
+import { GainTrophees, TropheesCompteur } from "./Trophees";
 import Icon from "./Icon";
 import Details from "./Details";
 
@@ -49,61 +47,37 @@ export function Defis({ defis }: { defis: Defi[] }) {
 
 const rangTexte = (r: number) => (r === 1 ? "1er" : `${r}e`);
 
-/** Mon classement : par groupe, ma ligue du mois, mes trophées et ma place dans la semaine en cours. */
+/** Mon classement : dans chaque groupe, ma place aux trophées (gagnés dans ses matières) et ceux en jeu. */
 export function MonClassement({ classements }: { classements: ClassementGroupe[] }) {
   if (!classements.length) return null;
   return (
     <section className="space-y-3" aria-labelledby="t-classement">
-      <h2 id="t-classement" className="h2">Mon classement</h2>
-      <ul className="space-y-2.5">
+      <h2 id="t-classement" className="h2">Mon classement par groupe</h2>
+      <ul className="liste">
         {classements.map((c) => {
-          const etat = c.ligne ?? { fige: 0, courant: 0, projection: 0, rang: c.membres, trophees: 0 };
-          const actuelle = ligueDe(etat.fige);
-          const { ligue } = actuelle;
-          const proj = ligueDe(etat.projection);
-          const fin = finDuMois(c.today);
-          const s = c.semaine;
-          const delta = s ? s.gain - s.perte : 0;
+          const l = c.ligne;
           return (
             <li key={c.groupId}>
-              <Link href={`/groupes/${c.groupId}?onglet=competitif`} className="tuile group block space-y-3" style={{ borderColor: `${ligue.clair}66` }}>
-                <span className="flex items-center gap-3">
-                  <LigueBlason ligue={ligue} size={48} />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-xs font-semibold tracking-wide text-texte-3 uppercase">{c.nom}</span>
-                    <span className="block font-titre text-xl font-extrabold" style={{ color: `light-dark(${ligue.fonce}, ${ligue.clair})` }}>Ligue {ligue.nom}</span>
-                    <span className="text-sm text-texte-2">
-                      {etat.courant > 0
-                        ? <><span className="num font-semibold text-texte">{rangTexte(etat.rang)}</span> sur <span className="num">{c.membres}</span> aux trophées</>
-                        : "Pas encore de trophée"}
-                    </span>
-                  </span>
-                  <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
-                </span>
-                <span className="grid grid-cols-2 gap-2 text-sm">
-                  <span className="rounded-[12px] bg-surface-2 px-3 py-2">
-                    <span className="block text-xs text-texte-3">Cette semaine</span>
-                    <span className="flex flex-wrap items-center gap-1.5 font-semibold">
-                      {s?.rang ? rangTexte(s.rang) : "Pas classé"}
-                      <GemmesCompteur n={s?.score ?? 0} className="text-accent-fort" />
-                    </span>
-                  </span>
-                  <span className="rounded-[12px] bg-surface-2 px-3 py-2">
-                    <span className="block text-xs text-texte-3">Trophées</span>
-                    <span className="flex flex-wrap items-center gap-1.5 font-semibold">
-                      <span className="num text-or">{etat.courant}</span>{delta !== 0 && <GainTrophees n={delta} provisoire />}
-                    </span>
+              <Link href={`/groupes/${c.groupId}?onglet=competitif`} className="ligne group min-h-16 transition-colors hover:bg-surface-2">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-bold">{c.nom}</span>
+                  <span className="block text-sm text-texte-2">
+                    {l && l.trophees > 0
+                      ? <><span className="num font-semibold text-texte">{rangTexte(l.rang)}</span> sur <span className="num">{c.membres}</span> aux trophées</>
+                      : "Pas encore de trophée dans ce groupe"}
                   </span>
                 </span>
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <TropheesCompteur n={l?.trophees ?? 0} className="text-sm text-or" />
+                  {c.enJeu > 0 && <GainTrophees n={c.enJeu} provisoire />}
+                </span>
+                <Icon name="chevronRight" size={18} className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
               </Link>
-              <Details className="mt-1.5 px-1">
-                {s?.rang === 1 ? `En tête : +${TROPHEES.SEMAINE_GAINS[0]} trophées si ça tient jusqu'à dimanche.` : "Le 1er de la semaine gagne des trophées."}{" "}
-                Fin du mois ({fin.slice(8)}/{fin.slice(5, 7)}) : {proj.index > actuelle.index ? `montée en ${proj.ligue.nom}` : proj.index < actuelle.index ? `descente en ${proj.ligue.nom}` : `tu restes en ${ligue.nom}`}.
-              </Details>
             </li>
           );
         })}
       </ul>
+      <Details>Les trophées se gagnent à la fin de la saison de chaque matière ; « en jeu » : ce que tu gagnerais si les saisons en cours s&apos;arrêtaient aujourd&apos;hui.</Details>
     </section>
   );
 }

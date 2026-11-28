@@ -8,7 +8,7 @@ describe("défis du jour", () => {
   it("défi du jour, flashcards, Memory et Arène, cochés selon ce qui a été fait", () => {
     const d = defisDuJour({ quiz: { faits: 1, total: 2, href: "/quiz/x" }, solo: { ...solo0, flashcards: 1 }, multi: 0, matiere: "m" });
     expect(d.map((x) => [x.id, x.fait])).toEqual([["quiz", false], ["flashcards", true], ["memory", false], ["arene", false]]);
-    expect(d[0].titre).toBe("Joue tes défis du jour");
+    expect(d[0].titre).toBe("Joue tes jeux du jour");
     expect(d[1].href).toBe("/matieres/m/flashcards");
   });
   it("pas de défi du jour ni de matière jouable : seulement l'Arène", () => {
@@ -22,7 +22,7 @@ describe("défis du jour", () => {
 
 describe("succès", () => {
   const base: EntreeSucces = { today: "2026-11-28", visites: [], vitrine: vitrine([], "u", "2026-11-28"), solo: solo0,
-    areneParties: 0, semainesGagnees: 0, plusRapide: false, plusAssidu: false };
+    areneParties: 0, saisonsGagnees: 0, plusRapide: false, plusAssidu: false };
   const un = (e: Partial<EntreeSucces>, id: string) => succes({ ...base, ...e }).find((s) => s.id === id)!;
   const jours = (fin: number, n: number) => Array.from({ length: n }, (_, i) => `2026-11-${String(fin - i).padStart(2, "0")}`);
 

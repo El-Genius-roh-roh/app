@@ -71,7 +71,7 @@ async function rate(s: State, c: PoolClient) {
   s.v += 1;
   if (humans.length < ARENA.MIN_HUMAINS_CLASSEE) {
     s.changes = {};
-    // entraînement contre des bots : non classé, mais compte comme activité solo (gemmes solo de la semaine, D37)
+    // entraînement contre des bots : non classé, mais compte comme activité solo (succès et défis du jour, D37)
     const joue = humans.filter((h) => Object.values(h.answers).some((a) => a.choice !== null));
     if (joue.length) {
       const date = await todayGroupe(s.groupId);

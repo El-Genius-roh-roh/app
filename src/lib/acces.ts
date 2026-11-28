@@ -1,12 +1,12 @@
-// Accès aux jeux (D45, remplace le premium D42) : l'Arène, le jeu de plateau, le Memory et Relier ne s'ouvrent qu'une
-// fois les défis du jour joués (toutes les matières du joueur). Les flashcards et le glossaire restent ouverts : ils
-// servent à réviser avant le défi. Sans défi aujourd'hui, tout est ouvert.
+// Accès à l'Arène (D45, revu en D49) : l'Arène et le jeu de plateau ne s'ouvrent qu'une fois TOUS les jeux du jour
+// joués (toutes les matières du joueur). Tout le reste (flashcards, Memory, Relier solo, glossaire, classements…)
+// reste ouvert. Sans jeu du jour aujourd'hui, l'Arène est ouverte.
 import { q } from "./db";
 import { sqlToday } from "./clock";
 
 export type AccesJeux = { ouvert: boolean; restants: number; prochain: { dayId: string; matiere: string } | null };
 
-/** Défis du jour pas encore terminés par le joueur (une tentative en cours ne compte pas comme faite). */
+/** Jeux du jour pas encore terminés par le joueur (une tentative en cours ne compte pas comme faite). */
 export async function accesJeux(userId: string): Promise<AccesJeux> {
   const rows = await q<{ day_id: string; matiere: string }>(
     `select gd.id as day_id, s.nom as matiere
@@ -17,4 +17,4 @@ export async function accesJeux(userId: string): Promise<AccesJeux> {
   return { ouvert: rows.length === 0, restants: rows.length, prochain: rows[0] ? { dayId: rows[0].day_id, matiere: rows[0].matiere } : null };
 }
 
-export const MESSAGE_VERROU = "Joue d'abord ton défi du jour : les jeux s'ouvrent ensuite.";
+export const MESSAGE_VERROU = "Joue d'abord tous tes jeux du jour : l'Arène s'ouvre ensuite.";

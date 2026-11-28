@@ -1,5 +1,7 @@
-import { CONFIG } from "@/config/constants";
+import { CONFIG, DEFI } from "@/config/constants";
 import { genererJourAvecIA } from "./ai";
+import { llmConfigured } from "../ai/llm";
+import { paires } from "../memory";
 import { pool, q } from "../db";
 import { sqlToday, todayParis } from "../clock";
 import { memberRole } from "../groups";
@@ -7,7 +9,7 @@ import { hashString, shuffled, secureRand } from "../rng";
 import { classementDuJour } from "../scoring";
 import { generateQuestions, validateTechnical, qkey, type GenQuestion, type SrcPage } from "./generate";
 import { verifyQuestion } from "./verify";
-import { formatDuJour, formatJouable, propositionVF, relierJuste, reserveRelier, vfJuste, type Format } from "./formats";
+import { carteDe, critereDe, formatDuJour, formatJouable, memePaire, paquetMemory, propositionVF, relierJuste, reserveRelier, vfJuste, type Format } from "./formats";
 
 /* ------------------------------------------------------------------ génération */
 
@@ -143,7 +145,9 @@ export async function ensureQuestions(gameDayId: string, preset?: GenQuestion[])
       await client.query(
         `insert into questions(subject_id,game_day_id,kind,type,enonce,choix,correct_index,explication,source_pages,notion,verifiee)
          values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-        [gd.subject_id, gameDayId, x.kind, x.type, x.enonce, JSON.stringify(x.choix), x.correct_index, x.explication, JSON.stringify(x.source), x.notion, !fromChat.has(x)]);
+        // « vérifiée » = digne des jeux solo et de l'Arène : écrite par l'IA (et validée par le correcteur) ou par le chat.
+        // Les questions du générateur simulé ne le sont que s'il n'y a pas d'IA (sinon elles sont trop approximatives).
+        [gd.subject_id, gameDayId, x.kind, x.type, x.enonce, JSON.stringify(x.choix), x.correct_index, x.explication, JSON.stringify(x.source), x.notion, fromChat.has(x) || !llmConfigured()]);
     }
     await client.query("update game_days set statut_generation='ok' where id=$1", [gameDayId]);
     await client.query("commit");
@@ -165,6 +169,8 @@ type Attempt = {
   statut: "en_cours" | "terminee" | "cloturee";
   /** Format du défi du jour (D41), fixé au début. Vrai ou faux : ordre_choix[q] = [réponse proposée]. Relier : `reserve` = ordre des réponses. */
   format: Format; reserve: string[] | null;
+  /** Memory du jour : paires ratées (deux cartes qui ne vont pas ensemble). */
+  rates: number;
 };
 /** Comment afficher la question en cours : QCM classique, Vrai ou faux sur une réponse proposée, ou Relier (choisir dans la réserve). */
 export type QuizMode = "qcm" | "vf" | "relier";
@@ -175,13 +181,16 @@ export type QuizQuestion = {
   /** Relier : les questions qui restent à relier (celle en cours comprise), pour montrer le plateau. */
   restantes?: string[];
 };
-export type QuizState = { attemptId: string; format: Format; index: number; total: number; question: QuizQuestion; elapsedMs: number };
+/** Memory du jour : le paquet (texte et face de chaque carte, sans dire quelles cartes vont ensemble) et les cartes trouvées. */
+export type MemoryState = { cartes: { texte: string; face: "q" | "r" }[]; trouvees: number[]; rates: number };
+export type QuizState = { attemptId: string; format: Format; index: number; total: number; question: QuizQuestion; elapsedMs: number; memory?: MemoryState };
 
 type QRow = { id: string; type: "qcm" | "vrai_faux"; enonce: string; choix: string[]; correct_index: number };
 const bonneReponse = (r: QRow) => r.choix[r.correct_index];
 
-/** Mode d'une question selon le format : les vrai/faux natifs restent des vrai/faux dans tous les formats. */
-const modeDe = (a: Attempt, type: QRow["type"]): QuizMode => (type === "vrai_faux" ? "qcm" : a.format);
+/** Mode d'une question selon le format : les vrai/faux natifs restent des vrai/faux ; la Mort subite se joue en QCM. */
+const modeDe = (a: Attempt, type: QRow["type"]): QuizMode =>
+  type === "vrai_faux" || a.format === "mort_subite" || a.format === "memory" ? "qcm" : a.format;
 
 /** Relier : la réserve encore disponible (réponses des QCM pas encore joués), avec le texte de chaque réponse. */
 async function reserveCourante(a: Attempt): Promise<{ id: string; texte: string }[]> {
@@ -198,6 +207,7 @@ async function reserveCourante(a: Attempt): Promise<{ id: string; texte: string 
 export async function currentState(a: Attempt): Promise<QuizState | null> {
   const [{ n }] = await q<{ n: string }>("select count(*) n from attempt_answers where attempt_id=$1", [a.id]);
   const index = Number(n);
+  if (a.format === "memory") return etatMemory(a, index);
   const qid = a.ordre_questions[index];
   if (!qid) return null;
   const [row] = await q<QRow>("select id,type,enonce,choix,correct_index from questions where id=$1", [qid]);
@@ -215,6 +225,21 @@ export async function currentState(a: Attempt): Promise<QuizState | null> {
   return { ...base, question: { id: row.id, type: row.type, mode, enonce: row.enonce, choices: perm.map((i) => row.choix[i]) } };
 }
 
+/** Memory du jour : état du plateau (paires trouvées = réponses enregistrées). */
+async function etatMemory(a: Attempt, trouves: number): Promise<QuizState | null> {
+  if (trouves >= a.ordre_questions.length) return null;
+  const paquet = a.reserve ?? [];
+  const rows = await q<QRow>("select id,type,enonce,choix,correct_index from questions where id = any($1::uuid[])", [a.ordre_questions]);
+  const par = new Map(rows.map((r) => [r.id, r]));
+  const faites = new Set((await q<{ question_id: string }>("select question_id from attempt_answers where attempt_id=$1", [a.id])).map((r) => r.question_id));
+  const cartes = paquet.map((k) => { const c = carteDe(k); const r = par.get(c.id); return { face: c.face, texte: r ? (c.face === "q" ? r.enonce : bonneReponse(r)) : "" }; });
+  const trouvees = paquet.map((k, i) => (faites.has(carteDe(k).id) ? i : -1)).filter((i) => i >= 0);
+  return {
+    attemptId: a.id, format: a.format, index: trouves, total: a.ordre_questions.length, elapsedMs: Date.now() - new Date(a.started_at).getTime(),
+    question: { id: "", type: "qcm", mode: "qcm", enonce: "", choices: [] }, memory: { cartes, trouvees, rates: a.rates },
+  };
+}
+
 /** Termine une tentative (terminée par le joueur, ou clôturée) et recalcule les résultats provisoires du jour. */
 export async function finishAttempt(attemptId: string, statut: "terminee" | "cloturee") {
   const [a] = await q<Attempt>("select * from attempts where id=$1 and statut='en_cours'", [attemptId]);
@@ -222,7 +247,9 @@ export async function finishAttempt(attemptId: string, statut: "terminee" | "clo
   const started = new Date(a.started_at).getTime();
   const end = statut === "terminee" ? Date.now() : Math.min(Date.now(), started + CONFIG.DUREE_MAX_TENTATIVE_MIN * 60_000);
   const [{ ok }] = await q<{ ok: string }>("select count(*) filter (where correct) ok from attempt_answers where attempt_id=$1", [attemptId]);
-  const erreurs = a.ordre_questions.length - Number(ok);
+  // Memory : les erreurs sont les paires ratées (le classement se fait au temps) ; ailleurs, les questions non réussies
+  // (Mort subite : la partie s'arrête à la première erreur, les questions suivantes comptent comme non réussies)
+  const erreurs = a.format === "memory" ? a.rates : a.ordre_questions.length - Number(ok);
   const done = await q(
     "update attempts set statut=$2, finished_at=$3, erreurs=$4, duree_ms=$5 where id=$1 and statut='en_cours' returning id",
     [attemptId, statut, new Date(end), erreurs, Math.max(0, end - started)]);
@@ -236,7 +263,9 @@ export async function recomputeDay(gameDayId: string) {
   const rows = await q<{ userId: string; erreurs: number; dureeMs: number; retard: number }>(
     `select user_id as "userId", erreurs, duree_ms as "dureeMs", retard_jours as retard from attempts where game_day_id=$1 and statut in ('terminee','cloturee')`, [gameDayId]);
   const mult = (await import("../scoring")).multiplicateur(gd.jour_dans_saison);
-  for (const r of classementDuJour(rows, gd.jour_dans_saison)) {
+  // tous les joueurs d'un jour ont le même jeu (il dépend de la date) : son critère de classement s'applique
+  const [f] = await q<{ format: Format }>("select format from attempts where game_day_id=$1 limit 1", [gameDayId]);
+  for (const r of classementDuJour(rows, gd.jour_dans_saison, critereDe(f?.format ?? "qcm"))) {
     await q(
       `insert into daily_results(game_day_id,user_id,rang,erreurs,duree_ms,joueurs_battus,points_base,multiplicateur,points,provisoire,retard_jours)
        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
@@ -297,11 +326,15 @@ export async function startAttempt(gameDayId: string, userId: string): Promise<S
     const ids = (await q<{ id: string }>("select id from questions where game_day_id=$1", [gameDayId])).map((r) => r.id);
     const rand = secureRand();
     const ordre = shuffled(ids, rand);
-    const types = new Map((await q<{ id: string; type: string; n: number; correct_index: number }>(
-      "select id,type,jsonb_array_length(choix) n,correct_index from questions where game_day_id=$1", [gameDayId])).map((r) => [r.id, r]));
+    const lignes = await q<{ id: string; type: string; n: number; correct_index: number; enonce: string; choix: string[]; kind: string }>(
+      "select id,type,jsonb_array_length(choix) n,correct_index,enonce,choix,kind from questions where game_day_id=$1", [gameDayId]);
+    const types = new Map(lignes.map((r) => [r.id, r]));
     const qcm = ordre.filter((id) => types.get(id)!.type !== "vrai_faux");
-    // défi du jour (D41) : le format dépend de la date du jour joué (un rattrapage garde le format de son jour)
-    const format = formatJouable(formatDuJour(gd.date), qcm.length);
+    // Memory : une paire par QCM (énoncé ↔ bonne réponse), les nouvelles notions du jour d'abord, sans doublon de texte
+    const parKind = [...lignes].sort((x, y) => Number(x.kind !== "new") - Number(y.kind !== "new"));
+    const pairesJour = paires(parKind.map((r) => ({ id: r.id, type: r.type, enonce: r.enonce, choix: r.choix, correct_index: r.correct_index }))).slice(0, DEFI.MEMORY_PAIRES);
+    // jeu du jour (D46) : il dépend de la date du jour joué (un rattrapage garde le jeu de son jour)
+    const format = formatJouable(formatDuJour(gd.date), qcm.length, pairesJour.length);
     const choix: Record<string, number[]> = {};
     for (const id of ordre) {
       const t = types.get(id)!;
@@ -310,9 +343,10 @@ export async function startAttempt(gameDayId: string, userId: string): Promise<S
       else if (format === "vf") choix[id] = [propositionVF(t.n, t.correct_index, rand)];
       else choix[id] = shuffled(idx, rand);
     }
-    const reserve = format === "relier" ? shuffled(qcm, rand) : null;
+    const memoire = format === "memory" ? pairesJour.map((p) => p.id) : null;
+    const reserve = format === "relier" ? shuffled(qcm, rand) : memoire ? paquetMemory(memoire, rand) : null;
     await q("insert into attempts(game_day_id,user_id,ordre_questions,ordre_choix,retard_jours,format,reserve) values ($1,$2,$3,$4,$5,$6,$7) on conflict (game_day_id,user_id) do nothing",
-      [gameDayId, userId, JSON.stringify(ordre), JSON.stringify(choix), retard, format, reserve && JSON.stringify(reserve)]);
+      [gameDayId, userId, JSON.stringify(memoire ?? ordre), JSON.stringify(choix), retard, format, reserve && JSON.stringify(reserve)]);
     a = await get();
   }
   const st = await currentState(a!);
@@ -327,6 +361,7 @@ export async function submitAnswer(attemptId: string, userId: string, questionId
     await finishAttempt(a.id, "cloturee");
     return { status: 410, body: { error: "Temps écoulé : la tentative est clôturée.", done: true } };
   }
+  if (a.format === "memory") return { status: 400, body: { error: "Memory : retourne deux cartes." } };
   const [{ n }] = await q<{ n: string }>("select count(*) n from attempt_answers where attempt_id=$1", [a.id]);
   const expected = a.ordre_questions[Number(n)];
   if (!expected || expected !== questionId) return { status: 409, body: { error: "Ce n'est pas la question en cours." } };
@@ -354,12 +389,44 @@ export async function submitAnswer(attemptId: string, userId: string, questionId
     "insert into attempt_answers(attempt_id,question_id,choix_index,correct) values ($1,$2,$3,$4) on conflict do nothing returning question_id",
     [a.id, questionId, orig, juste]);
   if (!ins.length) return { status: 409, body: { error: "Réponse déjà enregistrée." } };
-  if (Number(n) + 1 >= a.ordre_questions.length) {
+  // Mort subite : la première erreur termine la partie
+  if (Number(n) + 1 >= a.ordre_questions.length || (a.format === "mort_subite" && !juste)) {
     await finishAttempt(a.id, "terminee");
     return { status: 200, body: { done: true } };
   }
   const fresh = (await q<Attempt>("select * from attempts where id=$1", [a.id]))[0];
   return { status: 200, body: await currentState(fresh) };
+}
+
+/**
+ * Memory du jour : le joueur a retourné les cartes `c1` et `c2`. Une paire trouvée est enregistrée comme une réponse
+ * juste à sa question ; sinon le compteur de paires ratées augmente. Toutes les paires trouvées : partie terminée.
+ */
+export async function submitMemory(attemptId: string, userId: string, c1: number, c2: number): Promise<StartResult> {
+  const [a] = await q<Attempt>("select * from attempts where id=$1 and user_id=$2", [attemptId, userId]);
+  if (!a) return { status: 404, body: { error: "Tentative introuvable." } };
+  if (a.format !== "memory") return { status: 400, body: { error: "Ce jeu n'est pas un Memory." } };
+  if (a.statut !== "en_cours") return { status: 409, body: { error: "Tentative terminée.", done: true } };
+  if (Date.now() - new Date(a.started_at).getTime() > CONFIG.DUREE_MAX_TENTATIVE_MIN * 60_000) {
+    await finishAttempt(a.id, "cloturee");
+    return { status: 410, body: { error: "Temps écoulé : la tentative est clôturée.", done: true } };
+  }
+  const paquet = a.reserve ?? [];
+  if (![c1, c2].every((c) => Number.isInteger(c) && c >= 0 && c < paquet.length) || c1 === c2) return { status: 400, body: { error: "Cartes invalides." } };
+  const faites = new Set((await q<{ question_id: string }>("select question_id from attempt_answers where attempt_id=$1", [a.id])).map((r) => r.question_id));
+  if ([c1, c2].some((c) => faites.has(carteDe(paquet[c]).id))) return { status: 409, body: { error: "Carte déjà trouvée." } };
+  const id = memePaire(paquet, c1, c2);
+  if (id) {
+    await q("insert into attempt_answers(attempt_id,question_id,choix_index,correct) select $1,$2,correct_index,true from questions where id=$2 on conflict do nothing", [a.id, id]);
+    if (faites.size + 1 >= a.ordre_questions.length) {
+      await finishAttempt(a.id, "terminee");
+      return { status: 200, body: { done: true, paire: true } };
+    }
+  } else {
+    await q("update attempts set rates = rates + 1 where id=$1", [a.id]);
+  }
+  const fresh = (await q<Attempt>("select * from attempts where id=$1", [a.id]))[0];
+  return { status: 200, body: { paire: !!id, etat: await currentState(fresh) } };
 }
 
 /* ------------------------------------------------------------------ correction */

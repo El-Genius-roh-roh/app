@@ -130,7 +130,19 @@ function unique(key: string, f: () => Promise<ImportResult>): Promise<ImportResu
 
 // Dernière tentative de préparation par matière : la page d'une matière appelle preparerEnArrierePlan à chaque
 // affichage ; sans ce frein, un service IA en panne serait relancé à chaque clic (coût, charge).
-const derniereTentative = new Map<string, number>();
+// Sur globalThis, comme l'état de la génération : l'import (action serveur) et la page partagent le même frein.
+const g2 = globalThis as unknown as { __iaDerniereTentative?: Map<string, number> };
+const derniereTentative = (g2.__iaDerniereTentative ??= new Map<string, number>());
+
+/**
+ * Un cours vient d'être importé (ou réordonné) : la préparation repart tout de suite, sans attendre le frein.
+ * Sinon, une page de la matière ouverte AVANT l'import (rien à préparer, mais frein enclenché) bloquait l'IA pendant
+ * LLM_PREPARATION_INTERVALLE_MIN minutes, et le premier joueur tombait sur des questions simulées (D48).
+ */
+export function relancerPreparation(subjectId: string): void {
+  derniereTentative.delete(subjectId);
+  preparerEnArrierePlan(subjectId);
+}
 
 /** Prépare en arrière-plan les quiz des prochains jours (sans bloquer la page). */
 export function preparerEnArrierePlan(subjectId: string): void {

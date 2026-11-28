@@ -6,10 +6,10 @@ import { memberRole } from "@/lib/groups";
 import { todayParis } from "@/lib/clock";
 import { closeStaleAttempts, currentState, getCorrection, joursEntre } from "@/lib/quiz/service";
 import QuizPlayer from "@/components/QuizPlayer";
-import { formatDuJour, type Format } from "@/lib/quiz/formats";
+import { FORMATS, formatDuJour, resultatTexte, type Format } from "@/lib/quiz/formats";
 import Correction from "@/components/Correction";
 import { fmtMs } from "@/components/RankTable";
-import { getDayRanking, getGroupTrophees } from "@/lib/ranking";
+import { getDayRanking, tropheesDuJoueur } from "@/lib/ranking";
 import { exploitsDuJour, ligueDe } from "@/lib/trophees";
 import { GemmeIcone, LigueBlason, TropheesCompteur } from "@/components/Trophees";
 import { CONFIG } from "@/config/constants";
@@ -37,22 +37,20 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
         and not exists (select 1 from attempts a where a.game_day_id=g.id and a.user_id=$4 and a.statut<>'en_cours')
       order by (g.date = $3::date) desc, s.created_at, g.date limit 1`, [gd.group_id, dayId, today, u.id, CONFIG.RATTRAPAGE_JOURS]);
   const suivant = autre
-    ? <NextButton href={`/quiz/${autre.id}`} sub="Quiz suivant">{autre.nom}</NextButton>
+    ? <NextButton href={`/quiz/${autre.id}`} sub="Jeu du jour suivant">{autre.nom}</NextButton>
     : <NextButton href={`/matieres/${gd.subject_id}`} sub="Voir le classement">Retour à {gd.nom}</NextButton>;
 
   if (finished) {
-    const a = attempt as typeof attempt & { erreurs: number; duree_ms: number };
+    const a = attempt as typeof attempt & { erreurs: number; duree_ms: number; format: Format };
     const [res] = await q<{ points: number; rang: number; retard: number }>("select points, rang, retard_jours as retard from daily_results where game_day_id=$1 and user_id=$2", [dayId, u.id]);
-    const score = items.length - a.erreurs;
+    const format = a.format ?? "qcm";
+    const score = resultatTexte(format, a.erreurs, items.length);
     const jour = await getDayRanking(dayId);
     const ex = jour ? exploitsDuJour(jour.lines.map((l) => ({ ...l, dayId, date: jour.date })), u.id) : null;
-    const tr = await getGroupTrophees(gd.group_id);
-    // ligue du mois (fixée en fin de mois précédent, D36) ; la progression tient compte de la semaine en cours
-    const etat = tr.lignes.find((l) => l.userId === u.id) ?? { fige: 0, courant: 0, projection: 0 };
-    const mesTrophees = etat.projection;
-    const actuelle = ligueDe(etat.fige);
-    const ligue = { ...ligueDe(etat.projection), ligue: actuelle.ligue };
-    const verdict = ligue.index > actuelle.index ? `Fin du mois : montée en ${ligueDe(etat.projection).ligue.nom}` : ligue.index < actuelle.index ? `Fin du mois : descente en ${ligueDe(etat.projection).ligue.nom}` : null;
+    // ligue unique (D47) : trophées des saisons terminées, toutes matières
+    const mes = await tropheesDuJoueur(u.id);
+    const mesTrophees = mes.total;
+    const ligue = ligueDe(mes.total);
     return (
       <main className="page lg:max-w-3xl">
         <AutoRefresh every={15000} />
@@ -60,8 +58,9 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
         <section className="hero entree">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="eyebrow">Résultat · jour {gd.jour}</p>
-              <p className="num pop mt-2 text-7xl leading-none font-semibold">{score}<span className="text-3xl opacity-70">/{items.length}</span></p>
+              <p className="eyebrow">Résultat · {FORMATS[format].titre} · jour {gd.jour}</p>
+              <p className="num pop mt-2 text-6xl leading-none font-semibold">{score}</p>
+              {format === "memory" && <p className="mt-2 text-sm opacity-90"><span className="num">{items.length}</span> paires trouvées</p>}
               <p className="num mt-3 flex flex-wrap items-center gap-2 text-sm">
                 <span className="inline-flex items-center gap-1"><Icon name="clock" size={15} />{fmtMs(a.duree_ms)}</span>
                 {res && <span className="rounded-full bg-or-vif px-2.5 py-0.5 font-semibold text-sur-or">{res.rang === 1 ? "1er" : `${res.rang}e`} du jour</span>}
@@ -92,8 +91,8 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
               <div className="h-2.5 overflow-hidden rounded-full bg-accent-ombre/60" role="progressbar" aria-label={`Progression vers la ligue suivante`} aria-valuenow={Math.round(ligue.progression * 100)} aria-valuemin={0} aria-valuemax={100}>
                 <div className="h-2.5 rounded-full bg-or-vif" style={{ width: `${Math.round(ligue.progression * 100)}%` }} />
               </div>
-              {verdict ? <p className="text-xs font-semibold opacity-95">{verdict}</p> : ligue.suivante && <p className="text-xs opacity-90">Encore <span className="num font-semibold">{ligue.manque}</span> trophées pour la ligue {ligue.suivante.nom}</p>}
-              {!jour?.fige && <p className="text-xs opacity-80">Provisoire : les gemmes bougent tant que d&apos;autres joueurs peuvent encore jouer ce quiz. Les trophées se gagnent chaque semaine : le 1er du groupe aux gemmes gagne, chaque quiz manqué en coûte.</p>}
+              {ligue.suivante && <p className="text-xs opacity-90">Encore <span className="num font-semibold">{ligue.manque}</span> trophées pour la ligue {ligue.suivante.nom}</p>}
+              {!jour?.fige && <p className="text-xs opacity-80">Provisoire : les gemmes bougent tant que d&apos;autres joueurs peuvent encore jouer ce jeu. Les trophées se gagnent à la fin de la saison, d&apos;après le classement aux gemmes.</p>}
             </div>
           )}
         </section>
@@ -107,7 +106,7 @@ export default async function QuizPage({ params }: { params: Promise<{ dayId: st
     return (
       <main className="page lg:max-w-3xl">
         {back}
-        <p className="card text-texte-2">{retard < 0 ? `Ce quiz ouvrira le ${gd.date}.` : `Quiz non joué : on ne peut rattraper un quiz que pendant ${CONFIG.RATTRAPAGE_JOURS} jours.`}</p>
+        <p className="card text-texte-2">{retard < 0 ? `Ce jeu ouvrira le ${gd.date}.` : `Jeu non joué : on ne peut rattraper un jeu du jour que pendant ${CONFIG.RATTRAPAGE_JOURS} jours.`}</p>
         {retard > 0 && items.length > 0 && <Correction items={items} />}
         {suivant}
       </main>

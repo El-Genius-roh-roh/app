@@ -4,6 +4,7 @@ import { extractPdf } from "./pdf";
 import { analyzePages } from "./ai";
 import { rebuildSchedule } from "./schedule";
 import { extraireNotionsDocument } from "./notions-extraction";
+import { relancerPreparation } from "./quiz/ai";
 
 export const STORAGE = path.join(process.cwd(), "storage");
 
@@ -34,7 +35,10 @@ export async function processDocument(docId: string) {
     await q("update documents set nb_pages=$2, statut='pret', erreur=null where id=$1", [doc.id, pages.length]);
 
     // les annales servent d'exemples de style dans le prompt envoyé au chat
-    if (doc.categorie === "cours") await rebuildSchedule(doc.subject_id);
+    if (doc.categorie === "cours") {
+      await rebuildSchedule(doc.subject_id);
+      relancerPreparation(doc.subject_id); // l'IA écrit tout de suite les prochains jeux du jour (D48)
+    }
     // notions du cours (D39) en tâche de fond : une erreur ici ne doit jamais mettre le document en erreur
     if (doc.categorie === "cours") void extraireNotionsDocument(doc.id).catch((e) => console.error("notions", (e as Error).message));
   } catch (e) {

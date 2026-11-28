@@ -34,14 +34,13 @@ export const CONFIG = {
   LLM_JOURS_A_L_AVANCE: 3, // quiz préparés en arrière-plan : aujourd'hui + 2 jours
 } as const;
 
-// Trophées de la semaine et ligue du mois (docs/04 §8, D36) : la régularité paie, l'irrégularité coûte.
-// Chaque semaine (lundi → dimanche), le meilleur score du groupe (gemmes des quiz + gemmes solo) gagne des trophées ;
-// chaque quiz du jour manqué et non rattrapé en fait perdre (jamais sous 0). La ligue, fixée par le total de trophées,
-// est recalculée à la fin de chaque mois : on peut monter comme descendre.
+// Trophées de fin de saison et ligue unique (docs/04 §8, D30, D47) : à la fin de la saison d'une matière, chaque joueur
+// gagne PAR_JOUR_PAR_JOUEUR_DERRIERE × (jours de la saison) × (joueurs classés derrière lui aux gemmes de la saison).
+// Les trophées ne se perdent jamais. La ligue d'un joueur est UNIQUE : elle dépend du total de ses trophées, toutes
+// matières et tous groupes confondus.
 export const TROPHEES = {
-  SEMAINE_GAINS: [20], // trophées selon le rang de la semaine : [1er, 2e, …] (ex æquo : même gain)
-  PENALITE_QUIZ_MANQUE: 10, // par quiz du jour non joué, une fois le délai de rattrapage passé
-  SERIES_JOURS: [3, 7, 30], // badges : jours consécutifs avec au moins un quiz joué
+  PAR_JOUR_PAR_JOUEUR_DERRIERE: 1,
+  SERIES_JOURS: [3, 7, 30], // badges : jours consécutifs avec au moins un jeu du jour joué
   QUIZ_JOUES: [10, 50], // badges
   MIN_JOUEURS_DUEL: 2, // badges « 1er du jour » et « le plus rapide » : au moins 2 joueurs ce jour-là
 } as const;
@@ -93,18 +92,20 @@ export const ARENA = {
   CODE_LONGUEUR: 4,
   BOTS: ["Gauss", "Fisher", "Bayes", "Turing", "Pearson", "Markov", "Laplace", "Student"],
 } as const;
-// Activités solo (D37) : flashcards, Memory, Arène contre des bots. Chaque session terminée rapporte des gemmes solo,
-// plafonnées par jour, qui comptent dans le score de la semaine (pas dans les classements des quiz du jour).
+// Activités solo (D37) : flashcards, Memory, Relier, Arène contre des bots. Les sessions terminées comptent pour les
+// succès et les défis du tableau de bord ; elles ne rapportent ni gemmes ni trophées (D47).
 export const SOLO = {
-  GEMMES_PAR_SESSION: 5,
-  MAX_PAR_JOUR: 15,
   TYPES: ["flashcards", "memory", "arene", "relier"] as const,
 };
 
-// Défi du jour (D41, remplace D40) : le quiz du jour d'une matière change de format chaque jour, selon sa date de jeu.
-// Mêmes questions, même score (erreurs puis temps), même pénalité s'il est raté (TROPHEES.PENALITE_QUIZ_MANQUE).
+// Jeu du jour (D46, remplace D41) : chaque matière a un jeu du jour, qui change chaque jour par roulement.
+// Toujours sur les questions du jour (découpage du cours du jour + quelques révisions).
+// Classement : QCM et Relier = erreurs puis temps ; Mort subite = plus longue série puis temps ; Memory = temps.
 export const DEFI = {
-  FORMATS: ["qcm", "relier", "vf"] as const,
+  FORMATS: ["qcm", "memory", "mort_subite", "relier"] as const,
+  MEMORY_PAIRES: 8, // paires du Memory du jour (16 cartes), tirées des QCM du jour
+  MEMORY_MIN_PAIRES: 4, // en dessous, le jour retombe sur le QCM
+  MEMORY_DELAI_ERREUR_MS: 1500, // deux cartes qui ne vont pas ensemble restent visibles ce temps (ou jusqu'au clic suivant)
 };
 
 // Relier : chaque notion (ou question) avec sa définition (ou réponse), en touchant l'une puis l'autre

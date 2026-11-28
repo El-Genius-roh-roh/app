@@ -13,8 +13,11 @@ export function arrondi(x: number): number {
   return Math.floor(Math.round(x * 1e6) / 1e6 + 0.5);
 }
 
-const bat = (a: Result, b: Result) =>
-  a.erreurs < b.erreurs || (a.erreurs === b.erreurs && a.dureeMs < b.dureeMs);
+/** Critère du classement du jour (D46) : « erreurs » = erreurs puis temps ; « temps » = temps seul (Memory). */
+export type Critere = "erreurs" | "temps";
+
+const comparer = (c: Critere) => (a: Result, b: Result) =>
+  c === "temps" ? a.dureeMs - b.dureeMs : a.erreurs - b.erreurs || a.dureeMs - b.dureeMs;
 
 /** Part des gemmes conservée après `retard` jours de retard : 1 ; 0,9 ; 0,8 ; 0,7 (jamais négative). */
 export function facteurRetard(retard = 0): number {
@@ -22,13 +25,15 @@ export function facteurRetard(retard = 0): number {
 }
 
 /**
- * Classement du jour : erreurs puis temps ; rang « 1, 2, 2, 4 ».
+ * Classement du jour : erreurs puis temps (ou temps seul, selon le jeu du jour) ; rang « 1, 2, 2, 4 ».
  * Gemmes (champ `points`) : (participation + 10 par joueur derrière) × multiplicateur du jour × pénalité de retard.
  */
-export function classementDuJour(results: Result[], jour: number): Ranked[] {
+export function classementDuJour(results: Result[], jour: number, critere: Critere = "erreurs"): Ranked[] {
   const m = multiplicateur(jour);
+  const cmp = comparer(critere);
+  const bat = (a: Result, b: Result) => cmp(a, b) < 0;
   return [...results]
-    .sort((a, b) => a.erreurs - b.erreurs || a.dureeMs - b.dureeMs)
+    .sort(cmp)
     .map((r) => {
       const rang = 1 + results.filter((o) => bat(o, r)).length;
       const battus = results.filter((o) => bat(r, o)).length;

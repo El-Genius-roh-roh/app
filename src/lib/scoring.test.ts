@@ -90,3 +90,15 @@ describe("rattrapage : −10 % de gemmes par jour de retard", () => {
     expect(r[1]).toMatchObject({ userId: "B", rang: 2, points: 10 });
   });
 });
+
+describe("classement au temps (Memory du jour, D46)", () => {
+  it("le plus rapide gagne, quelles que soient les erreurs", () => {
+    const r = classementDuJour([
+      { userId: "A", erreurs: 5, dureeMs: 40_000 },
+      { userId: "B", erreurs: 0, dureeMs: 60_000 },
+    ], 1, "temps");
+    expect(r.find((x) => x.userId === "A")!.rang).toBe(1);
+    expect(r.find((x) => x.userId === "B")!.rang).toBe(2);
+    expect(r.find((x) => x.userId === "A")!.points).toBe(20);
+  });
+});

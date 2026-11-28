@@ -1,12 +1,12 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { url } from "@/lib/url";
-import { GemmeIcone } from "./Trophees";
+import Icon from "./Icon";
 
-type Reponse = { gagne: number; aujourdhui: number; max: number };
+type Reponse = { sessions: number };
 
 /**
- * Fin d'une session solo (flashcards, Memory, Relier) : l'enregistre une seule fois (D37) et affiche les gemmes solo gagnées.
+ * Fin d'une session solo (flashcards, Memory, Relier) : l'enregistre une seule fois (D37) pour les succès et les défis du jour.
  * Monté sur l'écran de fin : une nouvelle session remonte le composant, donc un nouvel envoi.
  */
 export default function RecompenseSolo({ type, subjectId }: { type: "flashcards" | "memory" | "relier"; subjectId: string }) {
@@ -21,9 +21,8 @@ export default function RecompenseSolo({ type, subjectId }: { type: "flashcards"
   if (!r) return null;
   return (
     <span className="chip border-transparent bg-surface text-texte" aria-live="polite">
-      <GemmeIcone size={14} />
-      {r.gagne > 0 ? <>+<span className="num">{r.gagne}</span> gemmes pour ta semaine</> : <>Plafond solo du jour atteint</>}
-      <span className="text-texte-3">· <span className="num">{r.aujourdhui}/{r.max}</span> aujourd&apos;hui</span>
+      <Icon name="check" size={14} className="text-ok" />Session enregistrée
+      <span className="text-texte-3">· <span className="num">{r.sessions}</span> aujourd&apos;hui</span>
     </span>
   );
 }

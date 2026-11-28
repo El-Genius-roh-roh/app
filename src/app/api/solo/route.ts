@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getUser } from "@/lib/auth";
-import { accesJeux, MESSAGE_VERROU } from "@/lib/acces";
 import { q } from "@/lib/db";
 import { getSubjectFor } from "@/lib/subjects";
 import { sqlToday, todayParis } from "@/lib/clock";
@@ -13,7 +12,7 @@ export const dynamic = "force-dynamic";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Fin d'une session solo d'une matière (flashcards, Memory ou Relier) : rapporte des gemmes solo (D37).
+ * Fin d'une session solo d'une matière (flashcards, Memory ou Relier) : comptée pour les succès et les défis (D37, D47).
  * Les parties d'Arène contre des bots sont enregistrées côté serveur, à la fin de la partie.
  */
 export async function POST(req: Request) {
@@ -23,10 +22,9 @@ export async function POST(req: Request) {
   const type = b.type === "flashcards" || b.type === "memory" || b.type === "relier" ? b.type : null;
   const subjectId = typeof b.subjectId === "string" && UUID.test(b.subjectId) ? b.subjectId : null;
   if (!type || !subjectId) return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
-  if (type !== "flashcards" && !(await accesJeux(u.id)).ouvert) return NextResponse.json({ error: MESSAGE_VERROU }, { status: 403 });
   const ctx = await getSubjectFor(subjectId, u.id);
   if (!ctx) return NextResponse.json({ error: "Matière introuvable." }, { status: 404 });
-  // même source que les jeux : questions vérifiées des jours passés ; pas de gemmes sans assez de cartes
+  // même source que les jeux : questions vérifiées des jours passés ; pas de session sans assez de cartes
   const [{ n }] = await q<{ n: number }>(`select ${sqlNbCartes("$1::uuid", sqlToday("$1::uuid"))} as n`, [subjectId]);
   if (n < (type === "flashcards" ? FLASHCARDS.MIN : type === "relier" ? RELIER.MIN_PAIRES : MEMORY.MIN_PAIRES)) return NextResponse.json({ error: "Pas assez de cartes." }, { status: 409 });
   const r = await enregistrerSolo({ userId: u.id, groupId: ctx.subject.group_id, subjectId, type, date: await todayParis(subjectId) });

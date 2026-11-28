@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { accesJeux } from "@/lib/acces";
-import JeuxVerrouilles from "@/components/JeuxVerrouilles";
 import { q } from "@/lib/db";
 import { getSubjectFor } from "@/lib/subjects";
 import { sqlToday } from "@/lib/clock";
@@ -19,8 +17,6 @@ export default async function Memory({ params }: { params: Promise<{ id: string 
   const u = await requireUser();
   const ctx = await getSubjectFor(id, u.id);
   if (!ctx) notFound();
-  const acces = await accesJeux(u.id);
-  if (!acces.ouvert) return <JeuxVerrouilles jeu="Memory" acces={acces} retour={{ href: `/matieres/${id}`, label: ctx.subject.nom }} />;
 
   // comme l'Arène : uniquement les questions vérifiées des jours passés, pour ne rien dévoiler du quiz du jour
   const pool = await q<QuestionSource>(

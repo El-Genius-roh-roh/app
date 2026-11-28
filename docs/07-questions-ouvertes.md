@@ -43,5 +43,11 @@ Points sans décision explicite. Claude Code applique la **valeur par défaut** 
 | Q33 | Relier : réponse en double dans la réserve ? | Une seule case par texte ; une réponse est juste si son texte est celui de la bonne réponse (deux questions peuvent avoir la même) |
 | Q34 | Comment devient-on premium sans paiement ? | En démo (`DEMO_MODE=1`), depuis son profil (activer / retirer). Hors démo, en base : `update revision_app.profiles set premium=true where …`. Les comptes existants sont gratuits après la migration 013 |
 | Q34 | (obsolète depuis D45) | Plus de premium |
-| Q35 | Quels « jeux » sont verrouillés avant le défi ? | Arène, jeu de plateau, Memory, Relier. Les flashcards et le glossaire restent ouverts (révision) |
+| Q35 | Quels « jeux » sont verrouillés avant le défi ? | Depuis D49 : seulement l'Arène et le jeu de plateau. Memory, Relier, flashcards et glossaire restent ouverts |
 | Q36 | Un rattrapage en retard bloque-t-il les jeux ? | Non : seuls les défis du jour comptent ; les rattrapages restent facultatifs (avec leur pénalité de gemmes) |
+| Q37 | Memory du jour : classé au temps ou aux erreurs ? | Au **temps** seul : toutes les paires finissent par être trouvées, et chaque paire ratée coûte du temps. Les paires ratées sont affichées (et 0 raté = badge « Sans faute ») |
+| Q38 | Mort subite : comment classer ? | Par la longueur de la série (stockée comme 10 − série erreurs, pour réutiliser « erreurs puis temps »), puis le temps |
+| Q39 | Combien de paires au Memory du jour ? | 8 (16 cartes, 4 × 4), les nouvelles notions du jour d'abord ; moins de 4 QCM utilisables : le jour se joue en QCM |
+| Q40 | Que deviennent les gemmes solo (D37) avec les trophées de fin de saison ? | Supprimées : seules les gemmes des jeux du jour comptent (classement de saison, donc trophées). Les sessions solo restent comptées pour les succès et les défis |
+| Q41 | Les trophées se perdent-ils ? Peut-on descendre de ligue ? | Non (comme D30) : les trophées sont acquis à la fin de chaque saison |
+| Q42 | Le classement des trophées d'un groupe compte-t-il les autres groupes ? | Non : il compte les trophées gagnés dans les matières du groupe. La ligue affichée à côté, elle, est la ligue unique du joueur (tous groupes) |

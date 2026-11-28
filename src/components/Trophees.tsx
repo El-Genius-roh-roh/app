@@ -1,5 +1,6 @@
 import { LIGUES } from "@/config/constants";
-import { finDuMois, ligueDe, type EtatTrophees, type Ligue, type LigueInfo, type Vitrine as VitrineData } from "@/lib/trophees";
+import Link from "next/link";
+import { ligueDe, type Ligue, type Vitrine as VitrineData } from "@/lib/trophees";
 import Icon from "./Icon";
 import TiltCard from "./TiltCard";
 
@@ -69,11 +70,11 @@ export function GainGemmes({ n, retard = 0 }: { n: number; retard?: number }) {
   );
 }
 
-/** Pastille « +20 » / « −10 » trophées d'une semaine ; grisée tant que la semaine n'est pas réglée. */
+/** Pastille « +20 » trophées de fin de saison ; grisée tant que la saison n'est pas finie (trophées en jeu). */
 export function GainTrophees({ n, provisoire = false }: { n: number; provisoire?: boolean }) {
   const couleur = provisoire ? "bg-surface-2 text-texte-3" : n < 0 ? "bg-ko-doux text-ko" : "bg-or-doux text-or";
   return (
-    <span title={provisoire ? "Provisoire : la semaine n'est pas encore réglée" : n < 0 ? "Trophées perdus" : "Trophées gagnés"}
+    <span title={provisoire ? "En jeu : gagnés si le classement tient jusqu'à la fin de la saison" : "Trophées gagnés"}
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-num text-xs font-bold tabular-nums ${couleur}`}>
       {n < 0 ? "−" : "+"}{fmt(Math.abs(n))}<TropheeIcone size={13} />
     </span>
@@ -165,19 +166,13 @@ export function LigueBadge({ ligue }: { ligue: Ligue }) {
 }
 
 /**
- * Grande carte « Ma ligue » (D36) : la ligue du mois (fixée par les trophées de fin du mois précédent), les trophées,
- * et ce qui se passera à la fin du mois (montée, maintien, descente) d'après les trophées avec la semaine en cours. Tilt 3D au survol.
+ * Grande carte « Ma ligue » (D47) : la ligue unique du joueur, fixée par le total de ses trophées (toutes matières,
+ * tous groupes), la progression vers la suivante, et les trophées en jeu dans les saisons en cours. Un clic ouvre la
+ * liste des ligues (/ligues). Tilt 3D au survol.
  */
-export function LigueCard({ etat, today, serie }: { etat: EtatTrophees; today: string; serie: number }) {
-  const { ligue, index } = ligueDe(etat.fige);
-  const proj: LigueInfo = ligueDe(etat.projection);
-  const { suivante, progression, manque } = proj;
-  const fin = finDuMois(today);
-  const verdict = proj.index > index ? <>tu montes en <b className="text-ok">{proj.ligue.nom}</b></>
-    : proj.index < index ? <>tu descends en <b className="text-ko">{proj.ligue.nom}</b></> : <>tu restes en <b className="text-texte">{ligue.nom}</b></>;
-  const enAttente = etat.projection - etat.courant;
-  return (
-    <TiltCard>
+export function LigueCard({ trophees, enJeu = 0, serie = 0, lien = true }: { trophees: number; enJeu?: number; serie?: number; lien?: boolean }) {
+  const { ligue, index, suivante, progression, manque } = ligueDe(trophees);
+  const carte = (
     <section className="card relative overflow-hidden" style={{ borderColor: `${ligue.clair}55` }}>
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 opacity-25" style={{ background: `radial-gradient(60% 100% at 20% 0%, ${ligue.clair}, transparent)` }} />
       <div className="relative flex items-center gap-4">
@@ -188,8 +183,8 @@ export function LigueCard({ etat, today, serie }: { etat: EtatTrophees; today: s
           <p className="eyebrow">Ma ligue</p>
           <p className="font-titre text-3xl" style={{ color: `light-dark(${ligue.fonce}, ${ligue.clair})` }}>{ligue.nom}</p>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span className="inline-flex items-center gap-1.5 font-num text-xl font-bold tabular-nums text-or"><TropheeIcone size={20} />{fmt(etat.courant)}</span>
-            {enAttente !== 0 && <span className="text-xs text-texte-3">{enAttente > 0 ? "+" : "−"}<span className="num">{fmt(Math.abs(enAttente))}</span> cette semaine (provisoire)</span>}
+            <span className="inline-flex items-center gap-1.5 font-num text-xl font-bold tabular-nums text-or"><TropheeIcone size={20} />{fmt(trophees)}</span>
+            {enJeu > 0 && <span className="text-xs text-texte-3">+<span className="num">{fmt(enJeu)}</span> en jeu dans les saisons en cours</span>}
           </p>
         </div>
         {serie > 0 && (
@@ -204,17 +199,15 @@ export function LigueCard({ etat, today, serie }: { etat: EtatTrophees; today: s
       <p className="relative mt-2 flex flex-wrap items-center gap-1 text-sm text-texte-2">
         {suivante ? <>Encore <b className="num text-texte">{fmt(manque)}</b> <TropheeIcone size={14} /> pour la ligue <b className="text-texte">{suivante.nom}</b></> : "Ligue maximale atteinte !"}
       </p>
-      <p className="relative mt-1 flex flex-wrap items-center gap-1 text-sm text-texte-2">
-        <Icon name="calendar" size={15} className="text-texte-3" /><span>Fin du mois (<span className="num">{fin.slice(8)}/{fin.slice(5, 7)}</span>) : {verdict}</span>
-      </p>
       <div className="relative mt-3 flex items-end gap-1.5" aria-label={`Ligue ${index + 1} sur ${LIGUES.length}`}>
         {LIGUES.map((l, i) => (
           <span key={l.nom} title={`${l.nom} · ${fmt(l.min)} trophées`}><LigueBlason ligue={l} size={i === index ? 30 : 22} verrouille={i > index} /></span>
         ))}
+        {lien && <span className="ml-auto inline-flex items-center gap-1 text-sm font-semibold text-accent-fort">Toutes les ligues<Icon name="chevronRight" size={16} /></span>}
       </div>
     </section>
-    </TiltCard>
   );
+  return <TiltCard>{lien ? <Link href="/ligues" className="block rounded-[20px]" aria-label={`Ligue ${ligue.nom} : voir toutes les ligues`}>{carte}</Link> : carte}</TiltCard>;
 }
 
 /* ------------------------------------------------------------------ badges */
