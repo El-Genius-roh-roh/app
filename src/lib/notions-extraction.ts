@@ -3,17 +3,26 @@
 import { NOTIONS } from "@/config/constants";
 import { pool, q } from "./db";
 import { chatLLM, llmConfigured } from "./ai/llm";
+import { fixLatexEscapes } from "./quiz/chat";
 import { ancrer, dedoublonner, detecterDefinitions, lireReponseIA, normTerme, promptNotions, type NotionBrute } from "./notions";
 
 type Page = { numero: number; texte: string };
 
-async function viaIA(matiere: string, pages: Page[]): Promise<NotionBrute[]> {
-  const out: NotionBrute[] = [];
+type Trouvee = NotionBrute & { source: "ia" | "auto" };
+
+/** Lot par lot : un lot dont l’appel échoue (délai, réponse illisible) passe à la détection simple, les autres gardent l’IA. */
+async function viaIA(matiere: string, pages: Page[]): Promise<Trouvee[]> {
+  const out: Trouvee[] = [];
   for (let i = 0; i < pages.length; i += NOTIONS.PAGES_PAR_APPEL) {
     const lot = pages.slice(i, i + NOTIONS.PAGES_PAR_APPEL).filter((p) => (p.texte ?? "").trim().length > 20);
     if (!lot.length) continue;
-    const r = await chatLLM([{ role: "user", content: promptNotions(matiere, lot) }], { maxTokens: 3000, temperature: 0.2 });
-    out.push(...ancrer(lireReponseIA(r), lot));
+    try {
+      const r = await chatLLM([{ role: "user", content: promptNotions(matiere, lot) }], { maxTokens: 4000, temperature: 0.2 });
+      out.push(...ancrer(lireReponseIA(fixLatexEscapes(r)), lot).map((x) => ({ ...x, source: "ia" as const })));
+    } catch (e) {
+      console.error("notions IA (lot)", (e as Error).message);
+      out.push(...detecterDefinitions(lot).map((x) => ({ ...x, source: "auto" as const })));
+    }
   }
   return out;
 }
@@ -24,13 +33,9 @@ export async function extraireNotionsDocument(docId: string): Promise<{ n: numbe
     "select d.subject_id, s.nom from documents d join subjects s on s.id=d.subject_id where d.id=$1 and d.categorie='cours'", [docId]);
   if (!doc) return { n: 0, source: "auto" };
   const pages = await q<Page>("select numero, coalesce(texte,'') as texte from document_pages where document_id=$1 order by numero", [docId]);
-  let items: NotionBrute[] = [];
-  let source: "ia" | "auto" = "auto";
-  if (llmConfigured()) {
-    try { items = await viaIA(doc.nom, pages); source = "ia"; }
-    catch (e) { console.error("notions IA", (e as Error).message); items = []; }
-  }
-  if (!items.length) { items = detecterDefinitions(pages); source = "auto"; }
+  let items: Trouvee[] = llmConfigured() ? await viaIA(doc.nom, pages) : [];
+  if (!items.length) items = detecterDefinitions(pages).map((x) => ({ ...x, source: "auto" as const }));
+  const source: "ia" | "auto" = items.some((x) => x.source === "ia") ? "ia" : "auto";
 
   const c = await pool.connect();
   try {
@@ -44,7 +49,7 @@ export async function extraireNotionsDocument(docId: string): Promise<{ n: numbe
     const nouvelles = dedoublonner(items).filter((x) => !deja.has(normTerme(x.terme)));
     for (const x of nouvelles) {
       await c.query("insert into notions(subject_id,document_id,page,terme,definition,source) values ($1,$2,$3,$4,$5,$6)",
-        [doc.subject_id, docId, x.page, x.terme, x.definition, source]);
+        [doc.subject_id, docId, x.page, x.terme, x.definition, x.source]);
     }
     await c.query("commit");
     return { n: nouvelles.length, source };

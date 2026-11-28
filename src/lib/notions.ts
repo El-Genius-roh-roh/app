@@ -67,16 +67,27 @@ export function dedoublonner<T extends { terme: string }>(xs: T[]): T[] {
   return xs.filter((x) => { const k = normTerme(x.terme); if (!k || vus.has(k)) return false; vus.add(k); return true; });
 }
 
-/** Réponse de l'IA → notions. Accepte un tableau JSON nu ou entouré de texte / de balises ```json. */
+/**
+ * Réponse de l'IA → notions. Accepte un tableau JSON nu ou entouré de texte, de balises ```json ou <think>, avec des
+ * crochets parasites avant le tableau (« [page 3] ») et du LaTeX mal échappé (« \frac »). Lève une erreur si rien n'est lisible.
+ */
 export function lireReponseIA(texte: string): NotionBrute[] {
-  const debut = texte.indexOf("["), fin = texte.lastIndexOf("]");
-  if (debut < 0 || fin <= debut) return [];
-  try {
-    const brut = JSON.parse(texte.slice(debut, fin + 1));
-    if (!Array.isArray(brut)) return [];
-    return brut.filter((x) => x && typeof x.terme === "string" && typeof x.definition === "string")
-      .map((x) => ({ terme: x.terme.trim(), definition: x.definition.trim(), page: Number.isInteger(x.page) ? x.page : null }));
-  } catch { return []; }
+  const t = texte.replace(/<think>[\s\S]*?<\/think>/g, "").replace(/```(?:json)?/gi, "");
+  const fin = t.lastIndexOf("]");
+  // le tableau commence au premier « [ » suivi d'un objet (ou vide) : on essaie chaque candidat
+  for (let i = t.indexOf("["); i >= 0 && i < fin; i = t.indexOf("[", i + 1)) {
+    if (!/^\[\s*[{\]]/.test(t.slice(i))) continue;
+    const brut = t.slice(i, fin + 1);
+    for (const essai of [brut, brut.replace(/\\(?!["\\/bfnrtu])/g, "\\\\")]) {
+      try {
+        const v = JSON.parse(essai);
+        if (!Array.isArray(v)) continue;
+        return v.filter((x) => x && typeof x.terme === "string" && typeof x.definition === "string")
+          .map((x) => ({ terme: x.terme.trim(), definition: x.definition.trim(), page: Number.isInteger(x.page) ? x.page : null }));
+      } catch { /* candidat suivant */ }
+    }
+  }
+  throw new Error("Réponse de l'IA illisible (pas de tableau JSON).");
 }
 
 /**

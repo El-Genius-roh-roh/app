@@ -45,8 +45,15 @@ describe("IA", () => {
     expect(lireReponseIA('Voici : ```json\n[{"terme":"Glycolyse","definition":"Dégradation du glucose en pyruvate.","page":8}]\n```')).toEqual([
       { terme: "Glycolyse", definition: "Dégradation du glucose en pyruvate.", page: 8 },
     ]);
-    expect(lireReponseIA("pas de JSON")).toEqual([]);
-    expect(lireReponseIA("[{oops}]")).toEqual([]);
+    expect(() => lireReponseIA("pas de JSON")).toThrow();
+    expect(() => lireReponseIA("[{oops}]")).toThrow();
+  });
+  it("ignore la réflexion et les crochets parasites avant le tableau, répare le LaTeX", () => {
+    // réponse brute du modèle : « \mu » et « \sigma » ne sont pas des échappements JSON valides
+    const brut = String.raw`<think>voir [page 3]</think>Notions [p. 8] :
+[{"terme":"Variance","definition":"Espérance de $(X-\mu)^2$, notée $\sigma^2$.","page":8}]`;
+    expect(lireReponseIA(brut)).toEqual([{ terme: "Variance", definition: String.raw`Espérance de $(X-\mu)^2$, notée $\sigma^2$.`, page: 8 }]);
+    expect(lireReponseIA("Aucune : []")).toEqual([]);
   });
   it("ne garde que les termes présents dans la page citée (garde-fou contre les inventions)", () => {
     const n = ancrer([
