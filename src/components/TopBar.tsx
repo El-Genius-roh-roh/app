@@ -3,6 +3,7 @@ import { getUser } from "@/lib/auth";
 import { APP_NAME } from "@/config/constants";
 import Avatar from "./Avatar";
 import Onglets, { LiensBureau } from "./Onglets";
+import { marquerVisite } from "@/lib/tableau";
 
 /**
  * Navigation : barre du haut (marque + profil) et, sur téléphone, barre d'onglets en bas (pouce).
@@ -11,6 +12,7 @@ import Onglets, { LiensBureau } from "./Onglets";
 export default async function TopBar() {
   const u = await getUser();
   if (!u) return null;
+  await marquerVisite(u.id).catch(() => undefined); // succès « fidèle » (D38) : jamais bloquant pour l'affichage
   return (
     <>
       <header className="sticky top-0 z-30 border-b-2 border-ligne bg-fond/90 backdrop-blur-md">

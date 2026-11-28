@@ -32,11 +32,13 @@ export const CONFIG = {
   LLM_JOURS_A_L_AVANCE: 3, // quiz préparés en arrière-plan : aujourd'hui + 2 jours
 } as const;
 
-// Trophées façon Clash Royale (docs/04 §8, D24) : on en gagne en battant des joueurs, on en perd en se faisant battre.
-// Les ligues se débloquent selon le nombre de trophées ; on ne retombe jamais sous le palier d'une ligue atteinte.
+// Trophées de la semaine et ligue du mois (docs/04 §8, D36) : la régularité paie, l'irrégularité coûte.
+// Chaque semaine (lundi → dimanche), le meilleur score du groupe (gemmes des quiz + gemmes solo) gagne des trophées ;
+// chaque quiz du jour manqué et non rattrapé en fait perdre (jamais sous 0). La ligue, fixée par le total de trophées,
+// est recalculée à la fin de chaque mois : on peut monter comme descendre.
 export const TROPHEES = {
-  // Fin de saison (D30) : trophées = jours de la saison × joueurs classés derrière soi (aux gemmes de la saison).
-  PAR_JOUR_PAR_JOUEUR_DERRIERE: 1,
+  SEMAINE_GAINS: [20], // trophées selon le rang de la semaine : [1er, 2e, …] (ex æquo : même gain)
+  PENALITE_QUIZ_MANQUE: 10, // par quiz du jour non joué, une fois le délai de rattrapage passé
   SERIES_JOURS: [3, 7, 30], // badges : jours consécutifs avec au moins un quiz joué
   QUIZ_JOUES: [10, 50], // badges
   MIN_JOUEURS_DUEL: 2, // badges « 1er du jour » et « le plus rapide » : au moins 2 joueurs ce jour-là
@@ -89,6 +91,32 @@ export const ARENA = {
   CODE_LONGUEUR: 4,
   BOTS: ["Gauss", "Fisher", "Bayes", "Turing", "Pearson", "Markov", "Laplace", "Student"],
 } as const;
+// Activités solo (D37) : flashcards, Memory, Arène contre des bots. Chaque session terminée rapporte des gemmes solo,
+// plafonnées par jour, qui comptent dans le score de la semaine (pas dans les classements des quiz du jour).
+export const SOLO = {
+  GEMMES_PAR_SESSION: 5,
+  MAX_PAR_JOUR: 15,
+  TYPES: ["flashcards", "memory", "arene"] as const,
+};
+
+// Tableau de bord personnel (D38) : succès à débloquer
+export const SUCCES = {
+  FIDELE_JOURS: [7, 30], // ouvrir l'application N jours d'affilée
+  SESSIONS: 10, // flashcards, Memory, parties d'Arène
+  MIN_QUIZ_TITRE: 3, // quiz joués pour prétendre au titre « l'éclair de la bande »
+};
+
+// Notions du cours (D39) : paires « concept ↔ définition » tirées des pages de cours (IA, sinon détection simple)
+export const NOTIONS = {
+  TERME_MAX: 60,
+  DEFINITION_MIN: 12,
+  DEFINITION_MAX: 220,
+  DEFINITION_IA: 140, // longueur demandée à l'IA
+  PAGES_PAR_APPEL: 8, // pages envoyées à l'IA par appel
+  PAGE_MAX_CARACTERES: 1500,
+  MEMORY_DEFINITION_MAX: 140, // au-delà, la carte du Memory est illisible sur téléphone
+};
+
 // Flashcards : recto = l'énoncé, verso = la bonne réponse et l'explication (questions vérifiées des jours passés)
 export const FLASHCARDS = {
   PAQUET: 12, // cartes par session ; les moins sues passent en premier

@@ -2,7 +2,7 @@
 // Les cartes viennent des questions vérifiées des jours passés : recto = l'énoncé, verso = la bonne réponse + l'explication.
 
 export type FlashSource = { id: string; type: string; enonce: string; choix: string[]; correct_index: number; explication: string };
-export type Flashcard = { id: string; recto: string; verso: string; explication: string; vf: boolean };
+export type Flashcard = { id: string; recto: string; verso: string; explication: string; vf: boolean; type: "notion" | "question" };
 
 /** Boîtes de Leitner (1 = à revoir souvent … BOITE_MAX = acquise), gardées dans le navigateur. */
 export type Boites = Record<string, number>;
@@ -23,9 +23,19 @@ export function cartes(pool: FlashSource[]): Flashcard[] {
     const k = norm(recto);
     if (vus.has(k)) continue;
     vus.add(k);
-    out.push({ id: x.id, recto, verso, explication: x.explication?.trim() ?? "", vf });
+    out.push({ id: x.id, recto, verso, explication: x.explication?.trim() ?? "", vf, type: "question" });
   }
   return out;
+}
+
+/**
+ * Notions du cours (D39) → cartes : recto = le concept, verso = sa définition. Ids préfixés « n: » pour que les boîtes
+ * de Leitner des notions et des questions ne se mélangent jamais.
+ */
+export function cartesNotions(notions: { id: string; terme: string; definition: string }[]): Flashcard[] {
+  const vus = new Set<string>();
+  return notions.filter((x) => { const k = norm(x.terme); if (!k || vus.has(k)) return false; vus.add(k); return true; })
+    .map((x) => ({ id: `n:${x.id}`, recto: x.terme.trim(), verso: x.definition.trim(), explication: "", vf: false, type: "notion" as const }));
 }
 
 const boite = (b: Boites, id: string) => Math.min(BOITE_MAX, Math.max(1, b[id] ?? 1));

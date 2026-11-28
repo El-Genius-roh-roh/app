@@ -11,7 +11,8 @@ export const fixAccents = (s: string) =>
     .normalize("NFC");
 
 // Polices standard de pdfjs (sinon avertissements et rendu d'image dégradé pour certains PDF)
-const FONTS = path.join(process.cwd(), "node_modules/pdfjs-dist/standard_fonts") + path.sep;
+// pdfjs exige une barre « / » finale, même sous Windows (path.sep y vaut « \ » et faisait échouer tout import de PDF)
+const FONTS = path.join(process.cwd(), "node_modules/pdfjs-dist/standard_fonts").replace(/\\/g, "/") + "/";
 
 export type ExtractedPage = { numero: number; texte: string; imagePath: string | null };
 

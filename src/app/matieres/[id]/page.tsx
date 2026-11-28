@@ -94,6 +94,16 @@ export default async function Matiere({ params, searchParams }: { params: Promis
         </div>
         <aside className="space-y-6">
           <div className="space-y-2.5">
+          <Link href={`/matieres/${id}/notions`} className="tuile group flex items-center gap-3.5">
+            <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-ok-doux text-ok shadow-[0_3px_0_var(--color-ligne)]">
+              <Icon name="book" size={22} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-bold">Glossaire du cours</span>
+              <span className="block text-sm text-texte-3">Les notions et leurs définitions</span>
+            </span>
+            <Icon name="chevronRight" className="text-texte-3 transition-transform group-hover:translate-x-0.5" />
+          </Link>
           <Link href={`/matieres/${id}/flashcards`} className="tuile group flex items-center gap-3.5">
             <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent-doux text-accent-fort shadow-[0_3px_0_var(--color-ligne)]">
               <Icon name="cards" size={22} />
