@@ -6,7 +6,7 @@ import { sqlToday } from "../clock";
 import { memberRole } from "../groups";
 import { secureRand } from "../rng";
 import {
-  advance, buildRounds, eloChanges, MODES, newState, ranking, startGame, submitAnswer, viewFor,
+  advance, buildRounds, eloChanges, MODES, newState, ranking, startGame, submitAnswer, valeur, viewFor,
   type Mode, type PoolQuestion, type State,
 } from "./engine";
 
@@ -73,11 +73,11 @@ async function rate(s: State, c: PoolClient) {
   const { rows } = await c.query<{ user_id: string; rating: string }>(
     "select user_id, rating from arena_ratings where group_id=$1 and user_id = any($2::uuid[])", [s.groupId, humans.map((h) => h.id)]);
   const cur = new Map(rows.map((r) => [r.user_id, Number(r.rating)]));
-  const d = eloChanges(humans.map((p) => ({ id: p.id, score: p.score, rating: cur.get(p.id) ?? ARENA.RATING_INITIAL })));
+  const d = eloChanges(humans.map((p) => ({ id: p.id, score: valeur(s, p), rating: cur.get(p.id) ?? ARENA.RATING_INITIAL })));
   const top = ranking(s).filter((p) => !p.bot)[0];
   for (const h of humans) {
     const bonnes = Object.values(h.answers).filter((a) => a.ok).length;
-    const gagne = top.id === h.id && h.score > 0 ? 1 : 0;
+    const gagne = top.id === h.id && valeur(s, h) > 0 ? 1 : 0;
     await c.query(
       `insert into arena_ratings(group_id,user_id,rating,parties,victoires,bonnes,reponses) values ($1,$2,$3,1,$4,$5,$6)
        on conflict (group_id,user_id) do update set rating=greatest(100, arena_ratings.rating + $7), parties=arena_ratings.parties+1,

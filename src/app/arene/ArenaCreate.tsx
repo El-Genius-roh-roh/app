@@ -32,7 +32,7 @@ export default function ArenaCreate({ groupId, modes, dispo }: { groupId: string
     <div className="space-y-4">
       <fieldset className="space-y-2">
         <legend className="eyebrow mb-2">Mode</legend>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {modes.map((m) => (
             <button key={m.id} type="button" onClick={() => setMode(m.id)} aria-pressed={mode === m.id} className={choix(mode === m.id)}>{m.titre}</button>
           ))}
@@ -40,7 +40,7 @@ export default function ArenaCreate({ groupId, modes, dispo }: { groupId: string
         <p className="text-sm text-texte-3">{modes.find((m) => m.id === mode)?.desc}</p>
       </fieldset>
       <fieldset>
-        <legend className="eyebrow mb-2">Manches</legend>
+        <legend className="eyebrow mb-2">{mode === "course" ? "Manches au maximum" : "Manches"}</legend>
         <div className="grid grid-cols-4 gap-2">
           {[5, 8, 10, 15].map((n) => (
             <button key={n} type="button" onClick={() => setRounds(n)} aria-pressed={rounds === n} className={`num ${choix(rounds === n)}`}>{n}</button>

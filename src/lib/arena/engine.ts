@@ -1,24 +1,26 @@
 // Moteur du mode « Arène » (duels en direct). Fonctions pures : aucune E/S, testables avec Vitest.
 // L'état d'une partie est avancé « paresseusement » (advance) à chaque requête, avec des horodatages
 // explicites : pas besoin de tâche de fond côté serveur.
-import { ARENA } from "@/config/constants";
+import { ARENA, COURSE } from "@/config/constants";
 import { hashString, rng, shuffled } from "../rng";
 
-export type Mode = "blitz" | "vf" | "mix";
+export type Mode = "blitz" | "vf" | "mix" | "course";
 export const MODES: Record<Mode, { titre: string; desc: string }> = {
   blitz: { titre: "Quiz Blitz", desc: "QCM chronométrés : plus tu réponds vite, plus tu marques." },
   vf: { titre: "Vrai ou Faux", desc: "Rafale de propositions : vrai ou faux ?" },
   mix: { titre: "Mix Arena", desc: "QCM et Vrai/Faux mélangés." },
+  course: { titre: "Course", desc: `Bonne réponse : +${COURSE.BONNE} cases (+${COURSE.TURBO} pour la plus rapide). Erreur : −${COURSE.ERREUR}. Le premier à ${COURSE.ARRIVEE} cases gagne.` },
 };
 
 export type Round = {
   qid: string; kind: "qcm" | "vf"; enonce: string; choices: string[];
   key: number; explication: string; limitMs: number;
 };
-export type Ans = { choice: number | null; ok: boolean; pts: number; bonus: number; at: number; missed?: boolean };
+export type Ans = { choice: number | null; ok: boolean; pts: number; bonus: number; at: number; missed?: boolean; move?: number; turbo?: boolean };
 export type Player = {
   id: string; name: string; bot: boolean; skill: number;
   score: number; streak: number; left: boolean; answers: Record<string, Ans>;
+  pos?: number; // mode Course : case atteinte (0 = départ, COURSE.ARRIVEE = arrivée)
 };
 export type Phase = "lobby" | "question" | "reveal" | "final";
 export type State = {
@@ -68,7 +70,7 @@ export function buildRounds(pool: PoolQuestion[], mode: Mode, n: number, rand: (
   const qcm = all.filter((x) => x.type === "qcm");
   const vf = all.filter((x) => x.type === "vrai_faux");
   const out: Round[] = [];
-  if (mode === "blitz") for (const x of qcm.slice(0, n)) out.push(asQcm(x, rand));
+  if (mode === "blitz" || mode === "course") for (const x of qcm.slice(0, n)) out.push(asQcm(x, rand));
   else if (mode === "vf") for (const x of [...vf, ...qcm].slice(0, n)) out.push(asVf(x, rand));
   else {
     // mix : alternance QCM / Vrai-Faux (les vrais V/F d'abord, puis des QCM transformés)
@@ -137,7 +139,7 @@ export function botPlan(s: State, p: Player, idx: number, roundStart: number, li
 
 export function startGame(s: State, rounds: Round[], now: number) {
   s.rounds = rounds;
-  s.players.forEach((p) => { p.score = 0; p.streak = 0; p.answers = {}; });
+  s.players.forEach((p) => { p.score = 0; p.streak = 0; p.answers = {}; p.pos = 0; });
   s.idx = 0;
   beginRound(s, now);
 }
@@ -158,9 +160,28 @@ function closeRound(s: State, endAt: number) {
       p.answers[s.idx] = { choice: null, ok: false, pts: 0, bonus: 0, at: endAt, missed: true };
     }
   }
+  if (s.mode === "course") deplacer(s);
   s.phase = "reveal";
   s.phaseStart = endAt;
 }
+
+/** Mode Course : chaque voiture avance, recule ou reste selon sa réponse ; turbo pour la bonne réponse la plus rapide. */
+export function deplacer(s: State) {
+  const bons = s.players.filter((p) => p.answers[s.idx]?.ok).sort((a, b) => a.answers[s.idx].at - b.answers[s.idx].at);
+  for (const p of s.players) {
+    const a = p.answers[s.idx];
+    if (!a) continue;
+    const turbo = bons[0] === p;
+    const d = a.ok ? COURSE.BONNE + (turbo ? COURSE.TURBO : 0) : a.missed ? 0 : -COURSE.ERREUR;
+    const avant = p.pos ?? 0;
+    p.pos = Math.max(0, Math.min(COURSE.ARRIVEE, avant + d));
+    a.move = p.pos - avant;
+    a.turbo = turbo;
+  }
+}
+
+/** Course terminée dès qu'une voiture atteint la ligne d'arrivée. */
+export const arrivee = (s: State) => s.mode === "course" && s.players.some((p) => !p.left && (p.pos ?? 0) >= COURSE.ARRIVEE);
 
 /** Fait avancer la partie jusqu'à `now`. Retourne true si l'état a changé. */
 export function advance(s: State, now: number): boolean {
@@ -185,7 +206,7 @@ export function advance(s: State, now: number): boolean {
     } else if (s.phase === "reveal") {
       const end = s.phaseStart + ARENA.REVEAL_S * 1000;
       if (now < end) break;
-      if (s.idx + 1 >= s.rounds.length) { s.phase = "final"; s.phaseStart = end; changed = true; break; }
+      if (s.idx + 1 >= s.rounds.length || arrivee(s)) { s.phase = "final"; s.phaseStart = end; changed = true; break; }
       s.idx += 1;
       beginRound(s, end);
       changed = true;
@@ -197,8 +218,11 @@ export function advance(s: State, now: number): boolean {
 
 /* ---------------------------------------------------------------- classement, Elo, ligues */
 
+/** Valeur de classement : la position d'abord en mode Course (les points départagent), sinon les points. */
+export const valeur = (s: State, p: Player) => (s.mode === "course" ? (p.pos ?? 0) * 100000 + p.score : p.score);
+
 export const ranking = (s: State) =>
-  [...s.players].sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+  [...s.players].sort((a, b) => valeur(s, b) - valeur(s, a) || a.name.localeCompare(b.name));
 
 export function tierOf(rating: number): string {
   if (rating < 950) return "Bronze";
@@ -237,17 +261,17 @@ export function viewFor(s: State, userId: string, now: number) {
   const players = (lobby ? s.players : rank).map((p) => {
     const a = p.answers[s.idx];
     return {
-      id: p.id, name: p.name, bot: p.bot, left: p.left, host: p.id === s.host, score: p.score, streak: p.streak,
+      id: p.id, name: p.name, bot: p.bot, left: p.left, host: p.id === s.host, score: p.score, streak: p.streak, pos: p.pos ?? 0,
       rank: pos.get(p.id) ?? 0,
       answered: s.phase === "question" || s.phase === "reveal" ? !!a : false,
-      round: s.phase === "reveal" && a ? { ok: a.ok, pts: a.pts, bonus: a.bonus, missed: !!a.missed, choice: a.choice } : undefined,
+      round: s.phase === "reveal" && a ? { ok: a.ok, pts: a.pts, bonus: a.bonus, missed: !!a.missed, choice: a.choice, move: a.move ?? 0, turbo: !!a.turbo } : undefined,
     };
   });
   const me = s.players.find((p) => p.id === userId);
   return {
     v: s.v, now, code: s.code, phase: s.phase, mode: s.mode, modeTitre: MODES[s.mode].titre, host: s.host, me: userId,
     idx: s.idx, nrounds: s.rounds.length || s.nrounds, deadline: s.deadline, phaseStart: s.phaseStart, revealMs: ARENA.REVEAL_S * 1000,
-    players,
+    players, arrivee: COURSE.ARRIVEE,
     classee: s.players.filter((p) => !p.bot).length >= ARENA.MIN_HUMAINS_CLASSEE,
     round: !lobby && r ? {
       kind: r.kind, enonce: r.enonce, choices: r.choices, limitMs: r.limitMs,
